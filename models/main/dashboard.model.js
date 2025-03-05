@@ -3542,7 +3542,7 @@ class Dashboard {
         }
     }
 
-     async getD3B3Data(connection, meter) {
+    async getD3B3Data(connection, meter) {
         try {
             const [[results]] = await connection.query(
                 {
@@ -3575,18 +3575,37 @@ class Dashboard {
 
     async graphDemoReportsAnalytics(connection, meter) {
         try {
-            const d1 = new Date();
-            const sdf = (date) => date.toISOString().split('T')[0];
-            const presDate = sdf(new Date(d1.setDate(d1.getDate() - 210)));
-            d1.setDate(d1.getDate() + 210);
-            const nextDate = sdf(new Date(d1));
+            // Create separate date objects
+            const today = new Date();
+            const pastDate = new Date(today);
+            pastDate.setDate(today.getDate() - 210);
+
+            // Format dates as YYYY-MM-DD for starting date
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const presDate = formatDate(pastDate) + ' 00:00:00'; // Start of day 210 days ago
+
+            // For end date, explicitly use end of current day (23:59:59)
+            const nextDate = formatDate(today) + ' 23:59:59'; // End of current day
+
+            console.log('Query date range:', presDate, 'to', nextDate);
 
             const [results] = await connection.query({
                 sql: `
-                    SELECT
+                SELECT 
+                    dates.consumption_date,
+                    dates.count,
+                    latest.DATA_STRING AS sum
+                FROM (
+                    SELECT 
                         SUBSTR(D3_TIME_STAMP, 1, 10) AS consumption_date,
                         COUNT(*) AS count,
-                        DATA_STRING as sum
+                        MAX(D3_TIME_STAMP) AS latest_timestamp
                     FROM d3_b3
                     WHERE D3_TIME_STAMP >= ?
                       AND D3_TIME_STAMP <= ?
@@ -3594,11 +3613,15 @@ class Dashboard {
                       AND TRIM(METER_SERIAL_NO) != ''
                       AND METER_SERIAL_NO = ?
                     GROUP BY SUBSTR(D3_TIME_STAMP, 1, 10)
-                `,
-                values: [presDate, nextDate, meter],
+                ) AS dates
+                JOIN d3_b3 AS latest ON 
+                    latest.D3_TIME_STAMP = dates.latest_timestamp AND
+                    latest.METER_SERIAL_NO = ?
+                ORDER BY dates.consumption_date
+            `,
+                values: [presDate, nextDate, meter, meter],
                 timeout: QUERY_TIMEOUT,
             });
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
@@ -3655,30 +3678,52 @@ class Dashboard {
 
     async graphDemoCumulativeReportsAnalytics(connection, meter) {
         try {
-            const d1 = new Date();
-            const sdf = (date) => date.toISOString().split('T')[0];
-            const presDate = sdf(new Date(d1.setDate(d1.getDate() - 210)));
-            d1.setDate(d1.getDate() + 210);
-            const nextDate = sdf(new Date(d1));
+            // Create separate date objects
+            const today = new Date();
+            const pastDate = new Date(today);
+            pastDate.setDate(today.getDate() - 210);
+
+            // Format dates as YYYY-MM-DD HH:MM:SS
+            const formatDatetime = (date, isEndOfDay = false) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const time = isEndOfDay ? '23:59:59' : '00:00:00';
+                return `${year}-${month}-${day} ${time}`;
+            };
+
+            const presDate = formatDatetime(pastDate);
+            const nextDate = formatDatetime(today, true); // End of current day
+
+            console.log('Query date range:', presDate, 'to', nextDate);
 
             const [results] = await connection.query({
                 sql: `
+                SELECT 
+                    dates.date,
+                    dates.count,
+                    latest.KWH_Imp AS value
+                FROM (
                     SELECT 
-                        SUBSTR(D6_TIME_STAMP, 1, 10) AS date,
+                        SUBSTR(D3_TIME_STAMP, 1, 10) AS date,
                         COUNT(*) AS count,
-                        DATA_STRING as value
-                    FROM d6_data 
-                    WHERE D6_TIME_STAMP >= ?
-                      AND D6_TIME_STAMP <= ?
+                        MAX(D3_TIME_STAMP) AS latest_timestamp
+                    FROM d3_b3
+                    WHERE D3_TIME_STAMP >= ?
+                      AND D3_TIME_STAMP <= ?
                       AND LENGTH(METER_SERIAL_NO) > 0
                       AND TRIM(METER_SERIAL_NO) != ''
                       AND METER_SERIAL_NO = ?
-                    GROUP BY SUBSTR(D6_TIME_STAMP, 1, 10)
-                `,
-                values: [presDate, nextDate, meter],
+                    GROUP BY SUBSTR(D3_TIME_STAMP, 1, 10)
+                ) AS dates
+                JOIN d3_b3 AS latest ON 
+                    latest.D3_TIME_STAMP = dates.latest_timestamp AND
+                    latest.METER_SERIAL_NO = ?
+                ORDER BY dates.date
+            `,
+                values: [presDate, nextDate, meter, meter],
                 timeout: QUERY_TIMEOUT,
             });
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {

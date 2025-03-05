@@ -429,7 +429,6 @@ export const getMainWidgets = async (req, res) => {
             total_overdue_bill ?? 0,
             total_revenue ?? 0
         );
-        console.log(firstDayBeforePreviousMonth, lastDayBeforePreviousMonth);
         const {
             total_revenue: total_bill_last_month,
             total_revenue_count: total_bill_last_month_count,
@@ -2317,7 +2316,6 @@ export const getPowerWidgets = async (req, res) => {
             ...d3,
             ...d3_b3,
         };
-        console.log(power);
         res.status(200).json({
             status: 'success',
             data: {
