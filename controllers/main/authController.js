@@ -162,6 +162,7 @@ const login = async (req, res) => {
                         userId: user.user_id,
                         email: user.email ? user.email : 'test@gmail.com',
                         role: roledata.role_title,
+                        user_role_id: roledata.role_id,
                         uid: user.name,
                         locationHierarchy: user.location_hierarchy,
                     },

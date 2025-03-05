@@ -8,6 +8,7 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
 import cron from 'node-cron';
+import fs from 'fs';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
@@ -102,6 +103,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
+    console.log( 'accessToken', req.cookies);
 
     if (!accessToken) {
         return next();
@@ -146,6 +148,53 @@ app.get('/health', (req, res) => {
 });
 
 app.use(`/api/${config.API_VERSION}`, v1Routes);
+
+// File access route
+app.get('/static/uploads/:filename', (req, res) => {
+    const { filename } = req.params;
+    const filePath = `${process.cwd()}/static/uploads/${filename}`;
+    
+    // Log the request details
+    logger.info('File access request:', {
+        filename,
+        filePath,
+        currentDir: process.cwd(),
+        fullPath: `${process.cwd()}/${filePath}`
+    });
+
+    // Check if file exists before trying to send it
+   // const fs = require('fs');
+    if (!fs.existsSync(filePath)) {
+        logger.error('File not found:', {
+            filePath,
+            currentDir: process.cwd(),
+            fullPath: `${process.cwd()}/${filePath}`
+        });
+        return res.status(404).json({
+            status: 'error',
+            message: 'File not found',
+            path: filePath,
+            details: 'The requested file does not exist in the uploads directory'
+        });
+    }
+
+    res.sendFile(filePath,(err) => {
+        if (err) {
+            logger.error('File access error:', {
+                error: err,
+                filePath,
+                currentDir: process.cwd(),
+                fullPath: `${process.cwd()}/${filePath}`
+            });
+            res.status(404).json({
+                status: 'error',
+                message: 'File not found',
+                path: filePath,
+                details: err.message
+            });
+        }
+    });
+});
 
 app.use(errorHandler);
 
