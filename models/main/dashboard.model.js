@@ -3486,8 +3486,8 @@ class Dashboard {
                             FREQUENCY as frequency,
                             APPARENT_POWER as apparent_power,
                             RPH_POWER_FACTOR as pfRPh,
-                            YPH_POWER_FACTOR as pfRPh,
-                            BPH_POWER_FACTOR as pfRPh,
+                            YPH_POWER_FACTOR as pfYPh,
+                            BPH_POWER_FACTOR as pfBPh,
                             AVG_POWER_FACTOR as pfAVG
                         FROM ntpl.d2 
                         WHERE METER_SERIAL_NO = ?
