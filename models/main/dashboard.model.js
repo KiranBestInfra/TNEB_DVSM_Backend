@@ -1454,28 +1454,81 @@ class Dashboard {
         accessValues
     ) {
         try {
+            // MySQL 5.5 compatible approach - check if indexes exist first
+            try {
+                // For bill_lkea table
+                const [billIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'bill_lkea' 
+                AND index_name = 'idx_created_at_uid_status'
+            `);
+
+                if (billIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_created_at_uid_status ON bill_lkea (created_at, uid, status)`
+                    );
+                }
+
+                // For consumers_lkea table
+                const [consumerIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'consumers_lkea' 
+                AND index_name = 'idx_uid'
+            `);
+
+                if (consumerIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_uid ON consumers_lkea (uid)`
+                    );
+                }
+
+                // For disconnected_consumers_lkea table
+                const [disconnectedIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'disconnected_consumers_lkea' 
+                AND index_name = 'idx_uid'
+            `);
+
+                if (disconnectedIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_uid ON disconnected_consumers_lkea (uid)`
+                    );
+                }
+            } catch (indexError) {
+                console.warn(
+                    'Index creation warning (continuing anyway):',
+                    indexError.message
+                );
+                // Continue even if index creation fails
+            }
+
+            const [dateRow] = await connection.query(`
+            SELECT DATE_FORMAT(DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+05:30'), INTERVAL 13 MONTH), '%Y-%m-01') AS start_date
+        `);
+            const startDate = dateRow[0].start_date;
+
             const [bills] = await connection.query({
                 sql: `
                 SELECT 
-                    DATE_FORMAT(CONVERT_TZ(b.created_at, '+00:00', '+05:30'), '%Y-%m') AS bill_month,
-                    COUNT(*) AS total_bill_count,
-                    SUM(CASE WHEN b.status = 'pending' THEN 1 ELSE 0 END) AS pending_bill_count,
-                    SUM(CASE WHEN b.status = 'paid' THEN 1 ELSE 0 END) AS paid_bill_count,
-                    SUM(CASE WHEN b.status = 'overdue' THEN 1 ELSE 0 END) AS overdue_bill_count
+                DATE_FORMAT(CONVERT_TZ(b.created_at, '+00:00', '+05:30'), '%Y-%m') AS bill_month,
+                COUNT(*) AS total_bill_count,
+                SUM(b.status = 'pending') AS pending_bill_count,
+                SUM(b.status = 'paid') AS paid_bill_count,
+                SUM(b.status = 'overdue') AS overdue_bill_count
                 FROM bill_lkea b
-                INNER JOIN consumers_lkea c ON c.uid = b.uid
-                WHERE CONVERT_TZ(b.created_at, '+00:00', '+05:30') >= 
-                    DATE_FORMAT(DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+05:30'), INTERVAL 13 MONTH), '%Y-%m-01')
-                    AND b.uid != 0
-                    ${accessCondition}
-                    AND b.uid NOT IN (
-                        SELECT uid
-                        FROM disconnected_consumers_lkea
-                    )
+                STRAIGHT_JOIN consumers_lkea c ON c.uid = b.uid
+                LEFT JOIN disconnected_consumers_lkea d ON d.uid = b.uid
+                WHERE CONVERT_TZ(b.created_at, '+00:00', '+05:30') >= ?
+                AND b.uid != 0
+                ${accessCondition}
+                AND d.uid IS NULL
                 GROUP BY bill_month
                 ORDER BY bill_month
             `,
-                values: accessValues,
+                values: [startDate, ...accessValues],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -2602,22 +2655,46 @@ class Dashboard {
         accessValues
     ) {
         try {
+            // First, check and create indexes if needed (similar to previous function)
+            try {
+                // Check for bill_date index
+                const [billDateIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'bill_lkea' 
+                AND index_name = 'idx_bill_date_uid'
+            `);
+
+                if (billDateIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_bill_date_uid ON bill_lkea (bill_date, uid)`
+                    );
+                }
+
+                // Other indexes from previous function should be sufficient
+            } catch (indexError) {
+                console.warn(
+                    'Index creation warning (continuing anyway):',
+                    indexError.message
+                );
+            }
+
+            // Optimized query using LEFT JOIN instead of NOT IN
+            // Using EXTRACT(YEAR_MONTH) to avoid repeated DATE_FORMAT calls
             const query = `
             SELECT 
-                DATE_FORMAT(b.bill_date, '%Y-%m') as month,
+                CONCAT(EXTRACT(YEAR FROM b.bill_date), '-', LPAD(EXTRACT(MONTH FROM b.bill_date), 2, '0')) as month,
                 SUM(b.amount) as total_amount_generated,
                 SUM(b.paid_amount) as total_paid_amount,
                 SUM(b.due_amount) as total_overdue_amount
             FROM bill_lkea b
             JOIN consumers_lkea c ON b.uid = c.uid
+            LEFT JOIN disconnected_consumers_lkea d ON b.uid = d.uid
             WHERE 1=1
-            ${accessCondition}
-            AND b.uid NOT IN (
-                    SELECT uid
-                    FROM disconnected_consumers_lkea
-            )
-            GROUP BY DATE_FORMAT(b.bill_date, '%Y-%m')
-            ORDER BY month
+                ${accessCondition}
+                AND d.uid IS NULL
+            GROUP BY EXTRACT(YEAR FROM b.bill_date), EXTRACT(MONTH FROM b.bill_date)
+            ORDER BY EXTRACT(YEAR FROM b.bill_date), EXTRACT(MONTH FROM b.bill_date)
         `;
 
             const queryParams = {
