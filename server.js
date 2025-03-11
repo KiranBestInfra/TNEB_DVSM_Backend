@@ -239,99 +239,99 @@ const setupCronJobs = () => {
         }
     );
 
-    // cron.schedule('*/5 * * * *', async () => {
-    //     try {
-    //         const [consumers] = await pool.query(
-    //             `
-    //         SELECT meter_serial
-    //         FROM consumers_lkea
-    //         WHERE block_name = 'Block-D'
-    //         AND meter_serial != '32500115'
-    //     `
-    //         );
-    //         for (const consumer of consumers) {
-    //             const [power] = await pool.query(
-    //                 `
-    //                 SELECT
-    //                     RPH_LINE_CURRENT as current,
-    //                     YPH_LINE_CURRENT as cYPh,
-    //                     BPH_LINE_CURRENT as cBPh,
-    //                     RPH_VOLTAGE as voltage,
-    //                     YPH_VOLTAGE as vYPh,
-    //                     BPH_VOLTAGE as vBPh,
-    //                     RPH_POWER_FACTOR as powerFactor,
-    //                     FREQUENCY as frequency
-    //                 FROM ntpl.d2
-    //                 WHERE METER_SERIAL_NO = ?
-    //                 ORDER BY METER_TIME_STAMP DESC
-    //                 LIMIT 1
-    //         `,
-    //                 [consumer.meter_serial]
-    //             );
-    //             const [[{ last_comm_date }]] = await pool.query(
-    //                 `
-    //                     SELECT D3_TIME_STAMP as last_comm_date
-    //                     FROM d3_b3
-    //                     WHERE METER_SERIAL_NO = ?
-    //                     ORDER BY D3_TIME_STAMP DESC
-    //                     LIMIT 1
-    //                 `,
-    //                 [consumer.meter_serial]
-    //             );
-    //             if (power && power.length > 0) {
-    //                 const powerData = power[0];
+    cron.schedule('*/5 * * * *', async () => {
+        try {
+            const [consumers] = await pool.query(
+                `
+            SELECT meter_serial
+            FROM consumers_lkea
+            WHERE block_name = 'Block-D'
+            AND meter_serial != '32500115'
+        `
+            );
+            for (const consumer of consumers) {
+                const [power] = await pool.query(
+                    `
+                    SELECT
+                        RPH_LINE_CURRENT as current,
+                        YPH_LINE_CURRENT as cYPh,
+                        BPH_LINE_CURRENT as cBPh,
+                        RPH_VOLTAGE as voltage,
+                        YPH_VOLTAGE as vYPh,
+                        BPH_VOLTAGE as vBPh,
+                        RPH_POWER_FACTOR as powerFactor,
+                        FREQUENCY as frequency
+                    FROM ntpl.d2
+                    WHERE METER_SERIAL_NO = ?
+                    ORDER BY METER_TIME_STAMP DESC
+                    LIMIT 1
+            `,
+                    [consumer.meter_serial]
+                );
+                const [[{ last_comm_date }]] = await pool.query(
+                    `
+                        SELECT D3_TIME_STAMP as last_comm_date
+                        FROM d3_b3
+                        WHERE METER_SERIAL_NO = ?
+                        ORDER BY D3_TIME_STAMP DESC
+                        LIMIT 1
+                    `,
+                    [consumer.meter_serial]
+                );
+                if (power && power.length > 0) {
+                    const powerData = power[0];
 
-    //                 powerData.vRPh = powerData.voltage;
-    //                 powerData.cRPh = powerData.current;
+                    powerData.vRPh = powerData.voltage;
+                    powerData.cRPh = powerData.current;
 
-    //                 const zeroValues = {
-    //                     powerFactor: isZero(powerData.powerFactor),
-    //                     'Voltage- R': isZero(powerData.vRPh),
-    //                     'Voltage- Y': isZero(powerData.vYPh),
-    //                     'Voltage- B': isZero(powerData.vBPh),
-    //                     'Current- R': isZero(powerData.cRPh),
-    //                     'Current- Y': isZero(powerData.cYPh),
-    //                     'Current- B': isZero(powerData.cBPh),
-    //                 };
-    //                 const hasZeroValues = Object.values(zeroValues).some(
-    //                     (isZero) => isZero
-    //                 );
-    //                 function convertToIST(dateString) {
-    //                     const date = new Date(dateString);
+                    const zeroValues = {
+                        powerFactor: isZero(powerData.powerFactor),
+                        'Voltage- R': isZero(powerData.vRPh),
+                        'Voltage- Y': isZero(powerData.vYPh),
+                        'Voltage- B': isZero(powerData.vBPh),
+                        'Current- R': isZero(powerData.cRPh),
+                        'Current- Y': isZero(powerData.cYPh),
+                        'Current- B': isZero(powerData.cBPh),
+                    };
+                    const hasZeroValues = Object.values(zeroValues).some(
+                        (isZero) => isZero
+                    );
+                    function convertToIST(dateString) {
+                        const date = new Date(dateString);
 
-    //                     const year = date.getFullYear();
-    //                     const month = String(date.getMonth() + 1).padStart(
-    //                         2,
-    //                         '0'
-    //                     );
-    //                     const day = String(date.getDate()).padStart(2, '0');
-    //                     const hours = String(date.getHours()).padStart(2, '0');
-    //                     const minutes = String(date.getMinutes()).padStart(
-    //                         2,
-    //                         '0'
-    //                     );
-    //                     const seconds = String(date.getSeconds()).padStart(
-    //                         2,
-    //                         '0'
-    //                     );
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(
+                            2,
+                            '0'
+                        );
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(
+                            2,
+                            '0'
+                        );
+                        const seconds = String(date.getSeconds()).padStart(
+                            2,
+                            '0'
+                        );
 
-    //                     return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-    //                 }
+                        return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+                    }
 
-    //                 if (hasZeroValues) {
-    //                     await sendZeroValueAlert(
-    //                         consumer.meter_serial,
-    //                         zeroValues,
-    //                         powerData,
-    //                         convertToIST(last_comm_date)
-    //                     );
-    //                 }
-    //             }
-    //         }
-    //     } catch (e) {
-    //         console.log(e);
-    //     }
-    // });
+                    if (hasZeroValues) {
+                        await sendZeroValueAlert(
+                            consumer.meter_serial,
+                            zeroValues,
+                            powerData,
+                            convertToIST(last_comm_date)
+                        );
+                    }
+                }
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    });
 };
 
 app.listen(config.PORT, () => {

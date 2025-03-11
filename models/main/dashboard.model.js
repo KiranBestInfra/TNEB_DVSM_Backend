@@ -3872,6 +3872,50 @@ class Dashboard {
             throw error;
         }
     }
+
+    async getDTRData(connection) {
+        try {
+            const [[results]] = await connection.query({
+                sql: `
+                        SELECT * FROM dtr_master
+                    `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return results;
+        } catch (error) {
+            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
+                throw new Error(
+                    'Dashboard query timed out after ' +
+                        QUERY_TIMEOUT / 1000 +
+                        ' seconds'
+                );
+            }
+            console.log('getMeterLastCommunication', error);
+            throw error;
+        }
+    }
+
+    async getFeederData(connection) {
+        try {
+            const [[results]] = await connection.query({
+                sql: `
+                        SELECT * FROM dtr_master
+                    `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return results;
+        } catch (error) {
+            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
+                throw new Error(
+                    'Dashboard query timed out after ' +
+                        QUERY_TIMEOUT / 1000 +
+                        ' seconds'
+                );
+            }
+            console.log('getMeterLastCommunication', error);
+            throw error;
+        }
+    }
 }
 
 export default new Dashboard();

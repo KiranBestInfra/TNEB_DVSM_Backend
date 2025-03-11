@@ -2476,3 +2476,21 @@ export const getPowerGraphs = async (req, res) => {
         });
     }
 };
+
+export const getDTRWidgetsData = async (req, res) => {
+    try {
+        
+    } catch (error) {
+        logger.error('Error getting DTR widgets data', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
+    }
+};
