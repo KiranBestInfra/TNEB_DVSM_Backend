@@ -856,34 +856,38 @@ class Dashboard {
         accessCondition,
         accessValues,
         startDate = null,
-        endDate = null
+        endDate = null,
+        full = false
     ) {
         try {
             let query = `
-            SELECT 
-                COALESCE(SUM(b.amount), 0) AS total_overdue_revenue, 
-                COUNT(b.uid) AS total_overdue_revenue_count
-            FROM bill_lkea b
-            INNER JOIN consumers_lkea c ON c.uid = b.uid
-            WHERE b.status = 'Overdue'
-                AND b.uid != 0
-                AND b.uid NOT IN (
-                    SELECT uid
-                    FROM disconnected_consumers_lkea
-                )
-                ${accessCondition}
-        `;
+        SELECT 
+            COALESCE(SUM(b.amount), 0) AS total_overdue_revenue, 
+            COUNT(b.uid) AS total_overdue_revenue_count
+        FROM bill_lkea b
+        INNER JOIN consumers_lkea c ON c.uid = b.uid
+        WHERE b.status = 'Overdue'
+            AND b.uid != 0
+            AND b.uid NOT IN (
+                SELECT uid
+                FROM disconnected_consumers_lkea
+            )
+            ${accessCondition}
+    `;
             const params = [...accessValues];
 
-            if (startDate && endDate) {
-                query +=
-                    " AND CONVERT_TZ(b.created_at, '+00:00', '+05:30') BETWEEN ? AND ?";
-                params.push(startDate, endDate);
-            } else {
-                query += `
+            if (!full) {
+                // Only apply date filtering if full is false
+                if (startDate && endDate) {
+                    query +=
+                        " AND CONVERT_TZ(b.created_at, '+00:00', '+05:30') BETWEEN ? AND ?";
+                    params.push(startDate, endDate);
+                } else {
+                    query += `
                 AND YEAR(CONVERT_TZ(b.created_at, '+00:00', '+05:30')) = YEAR(CONVERT_TZ(NOW(), '+00:00', '+05:30'))
                 AND MONTH(CONVERT_TZ(b.created_at, '+00:00', '+05:30')) = MONTH(CONVERT_TZ(NOW(), '+00:00', '+05:30'))
             `;
+                }
             }
 
             const [rows] = await connection.query({
@@ -3554,18 +3558,19 @@ class Dashboard {
                     sql: `
                         SELECT
                             RPH_VOLTAGE as voltage,
-                            RPH_LINE_CURRENT as current,
-                            RPH_POWER_FACTOR as powerFactor,
                             YPH_VOLTAGE as vYPh,
                             BPH_VOLTAGE as vBPh,
+                            RPH_LINE_CURRENT as current,
                             YPH_LINE_CURRENT as cYPh,
                             BPH_LINE_CURRENT as cBPh,
+                            RPH_POWER_FACTOR as powerFactor,
                             FREQUENCY as frequency,
                             APPARENT_POWER as apparent_power,
                             RPH_POWER_FACTOR as pfRPh,
                             YPH_POWER_FACTOR as pfYPh,
                             BPH_POWER_FACTOR as pfBPh,
-                            AVG_POWER_FACTOR as pfAVG
+                            AVG_POWER_FACTOR as pfAVG,
+                            NEUTRAL_CURRENT as neutral_current
                         FROM ntpl.d2 
                         WHERE METER_SERIAL_NO = ?
                         ORDER BY METER_TIME_STAMP DESC
@@ -3652,12 +3657,10 @@ class Dashboard {
 
     async graphDemoReportsAnalytics(connection, meter) {
         try {
-            // Create separate date objects
             const today = new Date();
             const pastDate = new Date(today);
             pastDate.setDate(today.getDate() - 210);
 
-            // Format dates as YYYY-MM-DD for starting date
             const formatDate = (date) => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -3665,10 +3668,9 @@ class Dashboard {
                 return `${year}-${month}-${day}`;
             };
 
-            const presDate = formatDate(pastDate) + ' 00:00:00'; // Start of day 210 days ago
+            const presDate = formatDate(pastDate) + ' 00:00:00';
 
-            // For end date, explicitly use end of current day (23:59:59)
-            const nextDate = formatDate(today) + ' 23:59:59'; // End of current day
+            const nextDate = formatDate(today) + ' 23:59:59';
 
             console.log('Query date range:', presDate, 'to', nextDate);
 
@@ -3755,12 +3757,10 @@ class Dashboard {
 
     async graphDemoCumulativeReportsAnalytics(connection, meter) {
         try {
-            // Create separate date objects
             const today = new Date();
             const pastDate = new Date(today);
             pastDate.setDate(today.getDate() - 210);
 
-            // Format dates as YYYY-MM-DD HH:MM:SS
             const formatDatetime = (date, isEndOfDay = false) => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -3770,7 +3770,7 @@ class Dashboard {
             };
 
             const presDate = formatDatetime(pastDate);
-            const nextDate = formatDatetime(today, true); // End of current day
+            const nextDate = formatDatetime(today, true);
 
             console.log('Query date range:', presDate, 'to', nextDate);
 
@@ -3860,50 +3860,6 @@ class Dashboard {
                 [meter]
             );
             return last_comm;
-        } catch (error) {
-            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
-                throw new Error(
-                    'Dashboard query timed out after ' +
-                        QUERY_TIMEOUT / 1000 +
-                        ' seconds'
-                );
-            }
-            console.log('getMeterLastCommunication', error);
-            throw error;
-        }
-    }
-
-    async getDTRData(connection) {
-        try {
-            const [[results]] = await connection.query({
-                sql: `
-                        SELECT * FROM dtr_master
-                    `,
-                timeout: QUERY_TIMEOUT,
-            });
-            return results;
-        } catch (error) {
-            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
-                throw new Error(
-                    'Dashboard query timed out after ' +
-                        QUERY_TIMEOUT / 1000 +
-                        ' seconds'
-                );
-            }
-            console.log('getMeterLastCommunication', error);
-            throw error;
-        }
-    }
-
-    async getFeederData(connection) {
-        try {
-            const [[results]] = await connection.query({
-                sql: `
-                        SELECT * FROM dtr_master
-                    `,
-                timeout: QUERY_TIMEOUT,
-            });
-            return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
                 throw new Error(

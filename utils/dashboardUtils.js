@@ -633,3 +633,7 @@ export const isZero = (value) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     return Math.abs(numValue) < 0.001;
 };
+
+export const calculateDTRPercentage = (value, total = 500.0) => {
+    return (value / total) * 100;
+};

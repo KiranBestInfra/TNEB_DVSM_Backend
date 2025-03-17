@@ -27,6 +27,10 @@ import {
     addNewConsumer,
     getPowerWidgets,
     getPowerGraphs,
+    getDTRDashboardWidgetsData,
+    getDTRTableData,
+    getDTRPageWidgetsData,
+    getFeederDetails,
 } from '../controllers/main/dashboardController.js';
 import multer from 'multer';
 
@@ -75,5 +79,9 @@ router.get('/tickets/trends', getTicketTrends);
 router.get('/tickets', getTicketTable);
 
 // DTR
+router.get('/dtr/main/widgets', getDTRDashboardWidgetsData);
+router.get('/dtr/page/widgets', getDTRPageWidgetsData);
+router.get('/dtr/page/table', getDTRTableData);
+router.get('/dtr/feeder/:feeder', getFeederDetails);
 
 export default router;

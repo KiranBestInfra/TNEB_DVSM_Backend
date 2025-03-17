@@ -15,11 +15,13 @@ import {
     fillMissingReadingDates,
     fillMissingMDData,
     predictFutureValues,
+    calculateDTRPercentage,
 } from '../../utils/dashboardUtils.js';
 import Joi from 'joi';
 import pool from '../../config/db.js';
 import XLSX from 'xlsx';
 import path from 'path';
+import DTR from '../../models/main/dtr.model.js';
 
 export const getConsumersTable = (
     with_pagination = 'true',
@@ -273,7 +275,10 @@ export const getMainWidgets = async (req, res) => {
         } = await Dashboard.getTotalOverDueRevenueCurrentMonth(
             pool,
             accessCondition,
-            accessValues
+            accessValues,
+            null,
+            null,
+            true
         );
         const {
             total_pending_revenue: total_pending_bill,
@@ -794,7 +799,8 @@ export const getReportsWidgets = async (req, res) => {
                 accessCondition,
                 accessValues,
                 startDate,
-                endDate
+                endDate,
+                true
             );
 
         const {
@@ -1142,7 +1148,6 @@ export const getConsumerByID = async (req, res) => {
 
         const convertedInvoices = convertInvoiceDates(results.invoices || []);
 
-        // Initialize default values for consumption data
         let dailyCons = { dates: [], values: [] };
         let monthlyCons = { dates: [], values: [] };
         let modifiedLastMonthCons = { dates: [], values: [] };
@@ -2477,9 +2482,65 @@ export const getPowerGraphs = async (req, res) => {
     }
 };
 
-export const getDTRWidgetsData = async (req, res) => {
+export const getDTRDashboardWidgetsData = async (req, res) => {
     try {
-        
+        let overloadDTR = 0;
+        let underloadDTR = 0;
+        let unbalancedDTR = 0;
+        let modifiedMeters = [];
+
+        const dtrData = await DTR.getDTRData(pool);
+        const feederData = await DTR.getFeederData(pool);
+
+        const meters = await DTR.getDTRMeters(pool);
+        meters.map((meter) => modifiedMeters.push(meter.meter_serial_no));
+
+        const consumption = await DTR.getDailyDTRMeterConsumption(
+            pool,
+            modifiedMeters
+        );
+        consumption.forEach((item) => {
+            const percentage = calculateDTRPercentage(item.sum);
+
+            if (percentage > 90) {
+                overloadDTR++;
+            }
+
+            if (percentage < 30) {
+                underloadDTR++;
+            }
+        });
+
+        const totalkVAh = await DTR.getDTRkVAh(pool, modifiedMeters);
+        const totalkWh = await DTR.getDTRkWh(pool, modifiedMeters);
+        const totalkW = await DTR.getDTRkW(pool, modifiedMeters);
+        const totalkVA = await DTR.getDTRkVA(pool, modifiedMeters);
+
+        const neutralCurrents = await DTR.getDTRNeutralCurrent(
+            pool,
+            modifiedMeters
+        );
+        neutralCurrents.forEach((item) => {
+            const current = item.NEUTRAL_CURRENT;
+
+            if (Number(current) > 5) {
+                unbalancedDTR++;
+            }
+        });
+
+        res.status(200).json({
+            data: {
+                totalDTR: dtrData.length,
+                totalFeeder: feederData.length,
+                overloadDTR,
+                underloadDTR,
+                unbalancedDTR,
+                totalkWh: parseFloat(totalkWh).toFixed(2),
+                totalkVAh: parseFloat(totalkVAh).toFixed(2),
+                totalkW,
+                totalkVA,
+            },
+        });
     } catch (error) {
         logger.error('Error getting DTR widgets data', {
             error: error.message,
@@ -2490,6 +2551,232 @@ export const getDTRWidgetsData = async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
+    }
+};
+
+export const getDTRPageWidgetsData = async (req, res) => {
+    try {
+        let modifiedMeters = [];
+        let unbalancedDTR = 0;
+
+        const feederData = await DTR.getFeederData(pool);
+
+        const meters = await DTR.getDTRMeters(pool);
+        meters.map((meter) => modifiedMeters.push(meter.meter_serial_no));
+
+        const totalkWh = await DTR.getDTRkWh(pool, modifiedMeters);
+        const totalkVAh = await DTR.getDTRkVAh(pool, modifiedMeters);
+        const totalkW = await DTR.getDTRkW(pool, modifiedMeters);
+        const totalkVA = await DTR.getDTRkVA(pool, modifiedMeters);
+
+        const neutralCurrents = await DTR.getDTRNeutralCurrent(
+            pool,
+            modifiedMeters
+        );
+        neutralCurrents.forEach((item) => {
+            const current = item.NEUTRAL_CURRENT;
+
+            if (Number(current) > 5) {
+                unbalancedDTR++;
+            }
+        });
+        res.status(200).json({
+            data: {
+                totalFeeder: feederData.length,
+                totalkWh: parseFloat(totalkWh).toFixed(2),
+                totalkVAh: parseFloat(totalkVAh).toFixed(2),
+                totalkW,
+                totalkVA,
+                unbalancedDTR,
+            },
+        });
+    } catch (error) {
+        logger.error('Error getting DTR widgets data', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
+    }
+};
+
+export const getDTRTableData = async (req, res) => {
+    try {
+        let dtrIDs = [];
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const searchTerm = req.query.search || '';
+
+        const dtrList = await DTR.getDTRTableData(
+            pool,
+            page,
+            limit,
+            true,
+            searchTerm
+        );
+        for (const dtr of dtrList.data) {
+            dtrIDs.push(dtr.dtr_id);
+        }
+
+        const feeders = await DTR.getFeederData(pool, dtrIDs);
+
+        const transformedDTRs = dtrList.data.map((dtr) => {
+            return {
+                id: dtr.dtr_id,
+                name: dtr.dtr_name,
+                feeders_count: dtr.feeder_count,
+                status: 'Normal',
+            };
+        });
+
+        const transformedFeeders = {};
+
+        dtrList.data.forEach((dtr) => {
+            const dtrId = dtr.dtr_id;
+            transformedFeeders[dtrId] = feeders
+                .filter((feeder) => feeder.dtr_id === dtrId)
+                .map((feeder) => {
+                    return {
+                        name: feeder.feeder_name,
+                        status: 'Healthy',
+                    };
+                });
+        });
+
+        res.status(200).json({
+            data: {
+                dtrs: transformedDTRs,
+                feeders: transformedFeeders,
+            },
+            pagination: dtrList.pagination,
+        });
+    } catch (error) {
+        logger.error('Error getting DTR widgets data', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
+    }
+};
+
+export const getFeederDetails = async (req, res) => {
+    try {
+        let dailyCons = { dates: [], values: [] };
+        let monthlyCons = { dates: [], values: [] };
+        const feeder_name = req.params.feeder || '';
+
+        if (feeder_name === '') {
+            return;
+        }
+
+        const dtr = await DTR.getMeterByFeederName(pool, feeder_name);
+        const geoData = await DTR.getGeoUsingDtrID(pool, dtr.dtr_id);
+        
+        const geo = {   
+            lat: geoData.latitude,
+            long: geoData.longitude,
+        };
+
+        const dailyConsumption =
+            (await Dashboard.geConsumerSpecificConsumptionGraphData(
+                pool,
+                dtr.meter_serial_no,
+                'daily'
+            )) || [];
+        const monthlyConsumption =
+            (await Dashboard.geConsumerSpecificConsumptionGraphData(
+                pool,
+                dtr.meter_serial_no,
+                'monthly'
+            )) || [];
+
+        if (dailyConsumption && dailyConsumption.length > 0) {
+            let { dailyxAxisData, dailysums } = dailyConsumption.reduce(
+                (acc, item) => {
+                    acc.dailyxAxisData.push(
+                        getDateInMDYFormat(item.consumption_date)
+                    );
+                    acc.dailysums.push(item.sum ? item.sum.toFixed(2) : '0.00');
+                    return acc;
+                },
+                { dailyxAxisData: [], dailysums: [] }
+            );
+
+            dailyCons = fillMissingDatesDyno(
+                dailyxAxisData,
+                dailysums,
+                'DD MMM, YYYY',
+                'day'
+            );
+        }
+
+        if (monthlyConsumption && monthlyConsumption.length > 0) {
+            const { monthlyxAxisData, monthlysums } = monthlyConsumption.reduce(
+                (acc, item) => {
+                    acc.monthlyxAxisData.push(
+                        getDateInMDYFormat(item.consumption_date)
+                    );
+                    acc.monthlysums.push(
+                        item.sum ? item.sum.toFixed(2) : '0.00'
+                    );
+                    return acc;
+                },
+                { monthlyxAxisData: [], monthlysums: [] }
+            );
+
+            monthlyCons = fillMissingDatesDyno(
+                monthlyxAxisData,
+                monthlysums,
+                'DD MMM, YYYY',
+                'month'
+            );
+        }
+
+        const d2 = await Dashboard.getD2Data(pool, dtr.meter_serial_no);
+        const d3 = await Dashboard.getD3Data(pool, dtr.meter_serial_no);
+        const d3_b3 = await Dashboard.getD3B3Data(pool, dtr.meter_serial_no);
+
+        res.status(200).json({
+            widgets: {
+                ...d2,
+                ...d3,
+                ...d3_b3,
+            },
+            graphs: {
+                dailyConsumption: {
+                    dailyxAxisData: dailyCons.dates || [],
+                    dailysums: dailyCons.values || [],
+                },
+                monthlyConsumption: {
+                    monthlyxAxisData: monthlyCons.dates || [],
+                    monthlysums: monthlyCons.values || [],
+                },
+            },
+            geo,
+        });
+    } catch (error) {
+        logger.error('Error fetching consumer with id', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({
+            status: 'error',
+            message: 'An error occurred while fetching feeder details',
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
