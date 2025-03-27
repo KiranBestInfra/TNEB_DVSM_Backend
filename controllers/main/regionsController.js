@@ -11,6 +11,9 @@ export const getDashboardWidgets = async (req, res) => {
         const commMeters = await models.commMeters.getCommMeters(pool);
         const nonCommMeters = await models.nonCommMeters.getNonCommMeters(pool);
         const regionNames = await models.regionDetails.getRegionNames(pool);
+        const regionEdcCounts = await models.regionDetails.getRegionEdcCounts(pool);
+        const regionSubstationCounts = await models.regionDetails.getRegionSubstationCounts(pool);
+        const regionFeederCounts = await models.regionDetails.getRegionFeederCounts(pool);
 
         res.status(200).json({
             status: "success",
@@ -21,7 +24,10 @@ export const getDashboardWidgets = async (req, res) => {
                 totalFeeders, 
                 commMeters, 
                 nonCommMeters,
-                regionNames 
+                regionNames,
+                regionEdcCounts, 
+                regionSubstationCounts, 
+                regionFeederCounts 
             },
         });
     } catch (error) {

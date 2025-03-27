@@ -139,29 +139,125 @@ class CommMeters {
             const [rows] = await connection.query({
                 sql: `
                     SELECT hierarchy_name 
-                    FROM hierarchy h, hierarchy_master hm 
-                    WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
-                    AND hm.hierarchy_title = "REGION";
+                    FROM hierarchy h
+                    JOIN hierarchy_master hm 
+                        ON h.hierarchy_type_id = hm.hierarchy_type_id 
+                    WHERE hm.hierarchy_title = "REGION";
                 `,
                 timeout: QUERY_TIMEOUT,
             });
+
             return rows.map(row => row.hierarchy_name); // ✅ Returns an array of region names
         } catch (error) {
-            console.log("Error fetching region names:", error);
+            console.error("❌ Error fetching region names:", error);
+            throw error;
+        }
+    }
+
+    async getRegionEdcCounts(connection) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                    SELECT 
+                        region.hierarchy_name AS region_name,
+                        COUNT(edc.hierarchy_id) AS edc_count
+                    FROM hierarchy region
+                    LEFT JOIN hierarchy edc 
+                        ON region.hierarchy_id = edc.parent_id 
+                        AND edc.hierarchy_type_id = 11  -- ✅ EDCs under Regions
+                    WHERE region.hierarchy_type_id = 10  -- ✅ Only Regions
+                    GROUP BY region.hierarchy_name;
+                `,
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.reduce((acc, row) => {
+                acc[row.region_name] = row.edc_count;
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error("❌ Error fetching EDC counts:", error);
+            throw error;
+        }
+    }
+
+    async getRegionSubstationCounts(connection) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                    SELECT 
+                        region.hierarchy_name AS region_name,
+                        COALESCE(COUNT(substation.hierarchy_id), 0) AS substation_count
+                    FROM hierarchy region
+                    JOIN hierarchy edc 
+                        ON region.hierarchy_id = edc.parent_id 
+                        AND edc.hierarchy_type_id = 11  
+                    JOIN hierarchy district 
+                        ON edc.hierarchy_id = district.parent_id 
+                        AND district.hierarchy_type_id = 34  
+                    LEFT JOIN hierarchy substation 
+                        ON district.hierarchy_id = substation.parent_id 
+                        AND substation.hierarchy_type_id = 35  
+                    WHERE region.hierarchy_type_id = 10  
+                    GROUP BY region.hierarchy_name;
+                `,
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.reduce((acc, row) => {
+                acc[row.region_name] = row.substation_count;
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error("❌ Error fetching Substation counts:", error);
+            throw error;
+        }
+    }
+
+    async getRegionFeederCounts(connection) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                    SELECT 
+                        region.hierarchy_name AS region_name,
+                        COALESCE(COUNT(feeder.hierarchy_id), 0) AS feeder_count
+                    FROM hierarchy region
+                    JOIN hierarchy edc 
+                        ON region.hierarchy_id = edc.parent_id 
+                        AND edc.hierarchy_type_id = 11  
+                    JOIN hierarchy district 
+                        ON edc.hierarchy_id = district.parent_id 
+                        AND district.hierarchy_type_id = 34  
+                    JOIN hierarchy substation 
+                        ON district.hierarchy_id = substation.parent_id 
+                        AND substation.hierarchy_type_id = 35  
+                    LEFT JOIN hierarchy feeder 
+                        ON substation.hierarchy_id = feeder.parent_id 
+                        AND feeder.hierarchy_type_id = 37  
+                    WHERE region.hierarchy_type_id = 10  
+                    GROUP BY region.hierarchy_name;
+                `,
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.reduce((acc, row) => {
+                acc[row.region_name] = row.feeder_count; // ✅ Fixed variable name
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error("❌ Error fetching Feeder counts for Regions:", error);
             throw error;
         }
     }
 }
 
-  
-  // ✅ Export all models, including CommMeters and NonCommMeters
-  export default {
+// ✅ Export all models efficiently
+export default {
     regions: new Regions(),
     edcs: new Edcs(),
     substations: new Substations(),
     feeders: new Feeders(),
     commMeters: new CommMeters(),
     nonCommMeters: new NonCommMeters(),
-    regionDetails: new RegionsDetails(),
-  };
-  
+    regionDetails: new RegionsDetails(), // ✅ Correct instance creation
+};
