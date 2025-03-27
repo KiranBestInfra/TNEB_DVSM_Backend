@@ -1,4 +1,4 @@
-import dashboardModel from '../models//main/dashboard.model.js';
+import dashboardModel from '../models/main/regions.model.js';
 import { calculateTotalAmount } from '../utils/dashboardUtils.js';
 
 const QUERY_TIMEOUT = 30000;
