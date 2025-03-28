@@ -1,10 +1,10 @@
 import pool from "../../config/db.js";
-import models from "../../models/main/edcs.model.js";
+import EDCS from "../../models/main/edcs.model.js"
 import logger from "../../utils/logger.js";
 
 export const getEDCWidgets = async (req, res) => {
     try {
-        const edcNames = await models.edcDetails.getEdcNames(pool);
+        const edcNames = await EDCS.getEdcNames(pool);
 
         res.status(200).json({
             status: "success",
