@@ -89,6 +89,7 @@ const login = async (req, res) => {
                 .json({ status: 'error', message: error.details[0].message });
         }
         const user = await User.findByEmailOrName(pool, email);
+        //console.log(user);
         if (!user) {
             return res
                 .status(401)
@@ -159,7 +160,7 @@ const login = async (req, res) => {
        //     if (user.role_id == 3) {
                 const accessToken = jwt.sign(
                     {
-                        userId: user.id,
+                        userId: user.user_id,
                         email: user.email ? user.email : 'test@gmail.com',
                         role: roledata.role_title,
                         uid: user.name,
@@ -170,7 +171,7 @@ const login = async (req, res) => {
                 );
 
                 const refreshToken = jwt.sign(
-                    { userId: user.id },
+                    { userId: user.user_id },
                     JWT_REFRESH_SECRET,
                     {
                         expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
@@ -226,7 +227,7 @@ const login = async (req, res) => {
             status: 'success',
             message: 'Login successful',
             user: {
-                id: user.id,
+                id: user.user_id,
                 email: user.email,
                 name: user.name,
             },

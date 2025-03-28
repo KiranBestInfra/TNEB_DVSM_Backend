@@ -249,9 +249,49 @@ class CommMeters {
             throw error;
         }
     }
+    async getSearch(
+      connection,
+      accessValues = [],
+      searchTerm
+  ) {
+      try {
+          const searchParams = [
+              `%${searchTerm}%`,
+              `%${searchTerm}%`,
+              `%${searchTerm}%`,
+              ...accessValues,
+          ];
+
+          const [results] = await connection.query(
+              {
+                  sql: `
+              SELECT c.hierarchy_id, c.hierarchy_name, c.hierarchy_type_id
+              FROM hierarchy c
+              WHERE (c.hierarchy_id LIKE ? 
+                 OR c.hierarchy_name LIKE ? 
+                 OR c.hierarchy_type_id LIKE ?)
+              LIMIT 5
+          `,
+                  timeout: QUERY_TIMEOUT,
+              },
+              searchParams
+          );
+
+          return results;
+      } catch (error) {
+          if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
+              throw new Error(
+                  'Dashboard query timed out after ' +
+                      QUERY_TIMEOUT / 1000 +
+                      ' seconds'
+              );
+          }
+          console.log('search', error);
+          throw error;
+      }
+  }
 }
 
-// ✅ Export all models efficiently
 export default {
     regions: new Regions(),
     edcs: new Edcs(),
@@ -259,5 +299,5 @@ export default {
     feeders: new Feeders(),
     commMeters: new CommMeters(),
     nonCommMeters: new NonCommMeters(),
-    regionDetails: new RegionsDetails(), // ✅ Correct instance creation
+    regionDetails: new RegionsDetails(), 
 };
