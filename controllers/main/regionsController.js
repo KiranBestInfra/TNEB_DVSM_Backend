@@ -88,6 +88,36 @@ export const getRegionStats = async (req, res) => {
         console.error('Error fetching region statistics:', error);
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
+}
+
+export const searchConsumers = async (req, res) => {
+    try {
+        const accessValues = req.locationAccess?.values || [];
+        const searchTerm = req.query.term || '';
+
+        const searchResults = await REGIONS.getSearch(pool, accessValues, searchTerm);
+
+        res.status(200).json({
+            status: 'success',
+            data: searchResults,
+        });
+    } catch (error) {
+        logger.error('Error searching consumers', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
+    }
 };
 
-export default getDashboardWidgets;
+export default {
+    getDashboardWidgets,
+    getRegionStats,
+    searchConsumers
+};
