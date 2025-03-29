@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 15000;
+const QUERY_TIMEOUT = 30000;
 
 class User {
     // Find user by email
@@ -6,7 +6,7 @@ class User {
         try {
             const [rows] = await Promise.race([
                 connection.query(
-                    'SELECT * FROM users WHERE email = ? OR name = ? LIMIT 1',
+                    'SELECT * FROM user WHERE email = ? OR user_full_name = ? LIMIT 1',
                     [identifier, identifier]
                 ),
                 new Promise((_, reject) =>
