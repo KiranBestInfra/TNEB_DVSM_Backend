@@ -6,6 +6,7 @@ const config = {
     DB_HOST: process.env.DB_HOST,
     DB_USER: process.env.DB_USER,
     DB_PASSWORD: process.env.DB_PASSWORD,
+    DB_PORT: process.env.DB_PORT,
     DB_NAME: process.env.DB_NAME,
     DB_NAME2: process.env.DB_NAME2,
     DB_PORT:process.env.DB_PORT,  //new modified
@@ -20,7 +21,8 @@ const config = {
     SMTP_SECURE: process.env.SMTP_SECURE || 'false',
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS,
-    APP_NAME: process.env.APP_NAME || 'Authentication App',
+
+    APP_NAME: process.env.APP_NAME || '',
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 

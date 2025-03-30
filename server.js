@@ -15,7 +15,7 @@ import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
 import { generateBills, generateOverDueBills } from './cron_jobs/index.js';
 import pool from './config/db.js';
-import dashboardModel from './models/main/dashboard.model.js';
+import dashboardModel from './models/main/regions.model.js';
 
 // import bcrypt from 'bcrypt';
 
@@ -157,182 +157,38 @@ app.use((req, res) => {
     });
 });
 
-const setupCronJobs = () => {
-    cron.schedule(
-        '0 1 1 * *',
-        async () => {
-            try {
-                await generateBills(pool);
-                logger.info('Monthly bills generation completed');
-            } catch (error) {
-                logger.error('Bills generation failed:', error);
-            }
-        },
-        {
-            timezone: 'Asia/Kolkata',
-            scheduled: true,
-        }
-    );
 
-    cron.schedule(
-        '0 1 9 * *',
-        async () => {
-            try {
-                await generateOverDueBills(pool);
-                logger.info('Overdue bills generation completed');
-            } catch (error) {
-                logger.error('Overdue bills generation failed:', error);
-            }
-        },
-        {
-            timezone: 'Asia/Kolkata',
-            scheduled: true,
-        }
-    );
-
-    cron.schedule('*/5 * * * *', async () => {
-        try {
-            const [consumers] = await pool.query(
-                `
-            SELECT  meter_serial
-            FROM consumers_lkea
-            WHERE block_name = 'Block-D'
-        `
-            );
-            for (const consumer of consumers) {
-                const [power] = await pool.query(
-                    `
-                    SELECT
-                        RPH_VOLTAGE as voltage,
-                        RPH_LINE_CURRENT as current,
-                        RPH_POWER_FACTOR as powerFactor,
-                        YPH_VOLTAGE as vYPh,
-                        BPH_VOLTAGE as vBPh,
-                        YPH_LINE_CURRENT as cYPh,
-                        BPH_LINE_CURRENT as cBPh,
-                        FREQUENCY as frequency
-                    FROM ntpl.d2
-                    WHERE METER_SERIAL_NO = ?
-                    ORDER BY METER_TIME_STAMP DESC
-                    LIMIT 1
-            `,
-                    [consumer.meter_serial]
-                );
-                const [[{ last_comm }]] = await pool.query(
-                    `
-                        SELECT DATA_STRING as last_comm
-                        FROM d3_b3
-                        WHERE METER_SERIAL_NO = ?
-                        ORDER BY D3_TIME_STAMP DESC
-                        LIMIT 1;
-                    `,
-                    [consumer.meter_serial]
-                );
-                const [[{ last_comm_date }]] = await pool.query(
-                    `
-                        SELECT D3_TIME_STAMP as last_comm_date
-                        FROM d3_b3
-                        WHERE METER_SERIAL_NO = ?
-                        ORDER BY D3_TIME_STAMP DESC
-                        LIMIT 1
-                    `,
-                    [consumer.meter_serial]
-                );
-                if (power && power.length > 0) {
-                    const powerData = power[0];
-
-                    powerData.vRPh = powerData.voltage;
-                    powerData.cRPh = powerData.current;
-
-                    const zeroValues = {
-                        vRPh: isZero(powerData.vRPh),
-                        cRPh: isZero(powerData.cRPh),
-                        powerFactor: isZero(powerData.powerFactor),
-                        vYPh: isZero(powerData.vYPh),
-                        vBPh: isZero(powerData.vBPh),
-                        cYPh: isZero(powerData.cYPh),
-                        // cBPh: isZero(powerData.cBPh),
-                        cBPh: true,
-                    };
-                    const hasZeroValues = Object.values(zeroValues).some(
-                        (isZero) => isZero
-                    );
-
-                    function convertToIST(dateString) {
-                        const date = new Date(dateString);
-
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(
-                            2,
-                            '0'
-                        );
-                        const day = String(date.getDate()).padStart(2, '0');
-                        const hours = String(date.getHours()).padStart(2, '0');
-                        const minutes = String(date.getMinutes()).padStart(
-                            2,
-                            '0'
-                        );
-                        const seconds = String(date.getSeconds()).padStart(
-                            2,
-                            '0'
-                        );
-
-                        return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-                    }
-
-                    if (hasZeroValues) {
-                        await sendZeroValueAlert(
-                            consumer.meter_serial,
-                            zeroValues,
-                            powerData,
-                            last_comm,
-                            convertToIST(last_comm_date)
-                        );
-                    }
-                }
-            }
-        } catch (e) {
-            console.log(e);
-        }
-    });
-};
-
-app.listen(config.PORT, () => {
-    logger.info(`Server is running on port ${config.PORT}`);
-    console.log(`Server is running on port ${config.PORT}`);
-
-    setupCronJobs();
-});
-
-// ````````````````````````````````````````````````````````
+app.listen(config.PORT,() => {
+    console.log("Running on port: ", config.PORT)
+})
 
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
-//     try {
-//         const [users] = await pool.query(
-//             `
-//             SELECT name
-//             FROM users
-//             WHERE id NOT IN (?)
-//         `,
-//             [excludeIDs]
-//         );
-//         for (let user of users) {
-//             let ou = user.name;
-//             let u = user.name + '@bi';
+//      try {
+//          const [users] = await pool.query(
+//              `
+//            SELECT name
+//              FROM users
+//              WHERE id NOT IN (?)
+//          `,
+//              [excludeIDs]
+//          );
+//          for (let user of users) {
+//              let ou = user.name;
+//              let u = user.name + '@bi';
 //             const salt = await bcrypt.genSalt(12);
-//             const passwordHash = await bcrypt.hash(u, salt);
-//             console.log(u, passwordHash);
-//             await pool.query(
-//                 `
-//                 UPDATE users
-//                 SET password = ?
-//                 WHERE name = ?
-//             `,
-//                 [passwordHash, ou]
-//             );
-//         }
-//     } catch (e) {
-//         console.log(e);
-//     }
-// };
+//            const passwordHash = await bcrypt.hash(u, salt);
+//              console.log(u, passwordHash);
+//              await pool.query(
+//                  `
+//                  UPDATE users
+//                  SET password = ?
+//                  WHERE name = ?
+//              `,
+//                  [passwordHash, ou]
+//              );
+//          }
+//      } catch (e) {
+//          console.log(e);
+//      }
+//  };
