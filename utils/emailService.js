@@ -78,7 +78,6 @@ async function sendZeroValueAlert(
     meterSerial,
     zeroValues,
     powerData,
-    last_comm,
     last_comm_date
 ) {
     try {
@@ -91,31 +90,36 @@ async function sendZeroValueAlert(
             .map(([key, _]) => key)
             .join(', ');
 
-        const powerDataTable = Object.entries(powerData)
-            .filter(([key]) =>
-                [
-                    'vRPh',
-                    'cRPh',
-                    'powerFactor',
-                    'vYPh',
-                    'vBPh',
-                    'cYPh',
-                    'cBPh',
-                ].includes(key)
-            )
-            .map(([key, value]) => {
-                const isValueZero = isZero(value);
+        const propertyMap = {
+            'Voltage- R': 'vRPh',
+            'Current- R': 'cRPh',
+            powerFactor: 'powerFactor',
+            'Voltage- Y': 'vYPh',
+            'Voltage- B': 'vBPh',
+            'Current- Y': 'cYPh',
+            'Current- B': 'cBPh',
+        };
+
+        const powerDataTable = Object.entries(zeroValues).map(
+            ([key, isZero]) => {
+                const dataKey = propertyMap[key];
+                const value = powerData[dataKey];
                 return {
                     key,
                     value:
                         value === null || value === undefined ? 'N/A' : value,
-                    isZero: isValueZero,
+                    isZero,
                 };
-            });
+            }
+        );
 
         const mailOptions = {
             from: config.EMAIL_FROM || config.SMTP_USER,
-            to: ['chandrika.bestinfra@gmail.com', 'kiran.bestinfra@gmail.com'],
+            to: [
+                'chandrika.bestinfra@gmail.com',
+                'kiran.bestinfra@gmail.com',
+                'Achantaster@gmail.com',
+            ],
             subject: `⚠️ Alert: Zero Power Values Detected for Meter ${meterSerial}`,
             html: `
         <h2>Zero Power Values Alert</h2>
@@ -127,7 +131,7 @@ async function sendZeroValueAlert(
               .join('')}
         </ul>
         
-        <h3>Current Meter Readings:</h3>
+        <h3>Instantaneous Values: @${last_comm_date}</h3>
         <table border="1" cellpadding="5" style="border-collapse: collapse;">
           <tr>
             <th>Parameter</th>
@@ -145,19 +149,19 @@ async function sendZeroValueAlert(
           `
               )
               .join('')}
-          <tr>
-            <td>Last Communication</td>
-            <td>${last_comm || 'N/A'}</td>
-            <td>OK</td>
-          </tr>
-          <tr>
-            <td>Last Communication Date</td>
-            <td>${last_comm_date || 'N/A'}</td>
-            <td>OK</td>
-          </tr>
+         
         </table>
         
-        <p>This alert was generated at: ${new Date().toLocaleString()}</p>
+        <p>This alert was generated at: ${(() => {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+        })()}</p>
         <p>Please investigate this issue promptly.</p>
         <p><small>This is an automated alert from the power monitoring system.</small></p>
       `,
@@ -165,17 +169,24 @@ async function sendZeroValueAlert(
 
 The following power values are zero for meter ${meterSerial}: ${zeroValuesList}
 
-Current Meter Readings:
+Instantaneous Values: @${last_comm_date}
 ${powerDataTable
     .map(
         (item) =>
             `${item.key}: ${item.value}${item.isZero ? ' (ZERO - ALERT!)' : ''}`
     )
     .join('\n')}
-Last Communication: ${last_comm || 'N/A'}
-Last Communication Date: ${last_comm_date || 'N/A'}
 
-This alert was generated at: ${new Date().toLocaleString()}
+This alert was generated at: ${(() => {
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+            })()}
 
 Please investigate this issue promptly.
 
