@@ -217,6 +217,32 @@ class Regions {
             throw error;
         }
     }
+
+    async getDemandTrendsData(connection, accessValues = [], start, end) {
+        try {
+            const [results] = await connection.query(
+                {
+                    sql: `
+                        SELECT * 
+                    `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [start, end]
+            );
+
+            return results;
+        } catch (error) {
+            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
+                throw new Error(
+                    'Dashboard query timed out after ' +
+                        QUERY_TIMEOUT / 1000 +
+                        ' seconds'
+                );
+            }
+            console.log('search', error);
+            throw error;
+        }
+    }
 }
 
 export default new Regions();

@@ -4,6 +4,10 @@ import EDCS from '../../models/main/edcs.model.js';
 import SUBSTATIONS from '../../models/main/substations.model.js';
 import FEEDERS from '../../models/main/feeders.model.js';
 import logger from '../../utils/logger.js';
+import {
+    getTodayStartAndEnd,
+    getYesterdayStartAndEnd,
+} from '../../utils/globalUtils.js';
 
 export const getDashboardWidgets = async (req, res) => {
     try {
@@ -88,14 +92,18 @@ export const getRegionStats = async (req, res) => {
         console.error('Error fetching region statistics:', error);
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
-}
+};
 
 export const searchConsumers = async (req, res) => {
     try {
         const accessValues = req.locationAccess?.values || [];
         const searchTerm = req.query.term || '';
 
-        const searchResults = await REGIONS.getSearch(pool, accessValues, searchTerm);
+        const searchResults = await REGIONS.getSearch(
+            pool,
+            accessValues,
+            searchTerm
+        );
 
         res.status(200).json({
             status: 'success',
@@ -116,8 +124,42 @@ export const searchConsumers = async (req, res) => {
     }
 };
 
+export const demandGraph = async (req, res) => {
+    try {
+        const accessValues = req.locationAccess?.values || [];
+
+        const { startOfDay, endOfDay } = getTodayStartAndEnd();
+        const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
+
+        const searchResults = await REGIONS.getDemandTrendsData(
+            pool,
+            accessValues,
+            startOfDay,
+            endOfDay
+        );
+        console.log(startOfDay, endOfDay);
+
+        res.status(200).json({
+            status: 'success',
+            // data: searchResults,
+        });
+    } catch (error) {
+        logger.error('Error searching consumers', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
+    }
+};
+
 export default {
     getDashboardWidgets,
     getRegionStats,
-    searchConsumers
+    searchConsumers,
 };
