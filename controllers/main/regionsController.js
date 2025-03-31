@@ -4,6 +4,7 @@ import EDCS from '../../models/main/edcs.model.js';
 import SUBSTATIONS from '../../models/main/substations.model.js';
 import FEEDERS from '../../models/main/feeders.model.js';
 import logger from '../../utils/logger.js';
+import moment from 'moment-timezone';
 import {
     getTodayStartAndEnd,
     getYesterdayStartAndEnd,
@@ -131,20 +132,73 @@ export const demandGraph = async (req, res) => {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
-        // const searchResults = await REGIONS.getDemandTrendsData(
-        //     pool,
-        //     accessValues,
-        //     startOfDay,
-        //     endOfDay
-        // );
-        // console.log(startOfDay, endOfDay);
+        const todayDemandData = await REGIONS.getDemandTrendsData(
+            pool,
+            accessValues,
+            startOfDay,
+            endOfDay
+        );
+
+        const yesterdayDemandData = await REGIONS.getDemandTrendsData(
+            pool,
+            accessValues,
+            startOfYesterday,
+            endOfYesterday
+        );
+
+        const xAxis = [];
+        const currentDayData = [];
+        const previousDayData = [];
+
+        const allTimestamps = new Set([
+            ...todayDemandData.map((d) => d.datetime),
+            ...yesterdayDemandData.map((d) => d.datetime),
+        ]);
+
+        const sortedTimestamps = Array.from(allTimestamps).sort(
+            (a, b) => a - b
+        );
+
+        sortedTimestamps.forEach((timestamp) => {
+            const date = moment(timestamp).tz('Asia/Kolkata');
+            xAxis.push(date.format('YYYY-MM-DD HH:mm:ss'));
+
+            const todayData = todayDemandData.find(
+                (d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').valueOf() ===
+                    moment(timestamp).tz('Asia/Kolkata').valueOf()
+            );
+            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+
+            const yesterdayData = yesterdayDemandData.find(
+                (d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').valueOf() ===
+                    moment(timestamp).tz('Asia/Kolkata').valueOf()
+            );
+            previousDayData.push(
+                yesterdayData ? yesterdayData.actual_demand_mw : 0
+            );
+        });
+        const detailedGraphData = {
+            xAxis,
+            series: [
+                {
+                    name: 'Current Day',
+                    data: currentDayData,
+                },
+                {
+                    name: 'Previous Day',
+                    data: previousDayData,
+                },
+            ],
+        };
 
         res.status(200).json({
             status: 'success',
-            // data: searchResults,
+            data: detailedGraphData,
         });
     } catch (error) {
-        logger.error('Error searching consumers', {
+        logger.error('Error fetching demand graph data:', {
             error: error.message,
             stack: error.stack,
             timestamp: new Date().toISOString(),

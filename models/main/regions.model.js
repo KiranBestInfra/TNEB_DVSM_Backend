@@ -223,7 +223,14 @@ class Regions {
             const [results] = await connection.query(
                 {
                     sql: `
-                        SELECT * 
+                        SELECT 
+                            ad.meter_no,
+                            ad.datetime,
+                            ad.kwh,
+                            ad.actual_demand_mw
+                        FROM actualdemand ad
+                        WHERE ad.datetime BETWEEN ? AND ?
+                        ORDER BY ad.datetime ASC
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
@@ -239,7 +246,7 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('search', error);
+            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
