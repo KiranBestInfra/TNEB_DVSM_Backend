@@ -131,13 +131,13 @@ export const demandGraph = async (req, res) => {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
-        const searchResults = await REGIONS.getDemandTrendsData(
-            pool,
-            accessValues,
-            startOfDay,
-            endOfDay
-        );
-        console.log(startOfDay, endOfDay);
+        // const searchResults = await REGIONS.getDemandTrendsData(
+        //     pool,
+        //     accessValues,
+        //     startOfDay,
+        //     endOfDay
+        // );
+        // console.log(startOfDay, endOfDay);
 
         res.status(200).json({
             status: 'success',
