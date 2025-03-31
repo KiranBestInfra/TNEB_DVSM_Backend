@@ -157,9 +157,10 @@ app.use((req, res) => {
     });
 });
 
-app.listen(config.PORT, () => {
-    console.log('Running on port: ', config.PORT);
-});
+
+app.listen(config.PORT,() => {
+    console.log("Running on port: ", config.PORT)
+})
 
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
