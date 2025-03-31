@@ -62,39 +62,69 @@ class EDCs {
             throw error;
         }
     }
-    async getRegionSubstationCounts(connection) {
+    async getSubstationCountByRegion(connection, region) {
         try {
-            const [rows] = await connection.query({
-                sql: `
-                    SELECT 
-                        region.hierarchy_name AS region_name,
-                        COALESCE(COUNT(substation.hierarchy_id), 0) AS substation_count
-                    FROM hierarchy region
-                    JOIN hierarchy edc 
-                        ON region.hierarchy_id = edc.parent_id 
-                        AND edc.hierarchy_type_id = 11  
-                    JOIN hierarchy district 
-                        ON edc.hierarchy_id = district.parent_id 
-                        AND district.hierarchy_type_id = 34  
-                    LEFT JOIN hierarchy substation 
-                        ON district.hierarchy_id = substation.parent_id 
-                        AND substation.hierarchy_type_id = 35  
-                    WHERE region.hierarchy_type_id = 10  
-                    GROUP BY region.hierarchy_name;
-                `,
-                timeout: QUERY_TIMEOUT,
-            });
+            const sql = `SELECT 
+                        edc.hierarchy_name AS edc_name,
+                        COUNT(substation.hierarchy_id) AS substation_count
+                     FROM hierarchy region
+                     JOIN hierarchy edc 
+                         ON region.hierarchy_id = edc.parent_id 
+                         AND edc.hierarchy_type_id = 11  
+                     JOIN hierarchy district 
+                         ON edc.hierarchy_id = district.parent_id 
+                         AND district.hierarchy_type_id = 34  
+                     LEFT JOIN hierarchy substation 
+                         ON district.hierarchy_id = substation.parent_id 
+                         AND substation.hierarchy_type_id = 35  
+                     WHERE region.hierarchy_type_id = 10  
+                     AND region.hierarchy_name = ?  
+                     GROUP BY edc.hierarchy_name`;
 
-            return rows.reduce((acc, row) => {
-                acc[row.region_name] = row.substation_count;
-                return acc;
-            }, {});
+            const [rows] = await connection.query(sql, [region]);
+            return rows;
         } catch (error) {
-            console.error('❌ Error fetching Substation counts:', error);
+            console.error('❌ Error fetching substation count:', error);
             throw error;
         }
     }
-    
+    async getEdcFeederCounts(connection, region) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    edc.hierarchy_name AS edc_name,
+                    COALESCE(COUNT(feeder.hierarchy_id), 0) AS feeder_count
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                    AND edc.hierarchy_type_id = 11  
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id 
+                    AND district.hierarchy_type_id = 34  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                    AND substation.hierarchy_type_id = 35  
+                LEFT JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                    AND feeder.hierarchy_type_id = 37  
+                WHERE region.hierarchy_type_id = 10  
+                AND region.hierarchy_name = ?
+                GROUP BY edc.hierarchy_name;
+            `,
+                timeout: QUERY_TIMEOUT,
+                values: [region], // Filter by region
+            });
+
+            return rows.reduce((acc, row) => {
+                acc[row.edc_name] = row.feeder_count;
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error('❌ Error fetching Feeder counts for EDCs:', error);
+            throw error;
+        }
+    }
 }
 
 export default new EDCs();
