@@ -1,9 +1,9 @@
 import pool from '../../config/db.js';
-import EDCs from '../../models/main/edcs.model.js';
+import Substations from '../../models/main/substations.model.js';
 
 // import logger from "../../utils/logger.js";
 
-export const getEDCWidgets = async (req, res) => {
+export const getSubstationWidgets = async (req, res) => {
     try {
         const region = req.params.region;
 
@@ -14,12 +14,16 @@ export const getEDCWidgets = async (req, res) => {
             });
         }
 
-        const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
+        const substationNames = await Substations.getSubstationNamesByRegion(
+            pool,
+            region
+        );
+
         res.status(200).json({
             status: 'success',
             data: {
                 region,
-                edcNames
+                substationNames,
             },
         });
     } catch (error) {
@@ -28,4 +32,4 @@ export const getEDCWidgets = async (req, res) => {
     }
 };
 
-export default getEDCWidgets;
+export default getSubstationWidgets;
