@@ -15,11 +15,18 @@ export const getEDCWidgets = async (req, res) => {
         }
 
         const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
+        const substationCounts = await EDCs.getSubstationCountByRegion(
+            pool,
+            region
+        );
+        const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
         res.status(200).json({
             status: 'success',
             data: {
                 region,
-                edcNames
+                edcNames,
+                substationCounts,
+                feederCounts,
             },
         });
     } catch (error) {

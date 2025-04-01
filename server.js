@@ -23,10 +23,15 @@ import {
     calculateTotalAmount,
     generateInvoiceNumber,
     getDateInMDYFormat,
+    isLoadImbalance,
+    isLowPowerFactor,
+    isLowVoltage,
+    isNegative,
     isZero,
 } from './utils/dashboardUtils.js';
 import { getPowerDetails } from './controllers/consumer/dashboardController.js';
 import { sendZeroValueAlert } from './utils/emailService.js';
+import notificationsModel from './models/main/notifications.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
@@ -80,6 +85,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
+    console.log('accessToken', req.cookies);
 
     if (!accessToken) {
         return next();
@@ -124,6 +130,54 @@ app.get('/health', (req, res) => {
 });
 
 app.use(`/api/${config.API_VERSION}`, v1Routes);
+
+// File access route
+app.get('/static/uploads/:filename', (req, res) => {
+    const { filename } = req.params;
+    const filePath = `${process.cwd()}/static/uploads/${filename}`;
+
+    // Log the request details
+    logger.info('File access request:', {
+        filename,
+        filePath,
+        currentDir: process.cwd(),
+        fullPath: `${process.cwd()}/${filePath}`,
+    });
+
+    // Check if file exists before trying to send it
+    // const fs = require('fs');
+    if (!fs.existsSync(filePath)) {
+        logger.error('File not found:', {
+            filePath,
+            currentDir: process.cwd(),
+            fullPath: `${process.cwd()}/${filePath}`,
+        });
+        return res.status(404).json({
+            status: 'error',
+            message: 'File not found',
+            path: filePath,
+            details:
+                'The requested file does not exist in the uploads directory',
+        });
+    }
+
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            logger.error('File access error:', {
+                error: err,
+                filePath,
+                currentDir: process.cwd(),
+                fullPath: `${process.cwd()}/${filePath}`,
+            });
+            res.status(404).json({
+                status: 'error',
+                message: 'File not found',
+                path: filePath,
+                details: err.message,
+            });
+        }
+    });
+});
 
 app.use(errorHandler);
 
