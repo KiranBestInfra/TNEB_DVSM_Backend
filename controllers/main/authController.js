@@ -89,7 +89,6 @@ const login = async (req, res) => {
                 .json({ status: 'error', message: error.details[0].message });
         }
         const user = await User.findByEmailOrName(pool, email);
-        //console.log(user);
         if (!user) {
             return res
                 .status(401)
