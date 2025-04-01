@@ -4,18 +4,17 @@ import cors from 'cors';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 import compression from 'compression';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
-import cron from 'node-cron';
+import { createServer } from 'node:http';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
-import { generateBills, generateOverDueBills } from './cron_jobs/index.js';
 import pool from './config/db.js';
 import dashboardModel from './models/main/regions.model.js';
+import socketService from './services/socket/socketService.js';
 
 // import bcrypt from 'bcrypt';
 
@@ -31,30 +30,9 @@ import { sendZeroValueAlert } from './utils/emailService.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
+const server = createServer(app);
+socketService.initialize(server);
 
-// Rate limiter configuration
-// const rateLimiter = new RateLimiterMemory({
-//     points: 100,
-//     duration: 60,
-//     blockDuration: 60 * 15,
-// });
-
-// Rate limiter middleware
-// const rateLimiterMiddleware = async (req, res, next) => {
-//     // if (req.path.startsWith('/api/auth/')) {
-//     //     return next();
-//     // }
-
-//     try {
-//         await rateLimiter.consume(req.ip);
-//         next();
-//     } catch (error) {
-//         logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
-//         res.status(429).send('Too Many Requests');
-//     }
-// };
-
-// Body parsers
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -157,11 +135,14 @@ app.use((req, res) => {
     });
 });
 
+// Start the server
+server.listen(config.SOCKET_PORT, () => {
+    console.log('Server running on port:', config.PORT);
+});
 
-app.listen(config.PORT,() => {
-    console.log("Running on port: ", config.PORT)
-})
-
+app.listen(config.PORT, () => {
+    console.log('Running on port: ', config.SOCKET_PORT);
+});
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
 //      try {
