@@ -82,6 +82,7 @@ class EDCs {
                      GROUP BY edc.hierarchy_name`;
 
             const [rows] = await connection.query(sql, [region]);
+            console.log('Region ID:', region);
             return rows;
         } catch (error) {
             console.error('❌ Error fetching substation count:', error);

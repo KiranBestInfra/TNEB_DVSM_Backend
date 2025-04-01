@@ -118,41 +118,43 @@ class Substations {
         }
     }
     async getSubstationNamesByRegion(connection, region) {
-        try {
-            const sql = `SELECT 
-                    region.hierarchy_name AS region_name,
-                    GROUP_CONCAT(substation.hierarchy_name ORDER BY substation.hierarchy_name ASC) AS substation_names
-                FROM hierarchy region
-                JOIN hierarchy edc 
-                    ON region.hierarchy_id = edc.parent_id 
-                    AND edc.hierarchy_type_id = 11  
-                JOIN hierarchy district 
-                    ON edc.hierarchy_id = district.parent_id 
-                    AND district.hierarchy_type_id = 34  
-                JOIN hierarchy substation 
-                    ON district.hierarchy_id = substation.parent_id 
-                    AND substation.hierarchy_type_id = 35  
-                WHERE region.hierarchy_type_id = 10  
-                AND region.hierarchy_name = ?
-                GROUP BY region.hierarchy_name
+    try {
+        const sql = `
+            SELECT
+                substation.hierarchy_name AS substation_names
+            FROM hierarchy region
+            JOIN hierarchy edc 
+                ON region.hierarchy_id = edc.parent_id 
+                AND edc.hierarchy_type_id = 11 
+            JOIN hierarchy district 
+                ON edc.hierarchy_id = district.parent_id 
+                AND district.hierarchy_type_id = 34 
+            LEFT JOIN hierarchy substation 
+                ON district.hierarchy_id = substation.parent_id 
+                AND substation.hierarchy_type_id = 35 
+            WHERE region.hierarchy_type_id = 10 
+            AND region.hierarchy_name = ?;
         `;
 
-            const [rows] = await connection.query(sql, [region]);
+        const [rows] = await connection.query(sql, [region]);
+        console.log('SQL Query Result:', rows); //Log the raw results.
 
-            if (rows.length === 0 || !rows[0].substation_names) {
-                return [];
-            }
-
-            // Convert the comma-separated string to an array
-            return rows[0].substation_names.split(',');
-        } catch (error) {
-            console.error(
-                `❌ Error fetching Substation names for region: ${region}`,
-                error
-            );
-            throw error;
+        if (rows.length === 0) {
+            return [];
         }
+
+        // Collect substation names from each row
+        const substationNames = rows.map(row => row.substation_names).filter(name => name !== null);
+
+        return substationNames;
+    } catch (error) {
+        console.error(
+            `❌ Error fetching Substation names for region: ${region}`,
+            error
+        );
+        throw error;
     }
+}
 }
 
 export default new Substations();
