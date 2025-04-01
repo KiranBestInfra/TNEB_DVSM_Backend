@@ -53,6 +53,10 @@ class SocketService {
         this.intervalIds.set(socketId, intervalId);
     }
 
+    getInterval(socketId) {
+        return this.intervalIds.get(socketId);
+    }
+
     clearInterval(socketId) {
         if (this.intervalIds.has(socketId)) {
             clearInterval(this.intervalIds.get(socketId));

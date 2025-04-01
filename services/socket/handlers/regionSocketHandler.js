@@ -11,15 +11,25 @@ class RegionSocketHandler {
     initialize(socket) {
         socket.on('subscribe', async (data) => {
             const { regions } = data;
-            logger.info(`Client subscribed to regions: ${regions.join(', ')}`);
 
+            if (socket.subscribedRegions) {
+                const existingIntervalId = socketService.getInterval(socket.id);
+                if (existingIntervalId) {
+                    clearInterval(existingIntervalId);
+                    socketService.clearInterval(socket.id);
+                }
+            }
+
+            logger.info(`Client subscribed to regions: ${regions.join(', ')}`);
             socket.subscribedRegions = regions;
 
             try {
                 await this.sendRegionData(socket, regions);
 
                 const intervalId = setInterval(async () => {
-                    await this.sendRegionData(socket, regions);
+                    if (socket.connected) {
+                        await this.sendRegionData(socket, regions);
+                    }
                 }, this.updateInterval);
 
                 socketService.storeInterval(socket.id, intervalId);
@@ -32,7 +42,7 @@ class RegionSocketHandler {
     async sendRegionData(socket, regions) {
         try {
             const regionDemandData = await fetchRegionGraphs(regions);
-            console.log('Hello');
+
             regions.forEach((region) => {
                 if (regionDemandData[region]) {
                     socket.emit('regionUpdate', {
