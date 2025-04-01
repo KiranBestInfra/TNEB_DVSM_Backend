@@ -8,7 +8,9 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
 import cron from 'node-cron';
-import fs from 'fs';
+import { Server } from 'socket.io';
+import { createServer } from 'node:http';
+import MSG91 from 'msg91';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
@@ -16,22 +18,69 @@ import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
 import { generateBills, generateOverDueBills } from './cron_jobs/index.js';
 import pool from './config/db.js';
-import dashboardModel from './models/main/regions.model.js';
-
-// import bcrypt from 'bcrypt';
-
-// import dashboardModel from './models/dashboard.model.js';
+import dashboardModel from './models/main/dashboard.model.js';
 import {
     calculateTotalAmount,
     generateInvoiceNumber,
     getDateInMDYFormat,
+    isLoadImbalance,
+    isLowPowerFactor,
+    isLowVoltage,
+    isNegative,
     isZero,
 } from './utils/dashboardUtils.js';
 import { getPowerDetails } from './controllers/consumer/dashboardController.js';
 import { sendZeroValueAlert } from './utils/emailService.js';
+import notificationsModel from './models/main/notifications.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
+
+const server = createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: [
+            'http://localhost:5173',
+            'https://lk-ea.co.in',
+            'http://lk-ea.co.in',
+        ],
+        methods: ['GET', 'POST'],
+        credentials: true,
+        allowedHeaders: ['my-custom-header'],
+    },
+});
+
+const msg91 = MSG91.default;
+
+msg91.initialize({
+    authKey: config.MSG_AUTH_TOKEN,
+});
+
+const connectedClients = new Set();
+
+io.on('connection', async (socket) => {
+    connectedClients.add(socket.id);
+
+    await notificationsModel.sendUnreadNotifications(pool, socket);
+    await notificationsModel.getNotificationCount(pool, socket);
+
+    socket.on('mark_notification_read', async (notificationId) => {
+        await notificationsModel.markNotificationAsRead(
+            pool,
+            socket,
+            notificationId
+        );
+    });
+
+    socket.on('mark_all_read', async () => {
+        await notificationsModel.markAsReadAllNotifications(pool, socket);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
+        connectedClients.delete(socket.id);
+    });
+});
 
 // Rate limiter configuration
 // const rateLimiter = new RateLimiterMemory({
@@ -103,7 +152,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
-    console.log( 'accessToken', req.cookies);
+    console.log('accessToken', req.cookies);
 
     if (!accessToken) {
         return next();
@@ -153,44 +202,45 @@ app.use(`/api/${config.API_VERSION}`, v1Routes);
 app.get('/static/uploads/:filename', (req, res) => {
     const { filename } = req.params;
     const filePath = `${process.cwd()}/static/uploads/${filename}`;
-    
+
     // Log the request details
     logger.info('File access request:', {
         filename,
         filePath,
         currentDir: process.cwd(),
-        fullPath: `${process.cwd()}/${filePath}`
+        fullPath: `${process.cwd()}/${filePath}`,
     });
 
     // Check if file exists before trying to send it
-   // const fs = require('fs');
+    // const fs = require('fs');
     if (!fs.existsSync(filePath)) {
         logger.error('File not found:', {
             filePath,
             currentDir: process.cwd(),
-            fullPath: `${process.cwd()}/${filePath}`
+            fullPath: `${process.cwd()}/${filePath}`,
         });
         return res.status(404).json({
             status: 'error',
             message: 'File not found',
             path: filePath,
-            details: 'The requested file does not exist in the uploads directory'
+            details:
+                'The requested file does not exist in the uploads directory',
         });
     }
 
-    res.sendFile(filePath,(err) => {
+    res.sendFile(filePath, (err) => {
         if (err) {
             logger.error('File access error:', {
                 error: err,
                 filePath,
                 currentDir: process.cwd(),
-                fullPath: `${process.cwd()}/${filePath}`
+                fullPath: `${process.cwd()}/${filePath}`,
             });
             res.status(404).json({
                 status: 'error',
                 message: 'File not found',
                 path: filePath,
-                details: err.message
+                details: err.message,
             });
         }
     });
@@ -206,139 +256,9 @@ app.use((req, res) => {
     });
 });
 
-const setupCronJobs = () => {
-    cron.schedule(
-        '0 1 1 * *',
-        async () => {
-            try {
-                await generateBills(pool);
-                logger.info('Monthly bills generation completed');
-            } catch (error) {
-                logger.error('Bills generation failed:', error);
-            }
-        },
-        {
-            timezone: 'Asia/Kolkata',
-            scheduled: true,
-        }
-    );
-
-    cron.schedule(
-        '0 1 9 * *',
-        async () => {
-            try {
-                await generateOverDueBills(pool);
-                logger.info('Overdue bills generation completed');
-            } catch (error) {
-                logger.error('Overdue bills generation failed:', error);
-            }
-        },
-        {
-            timezone: 'Asia/Kolkata',
-            scheduled: true,
-        }
-    );
-
-    cron.schedule('*/5 * * * *', async () => {
-        try {
-            const [consumers] = await pool.query(
-                `
-            SELECT meter_serial
-            FROM consumers_lkea
-            WHERE block_name = 'Block-D'
-            AND meter_serial != '32500115'
-        `
-            );
-            for (const consumer of consumers) {
-                const [power] = await pool.query(
-                    `
-                    SELECT
-                        RPH_LINE_CURRENT as current,
-                        YPH_LINE_CURRENT as cYPh,
-                        BPH_LINE_CURRENT as cBPh,
-                        RPH_VOLTAGE as voltage,
-                        YPH_VOLTAGE as vYPh,
-                        BPH_VOLTAGE as vBPh,
-                        RPH_POWER_FACTOR as powerFactor,
-                        FREQUENCY as frequency
-                    FROM ntpl.d2
-                    WHERE METER_SERIAL_NO = ?
-                    ORDER BY METER_TIME_STAMP DESC
-                    LIMIT 1
-            `,
-                    [consumer.meter_serial]
-                );
-                const [[{ last_comm_date }]] = await pool.query(
-                    `
-                        SELECT D3_TIME_STAMP as last_comm_date
-                        FROM d3_b3
-                        WHERE METER_SERIAL_NO = ?
-                        ORDER BY D3_TIME_STAMP DESC
-                        LIMIT 1
-                    `,
-                    [consumer.meter_serial]
-                );
-                if (power && power.length > 0) {
-                    const powerData = power[0];
-
-                    powerData.vRPh = powerData.voltage;
-                    powerData.cRPh = powerData.current;
-
-                    const zeroValues = {
-                        powerFactor: isZero(powerData.powerFactor),
-                        'Voltage- R': isZero(powerData.vRPh),
-                        'Voltage- Y': isZero(powerData.vYPh),
-                        'Voltage- B': isZero(powerData.vBPh),
-                        'Current- R': isZero(powerData.cRPh),
-                        'Current- Y': isZero(powerData.cYPh),
-                        'Current- B': isZero(powerData.cBPh),
-                    };
-                    const hasZeroValues = Object.values(zeroValues).some(
-                        (isZero) => isZero
-                    );
-                    function convertToIST(dateString) {
-                        const date = new Date(dateString);
-
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(
-                            2,
-                            '0'
-                        );
-                        const day = String(date.getDate()).padStart(2, '0');
-                        const hours = String(date.getHours()).padStart(2, '0');
-                        const minutes = String(date.getMinutes()).padStart(
-                            2,
-                            '0'
-                        );
-                        const seconds = String(date.getSeconds()).padStart(
-                            2,
-                            '0'
-                        );
-
-                        return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-                    }
-
-                    if (hasZeroValues) {
-                        await sendZeroValueAlert(
-                            consumer.meter_serial,
-                            zeroValues,
-                            powerData,
-                            convertToIST(last_comm_date)
-                        );
-                    }
-                }
-            }
-        } catch (e) {
-            console.log(e);
-        }
-    });
-};
-
 app.listen(config.PORT, () => {
     logger.info(`Server is running on port ${config.PORT}`);
     console.log(`Server is running on port ${config.PORT}`);
-
-    setupCronJobs();
 });
 
 // ````````````````````````````````````````````````````````

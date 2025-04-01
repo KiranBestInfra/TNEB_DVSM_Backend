@@ -22,6 +22,7 @@ import pool from '../../config/db.js';
 import XLSX from 'xlsx';
 import path from 'path';
 import DTR from '../../models/main/dtr.model.js';
+import notificationsModel from '../../models/main/notifications.model.js';
 
 export const getConsumersTable = (
     with_pagination = 'true',
@@ -2558,12 +2559,14 @@ export const getDTRDashboardWidgetsData = async (req, res) => {
 
 export const getDTRPageWidgetsData = async (req, res) => {
     try {
+        const dtrName = req.query.dtrID || '';
+
         let modifiedMeters = [];
         let unbalancedDTR = 0;
+        const dtrID = await DTR.getDTRData(pool, dtrName);
+        const feederData = await DTR.getFeederData(pool, [dtrID[0].dtr_id]);
 
-        const feederData = await DTR.getFeederData(pool);
-
-        const meters = await DTR.getDTRMeters(pool);
+        const meters = await DTR.getDTRMeters(pool, [dtrID[0].dtr_id]);
         meters.map((meter) => modifiedMeters.push(meter.meter_serial_no));
 
         const totalkWh = await DTR.getDTRkWh(pool, modifiedMeters);
@@ -2582,13 +2585,15 @@ export const getDTRPageWidgetsData = async (req, res) => {
                 unbalancedDTR++;
             }
         });
+
         res.status(200).json({
             data: {
                 totalFeeder: feederData.length,
+                feeders: feederData,
                 totalkWh: parseFloat(totalkWh).toFixed(2),
                 totalkVAh: parseFloat(totalkVAh).toFixed(2),
-                totalkW,
-                totalkVA,
+                totalkW: parseFloat(totalkW).toFixed(2),
+                totalkVA: parseFloat(totalkVA).toFixed(2),
                 unbalancedDTR,
             },
         });
@@ -2612,6 +2617,7 @@ export const getDTRTableData = async (req, res) => {
         let dtrIDs = [];
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
+
         const searchTerm = req.query.search || '';
 
         const dtrList = await DTR.getDTRTableData(
@@ -2684,8 +2690,8 @@ export const getFeederDetails = async (req, res) => {
 
         const dtr = await DTR.getMeterByFeederName(pool, feeder_name);
         const geoData = await DTR.getGeoUsingDtrID(pool, dtr.dtr_id);
-        
-        const geo = {   
+
+        const geo = {
             lat: geoData.latitude,
             long: geoData.longitude,
         };

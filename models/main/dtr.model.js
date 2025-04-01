@@ -1,14 +1,20 @@
 const QUERY_TIMEOUT = 30000;
 
 class DTR {
-    async getDTRData(connection) {
+    async getDTRData(connection, dtrName = null) {
         try {
-            const [results] = await connection.query({
-                sql: `
-                        SELECT * FROM dtr_master
+            const [results] = await connection.query(
+                {
+                    sql: `
+                        SELECT *
+                        FROM dtr_master
+                        WHERE 1=1 
+                        ${dtrName ? ' AND dtr_name = ?' : ''}
                     `,
-                timeout: QUERY_TIMEOUT,
-            });
+                    timeout: QUERY_TIMEOUT,
+                },
+                dtrName ? [dtrName] : []
+            );
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
@@ -150,7 +156,7 @@ class DTR {
         }
     }
 
-    async getFeederData(connection, dtrId = null) {
+    async getFeederData(connection, dtrIds = null) {
         try {
             const [results] = await connection.query(
                 {
@@ -158,11 +164,11 @@ class DTR {
                         SELECT *
                         FROM feeder_master
                         WHERE 1=1
-                        ${dtrId ? 'AND dtr_id IN (?)' : ''}
+                        ${dtrIds ? 'AND dtr_id IN (?)' : ''}
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                dtrId ? [dtrId] : []
+                dtrIds ? [dtrIds] : []
             );
             return results;
         } catch (error) {
@@ -178,14 +184,19 @@ class DTR {
         }
     }
 
-    async getDTRMeters(connection) {
+    async getDTRMeters(connection, dtrID = null) {
         try {
-            const [results] = await connection.query({
-                sql: `
-                        SELECT meter_serial_no FROM feeder_master
-                    `,
-                timeout: QUERY_TIMEOUT,
-            });
+            const [results] = await connection.query(
+                {
+                    sql: `
+                    SELECT meter_serial_no FROM feeder_master
+                    WHERE 1=1
+                    ${dtrID ? 'AND dtr_id IN (?)' : ''}
+                `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                dtrID ? [dtrID] : []
+            );
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
@@ -314,16 +325,15 @@ class DTR {
                         SELECT SUM(t1.FUND_ACT_POWER) AS kw
                         FROM ntpl.d2 t1
                         JOIN (
-                            SELECT METER_SERIAL_NO, MAX(METER_TIME_STAMP) as latest_timestamp
+                            SELECT METER_SERIAL_NO, MAX(METER_TIME_STAMP) AS latest_timestamp
                             FROM ntpl.d2
-                            WHERE DATE(METER_TIME_STAMP) = DATE(NOW() - INTERVAL 1 DAY)
+                            WHERE METER_TIME_STAMP BETWEEN NOW() - INTERVAL 1 DAY AND NOW() 
                             AND METER_SERIAL_NO IN (?)
                             GROUP BY METER_SERIAL_NO
                         ) t2
-                        ON t1.METER_SERIAL_NO = t2.METER_SERIAL_NO 
+                        ON t1.METER_SERIAL_NO = t2.METER_SERIAL_NO
                         AND t1.METER_TIME_STAMP = t2.latest_timestamp
-                        WHERE DATE(t1.METER_TIME_STAMP) = DATE(NOW() - INTERVAL 1 DAY)
-                        ORDER BY t1.METER_SERIAL_NO DESC;
+
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
@@ -351,16 +361,14 @@ class DTR {
                         SELECT SUM(t1.APPARENT_POWER) AS kVA
                         FROM ntpl.d2 t1
                         JOIN (
-                            SELECT METER_SERIAL_NO, MAX(METER_TIME_STAMP) as latest_timestamp
+                            SELECT METER_SERIAL_NO, MAX(METER_TIME_STAMP) AS latest_timestamp
                             FROM ntpl.d2
-                            WHERE DATE(METER_TIME_STAMP) = DATE(NOW() - INTERVAL 1 DAY)
+                            WHERE METER_TIME_STAMP BETWEEN NOW() - INTERVAL 1 DAY AND NOW()
                             AND METER_SERIAL_NO IN (?)
                             GROUP BY METER_SERIAL_NO
                         ) t2
-                        ON t1.METER_SERIAL_NO = t2.METER_SERIAL_NO 
+                        ON t1.METER_SERIAL_NO = t2.METER_SERIAL_NO
                         AND t1.METER_TIME_STAMP = t2.latest_timestamp
-                        WHERE DATE(t1.METER_TIME_STAMP) = DATE(NOW() - INTERVAL 1 DAY)
-                        ORDER BY t1.METER_SERIAL_NO DESC;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
@@ -388,16 +396,15 @@ class DTR {
                         SELECT t1.NEUTRAL_CURRENT
                         FROM d2 t1
                         JOIN (
-                            SELECT METER_SERIAL_NO, MAX(METER_TIME_STAMP) as latest_timestamp
+                            SELECT METER_SERIAL_NO, MAX(METER_TIME_STAMP) AS latest_timestamp
                             FROM d2
-                            WHERE DATE(METER_TIME_STAMP) = DATE(NOW() - INTERVAL 1 DAY)
+                            WHERE METER_TIME_STAMP BETWEEN NOW() - INTERVAL 1 DAY AND NOW()
                             AND METER_SERIAL_NO IN (?)
                             GROUP BY METER_SERIAL_NO
                         ) t2
-                        ON t1.METER_SERIAL_NO = t2.METER_SERIAL_NO 
+                        ON t1.METER_SERIAL_NO = t2.METER_SERIAL_NO
                         AND t1.METER_TIME_STAMP = t2.latest_timestamp
-                        WHERE DATE(t1.METER_TIME_STAMP) = DATE(NOW() - INTERVAL 1 DAY)
-                        ORDER BY t1.METER_SERIAL_NO DESC;
+
                     `,
                     timeout: QUERY_TIMEOUT,
                 },

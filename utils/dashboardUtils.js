@@ -634,6 +634,42 @@ export const isZero = (value) => {
     return Math.abs(numValue) < 0.001;
 };
 
+export const isNegative = (value) => {
+    if (value === null || value === undefined || value === '') return false;
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return numValue < 0;
+};
+
+export const isLoadImbalance = (neutralCurrent) => {
+    if (
+        neutralCurrent === null ||
+        neutralCurrent === undefined ||
+        neutralCurrent === ''
+    )
+        return false;
+    const numValue =
+        typeof neutralCurrent === 'string'
+            ? parseFloat(neutralCurrent)
+            : neutralCurrent;
+    return numValue > 15;
+};
+
+export const isLowPowerFactor = (powerFactor) => {
+    if (powerFactor === null || powerFactor === undefined || powerFactor === '')
+        return false;
+    const numValue =
+        typeof powerFactor === 'string' ? parseFloat(powerFactor) : powerFactor;
+    return numValue < 0.8;
+};
+
+export const isLowVoltage = (voltage) => {
+    if (voltage === null || voltage === undefined || voltage === '')
+        return false;
+    const numValue =
+        typeof voltage === 'string' ? parseFloat(voltage) : voltage;
+    return numValue < 180;
+};
+
 export const calculateDTRPercentage = (value, total = 500.0) => {
     return (value / total) * 100;
 };
