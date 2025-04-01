@@ -21,8 +21,7 @@ const config = {
     SMTP_SECURE: process.env.SMTP_SECURE || 'false',
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS,
-
-    APP_NAME: process.env.APP_NAME || '',
+    APP_NAME: process.env.APP_NAME || 'Authentication App',
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 

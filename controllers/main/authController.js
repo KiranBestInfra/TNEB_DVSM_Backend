@@ -89,7 +89,6 @@ const login = async (req, res) => {
                 .json({ status: 'error', message: error.details[0].message });
         }
         const user = await User.findByEmailOrName(pool, email);
-        //console.log(user);
         if (!user) {
             return res
                 .status(401)
@@ -163,6 +162,7 @@ const login = async (req, res) => {
                         userId: user.user_id,
                         email: user.email ? user.email : 'test@gmail.com',
                         role: roledata.role_title,
+                        user_role_id: roledata.role_id,
                         uid: user.name,
                         locationHierarchy: user.location_hierarchy,
                     },
