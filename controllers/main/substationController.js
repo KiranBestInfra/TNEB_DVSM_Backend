@@ -14,20 +14,35 @@ export const getSubstationWidgets = async (req, res) => {
             });
         }
 
+        // Fetch substation names and feeder counts
         const substationNames = await Substations.getSubstationNamesByRegion(
             pool,
             region
         );
+        const feederCounts = await Substations.getFeederCountBySubstation(
+            pool,
+            region
+        );
 
+        // If feederCounts is an object, transform it as needed
+        const substationFeederCounts = Array.isArray(feederCounts)
+            ? feederCounts.reduce((acc, feeder) => {
+                  acc[feeder.substation_name] = feeder.feeder_count;
+                  return acc;
+              }, {})
+            : feederCounts; // Handle if it's already an object
+
+        // Return the response
         res.status(200).json({
             status: 'success',
             data: {
                 region,
                 substationNames,
+                substationFeederCounts,
             },
         });
     } catch (error) {
-        console.error('❌ Error fetching EDC names:', error);
+        console.error('❌ Error fetching substation widgets:', error);
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };

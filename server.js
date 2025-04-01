@@ -8,7 +8,9 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
 import cron from 'node-cron';
-import fs from 'fs';
+import { Server } from 'socket.io';
+import { createServer } from 'node:http';
+import MSG91 from 'msg91';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
@@ -16,22 +18,69 @@ import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
 import { generateBills, generateOverDueBills } from './cron_jobs/index.js';
 import pool from './config/db.js';
-import dashboardModel from './models/main/regions.model.js';
-
-// import bcrypt from 'bcrypt';
-
-// import dashboardModel from './models/dashboard.model.js';
+import dashboardModel from './models/main/dashboard.model.js';
 import {
     calculateTotalAmount,
     generateInvoiceNumber,
     getDateInMDYFormat,
+    isLoadImbalance,
+    isLowPowerFactor,
+    isLowVoltage,
+    isNegative,
     isZero,
 } from './utils/dashboardUtils.js';
 import { getPowerDetails } from './controllers/consumer/dashboardController.js';
 import { sendZeroValueAlert } from './utils/emailService.js';
+import notificationsModel from './models/main/notifications.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
+
+const server = createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: [
+            'http://localhost:5173',
+            'https://lk-ea.co.in',
+            'http://lk-ea.co.in',
+        ],
+        methods: ['GET', 'POST'],
+        credentials: true,
+        allowedHeaders: ['my-custom-header'],
+    },
+});
+
+const msg91 = MSG91.default;
+
+msg91.initialize({
+    authKey: config.MSG_AUTH_TOKEN,
+});
+
+const connectedClients = new Set();
+
+io.on('connection', async (socket) => {
+    connectedClients.add(socket.id);
+
+    await notificationsModel.sendUnreadNotifications(pool, socket);
+    await notificationsModel.getNotificationCount(pool, socket);
+
+    socket.on('mark_notification_read', async (notificationId) => {
+        await notificationsModel.markNotificationAsRead(
+            pool,
+            socket,
+            notificationId
+        );
+    });
+
+    socket.on('mark_all_read', async () => {
+        await notificationsModel.markAsReadAllNotifications(pool, socket);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
+        connectedClients.delete(socket.id);
+    });
+});
 
 // Rate limiter configuration
 // const rateLimiter = new RateLimiterMemory({
@@ -103,7 +152,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
-    console.log( 'accessToken', req.cookies);
+    console.log('accessToken', req.cookies);
 
     if (!accessToken) {
         return next();
@@ -153,44 +202,45 @@ app.use(`/api/${config.API_VERSION}`, v1Routes);
 app.get('/static/uploads/:filename', (req, res) => {
     const { filename } = req.params;
     const filePath = `${process.cwd()}/static/uploads/${filename}`;
-    
+
     // Log the request details
     logger.info('File access request:', {
         filename,
         filePath,
         currentDir: process.cwd(),
-        fullPath: `${process.cwd()}/${filePath}`
+        fullPath: `${process.cwd()}/${filePath}`,
     });
 
     // Check if file exists before trying to send it
-   // const fs = require('fs');
+    // const fs = require('fs');
     if (!fs.existsSync(filePath)) {
         logger.error('File not found:', {
             filePath,
             currentDir: process.cwd(),
-            fullPath: `${process.cwd()}/${filePath}`
+            fullPath: `${process.cwd()}/${filePath}`,
         });
         return res.status(404).json({
             status: 'error',
             message: 'File not found',
             path: filePath,
-            details: 'The requested file does not exist in the uploads directory'
+            details:
+                'The requested file does not exist in the uploads directory',
         });
     }
 
-    res.sendFile(filePath,(err) => {
+    res.sendFile(filePath, (err) => {
         if (err) {
             logger.error('File access error:', {
                 error: err,
                 filePath,
                 currentDir: process.cwd(),
-                fullPath: `${process.cwd()}/${filePath}`
+                fullPath: `${process.cwd()}/${filePath}`,
             });
             res.status(404).json({
                 status: 'error',
                 message: 'File not found',
                 path: filePath,
-                details: err.message
+                details: err.message,
             });
         }
     });
@@ -206,10 +256,12 @@ app.use((req, res) => {
     });
 });
 
+app.listen(config.PORT, () => {
+    logger.info(`Server is running on port ${config.PORT}`);
+    console.log(`Server is running on port ${config.PORT}`);
+});
 
-app.listen(config.PORT,() => {
-    console.log("Running on port: ", config.PORT)
-})
+// ````````````````````````````````````````````````````````
 
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
