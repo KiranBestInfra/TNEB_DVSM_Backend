@@ -4,21 +4,21 @@ import cors from 'cors';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 import compression from 'compression';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
-import cron from 'node-cron';
-import { Server } from 'socket.io';
 import { createServer } from 'node:http';
-import MSG91 from 'msg91';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
-import { generateBills, generateOverDueBills } from './cron_jobs/index.js';
 import pool from './config/db.js';
-import dashboardModel from './models/main/dashboard.model.js';
+import dashboardModel from './models/main/regions.model.js';
+import socketService from './services/socket/socketService.js';
+
+// import bcrypt from 'bcrypt';
+
+// import dashboardModel from './models/dashboard.model.js';
 import {
     calculateTotalAmount,
     generateInvoiceNumber,
@@ -35,76 +35,9 @@ import notificationsModel from './models/main/notifications.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
-
 const server = createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: [
-            'http://localhost:5173',
-            'https://lk-ea.co.in',
-            'http://lk-ea.co.in',
-        ],
-        methods: ['GET', 'POST'],
-        credentials: true,
-        allowedHeaders: ['my-custom-header'],
-    },
-});
+socketService.initialize(server);
 
-const msg91 = MSG91.default;
-
-msg91.initialize({
-    authKey: config.MSG_AUTH_TOKEN,
-});
-
-const connectedClients = new Set();
-
-io.on('connection', async (socket) => {
-    connectedClients.add(socket.id);
-
-    await notificationsModel.sendUnreadNotifications(pool, socket);
-    await notificationsModel.getNotificationCount(pool, socket);
-
-    socket.on('mark_notification_read', async (notificationId) => {
-        await notificationsModel.markNotificationAsRead(
-            pool,
-            socket,
-            notificationId
-        );
-    });
-
-    socket.on('mark_all_read', async () => {
-        await notificationsModel.markAsReadAllNotifications(pool, socket);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-        connectedClients.delete(socket.id);
-    });
-});
-
-// Rate limiter configuration
-// const rateLimiter = new RateLimiterMemory({
-//     points: 100,
-//     duration: 60,
-//     blockDuration: 60 * 15,
-// });
-
-// Rate limiter middleware
-// const rateLimiterMiddleware = async (req, res, next) => {
-//     // if (req.path.startsWith('/api/auth/')) {
-//     //     return next();
-//     // }
-
-//     try {
-//         await rateLimiter.consume(req.ip);
-//         next();
-//     } catch (error) {
-//         logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
-//         res.status(429).send('Too Many Requests');
-//     }
-// };
-
-// Body parsers
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -256,13 +189,14 @@ app.use((req, res) => {
     });
 });
 
-app.listen(config.PORT, () => {
-    logger.info(`Server is running on port ${config.PORT}`);
-    console.log(`Server is running on port ${config.PORT}`);
+// Start the server
+server.listen(config.SOCKET_PORT, () => {
+    console.log('Server running on port:', config.PORT);
 });
 
-// ````````````````````````````````````````````````````````
-
+app.listen(config.PORT, () => {
+    console.log('Running on port: ', config.SOCKET_PORT);
+});
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
 //      try {
