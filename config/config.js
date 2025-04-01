@@ -9,6 +9,7 @@ const config = {
     DB_PORT: process.env.DB_PORT,
     DB_NAME: process.env.DB_NAME,
     DB_NAME2: process.env.DB_NAME2,
+    DB_PORT:process.env.DB_PORT,  //new modified
     SECRET_KEY: process.env.SECRET_KEY,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
@@ -20,8 +21,7 @@ const config = {
     SMTP_SECURE: process.env.SMTP_SECURE || 'false',
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS,
-
-    APP_NAME: process.env.APP_NAME || '',
+    APP_NAME: process.env.APP_NAME || 'Authentication App',
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 

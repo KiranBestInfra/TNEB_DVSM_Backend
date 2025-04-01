@@ -5,6 +5,7 @@ import regionRoutes from '../regions.js';
 import consumerRoutes from '../consumer.js';
 import edcRoutes from '../edc.js'
 import profileRoutes from '../profile.js';
+import ticketRoutes from '../tickets.js';
 
 
 const router = express.Router();
@@ -14,6 +15,9 @@ router.use('/regions', regionRoutes);
 router.use('/consumer', consumerRoutes);
 router.use('/edcs', edcRoutes);
 router.use('/profile', profileRoutes);
+router.use('/edcs',edcRoutes);
+router.use('/tickets', ticketRoutes);
+
 // router.use('/demo', demoRoutes);
 
 export default router;

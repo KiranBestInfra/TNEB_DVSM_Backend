@@ -108,7 +108,7 @@ class Consumer {
         }
     }
 
-    async getVoltage(connection, user) {
+    async getD2Data(connection, user) {
         try {
             const [[results]] = await connection.query(
                 {
@@ -141,7 +141,7 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getVoltage', error);
+            console.log('getD2Data', error);
             throw error;
         }
     }
