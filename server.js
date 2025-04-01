@@ -4,19 +4,17 @@ import cors from 'cors';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 import compression from 'compression';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
-import cron from 'node-cron';
-import fs from 'fs';
+import { createServer } from 'node:http';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
-import { generateBills, generateOverDueBills } from './cron_jobs/index.js';
 import pool from './config/db.js';
 import dashboardModel from './models/main/regions.model.js';
+import socketService from './services/socket/socketService.js';
 
 // import bcrypt from 'bcrypt';
 
@@ -25,37 +23,21 @@ import {
     calculateTotalAmount,
     generateInvoiceNumber,
     getDateInMDYFormat,
+    isLoadImbalance,
+    isLowPowerFactor,
+    isLowVoltage,
+    isNegative,
     isZero,
 } from './utils/dashboardUtils.js';
 import { getPowerDetails } from './controllers/consumer/dashboardController.js';
 import { sendZeroValueAlert } from './utils/emailService.js';
+import notificationsModel from './models/main/notifications.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
+const server = createServer(app);
+socketService.initialize(server);
 
-// Rate limiter configuration
-// const rateLimiter = new RateLimiterMemory({
-//     points: 100,
-//     duration: 60,
-//     blockDuration: 60 * 15,
-// });
-
-// Rate limiter middleware
-// const rateLimiterMiddleware = async (req, res, next) => {
-//     // if (req.path.startsWith('/api/auth/')) {
-//     //     return next();
-//     // }
-
-//     try {
-//         await rateLimiter.consume(req.ip);
-//         next();
-//     } catch (error) {
-//         logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
-//         res.status(429).send('Too Many Requests');
-//     }
-// };
-
-// Body parsers
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -103,7 +85,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
-    console.log( 'accessToken', req.cookies);
+    console.log('accessToken', req.cookies);
 
     if (!accessToken) {
         return next();
@@ -153,44 +135,45 @@ app.use(`/api/${config.API_VERSION}`, v1Routes);
 app.get('/static/uploads/:filename', (req, res) => {
     const { filename } = req.params;
     const filePath = `${process.cwd()}/static/uploads/${filename}`;
-    
+
     // Log the request details
     logger.info('File access request:', {
         filename,
         filePath,
         currentDir: process.cwd(),
-        fullPath: `${process.cwd()}/${filePath}`
+        fullPath: `${process.cwd()}/${filePath}`,
     });
 
     // Check if file exists before trying to send it
-   // const fs = require('fs');
+    // const fs = require('fs');
     if (!fs.existsSync(filePath)) {
         logger.error('File not found:', {
             filePath,
             currentDir: process.cwd(),
-            fullPath: `${process.cwd()}/${filePath}`
+            fullPath: `${process.cwd()}/${filePath}`,
         });
         return res.status(404).json({
             status: 'error',
             message: 'File not found',
             path: filePath,
-            details: 'The requested file does not exist in the uploads directory'
+            details:
+                'The requested file does not exist in the uploads directory',
         });
     }
 
-    res.sendFile(filePath,(err) => {
+    res.sendFile(filePath, (err) => {
         if (err) {
             logger.error('File access error:', {
                 error: err,
                 filePath,
                 currentDir: process.cwd(),
-                fullPath: `${process.cwd()}/${filePath}`
+                fullPath: `${process.cwd()}/${filePath}`,
             });
             res.status(404).json({
                 status: 'error',
                 message: 'File not found',
                 path: filePath,
-                details: err.message
+                details: err.message,
             });
         }
     });
@@ -206,11 +189,14 @@ app.use((req, res) => {
     });
 });
 
+// Start the server
+server.listen(config.SOCKET_PORT, () => {
+    console.log('Server running on port:', config.PORT);
+});
 
-app.listen(config.PORT,() => {
-    console.log("Running on port: ", config.PORT)
-})
-
+app.listen(config.PORT, () => {
+    console.log('Running on port: ', config.SOCKET_PORT);
+});
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
 //      try {

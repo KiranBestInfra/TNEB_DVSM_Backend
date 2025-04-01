@@ -494,17 +494,12 @@ function formatDates(date) {
 export function fillMissingReadingDates(data) {
     const dates = data.readingsxAxisData;
     const values = data.readingssums;
-
     const startDate = new Date(dates[0]);
     const endDate = new Date();
-    const oneDayBefore = new Date(endDate);
-    oneDayBefore.setDate(endDate.getDate() - 1);
-
     const completeDates = [];
     const completeValues = [];
-
     const currentDate = new Date(startDate);
-    while (currentDate <= oneDayBefore) {
+    while (currentDate <= endDate) {
         const formattedDate = `${currentDate.toLocaleDateString('en-US', {
             month: 'short',
         })} ${currentDate.getDate()}, ${currentDate.getFullYear()}`;
@@ -513,10 +508,8 @@ export function fillMissingReadingDates(data) {
         completeValues.push(
             originalIndex !== -1 ? values[originalIndex] : '0.0'
         );
-
         currentDate.setDate(currentDate.getDate() + 1);
     }
-
     return {
         dailyxAxisData: completeDates,
         dailysums: completeValues,
@@ -526,20 +519,14 @@ export function fillMissingReadingDates(data) {
 export function fillMissingMDData(data, startDateStr) {
     const parsedStartDate = new Date(startDateStr);
     const endDate = new Date();
-    const oneDayBefore = new Date(endDate);
-    oneDayBefore.setDate(endDate.getDate() - 1);
-
     const dateMap = new Map(data.map((item) => [item.date, { ...item }]));
-
     const result = [];
     const currentDate = new Date(parsedStartDate);
-
-    while (currentDate <= oneDayBefore) {
+    while (currentDate <= endDate) {
         const year = currentDate.getFullYear();
         const month = String(currentDate.getMonth() + 1).padStart(2, '0');
         const day = String(currentDate.getDate()).padStart(2, '0');
         const isoDate = `${year}-${month}-${day}`;
-
         if (dateMap.has(isoDate)) {
             result.push(dateMap.get(isoDate));
         } else {
@@ -549,7 +536,6 @@ export function fillMissingMDData(data, startDateStr) {
                 value: '0.000',
             });
         }
-
         currentDate.setDate(currentDate.getDate() + 1);
     }
     return result;
@@ -646,4 +632,44 @@ export const isZero = (value) => {
     if (value === null || value === undefined || value === '') return true;
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     return Math.abs(numValue) < 0.001;
+};
+
+export const isNegative = (value) => {
+    if (value === null || value === undefined || value === '') return false;
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return numValue < 0;
+};
+
+export const isLoadImbalance = (neutralCurrent) => {
+    if (
+        neutralCurrent === null ||
+        neutralCurrent === undefined ||
+        neutralCurrent === ''
+    )
+        return false;
+    const numValue =
+        typeof neutralCurrent === 'string'
+            ? parseFloat(neutralCurrent)
+            : neutralCurrent;
+    return numValue > 15;
+};
+
+export const isLowPowerFactor = (powerFactor) => {
+    if (powerFactor === null || powerFactor === undefined || powerFactor === '')
+        return false;
+    const numValue =
+        typeof powerFactor === 'string' ? parseFloat(powerFactor) : powerFactor;
+    return numValue < 0.8;
+};
+
+export const isLowVoltage = (voltage) => {
+    if (voltage === null || voltage === undefined || voltage === '')
+        return false;
+    const numValue =
+        typeof voltage === 'string' ? parseFloat(voltage) : voltage;
+    return numValue < 180;
+};
+
+export const calculateDTRPercentage = (value, total = 500.0) => {
+    return (value / total) * 100;
 };

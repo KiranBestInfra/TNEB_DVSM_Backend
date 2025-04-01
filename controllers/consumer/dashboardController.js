@@ -97,7 +97,6 @@ export const getBillingData = async (req, res) => {
     try {
         const user = req.user;
         const bill = await Consumer.getLatestBill(pool, user);
-        console.log(bill);
 
         res.status(200).json({
             status: 'success',

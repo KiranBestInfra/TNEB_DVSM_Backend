@@ -2,7 +2,6 @@ import multer from 'multer';
 // import path from 'path';
 import fs from 'fs';
 import pool from '../../config/db.js';
-import { v4 as uuidv4 } from 'uuid';
 
 // Configure multer for file upload
 // const storage = multer.diskStorage({

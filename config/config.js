@@ -2,14 +2,16 @@ import 'dotenv/config';
 
 const config = {
     PORT: process.env.PORT,
+    SOCKET_PORT: process.env.SOCKET_PORT,
     NODE_ENV: process.env.NODE_ENV,
+    SOCKET_PORT: process.env.SOCKET_PORT,
     DB_HOST: process.env.DB_HOST,
     DB_USER: process.env.DB_USER,
     DB_PASSWORD: process.env.DB_PASSWORD,
     DB_PORT: process.env.DB_PORT,
     DB_NAME: process.env.DB_NAME,
     DB_NAME2: process.env.DB_NAME2,
-    DB_PORT:process.env.DB_PORT,  //new modified
+    DB_PORT: process.env.DB_PORT, //new modified
     SECRET_KEY: process.env.SECRET_KEY,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
@@ -23,6 +25,11 @@ const config = {
     SMTP_PASS: process.env.SMTP_PASS,
     APP_NAME: process.env.APP_NAME || 'Authentication App',
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+
+    MSG_AUTH_TOKEN: process.env.MSG_AUTH_TOKEN,
+    MSG_SENDER_ID: process.env.MSG_SENDER_ID,
+    MSG_TEMPLATE_ID: process.env.MSG_TEMPLATE_ID,
+    DLT_TE_ID: process.env.DLT_TE_ID,
 };
 
 export default config;
