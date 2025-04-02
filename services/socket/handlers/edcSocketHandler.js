@@ -12,11 +12,23 @@ class EdcSocketHandler {
         socket.on('subscribeEdc', async (data) => {
             if (!data || !data.edcs || !Array.isArray(data.edcs)) {
                 logger.error('Invalid EDC subscription data received');
-                socket.emit('error', { message: 'Invalid subscription data. Expected { edcs: string[] }' });
+                socket.emit('error', {
+                    message:
+                        'Invalid subscription data. Expected { edcs: string[] }',
+                });
                 return;
             }
 
             const { edcs } = data;
+
+            if (socket.subscribedEdcs) {
+                const existingIntervalId = socketService.getInterval(socket.id);
+                if (existingIntervalId) {
+                    clearInterval(existingIntervalId);
+                    socketService.clearInterval(socket.id);
+                }
+            }
+
             logger.info(`Client subscribed to EDCs: ${edcs.join(', ')}`);
 
             socket.subscribedEdcs = edcs;
@@ -25,13 +37,17 @@ class EdcSocketHandler {
                 await this.sendEdcData(socket, edcs);
 
                 const intervalId = setInterval(async () => {
-                    await this.sendEdcData(socket, edcs);
+                    if (socket.connected) {
+                        await this.sendEdcData(socket, edcs);
+                    }
                 }, this.updateInterval);
 
                 socketService.storeInterval(socket.id, intervalId);
             } catch (error) {
                 logger.error('Error in EDC subscription:', error);
-                socket.emit('error', { message: 'Error processing EDC subscription' });
+                socket.emit('error', {
+                    message: 'Error processing EDC subscription',
+                });
             }
         });
     }
@@ -55,4 +71,4 @@ class EdcSocketHandler {
 }
 
 const edcSocketHandler = new EdcSocketHandler();
-export { edcSocketHandler }; 
+export { edcSocketHandler };
