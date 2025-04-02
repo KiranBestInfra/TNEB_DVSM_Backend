@@ -17,7 +17,7 @@ export const fetchFeederGraphs = async (feeders) => {
         const feederDemandData = {};
 
         for (const feeder of feeders) {
-            const hierarchy = await Feeders.getHierarchyByFeeder(pool, region);
+            const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
             const meters = await Feeders.getFeederMeters(
                 pool,
                 null,
