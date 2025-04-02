@@ -57,7 +57,7 @@ export const getDashboardWidgets = async (req, res) => {
 };
 
 export const fetchRegionGraphs = async (regionNames) => {
-    console.log(regionNames)
+    console.log(regionNames);
     try {
         // const regionNames = await REGIONS.getRegionNames(pool);
 
