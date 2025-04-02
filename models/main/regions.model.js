@@ -230,13 +230,14 @@ class Regions {
                 {
                     sql: `
                         SELECT 
-                            ad.datetime,
-                            MAX(ad.actual_demand_mw) as actual_demand_mw
-                        FROM actualdemand ad
+                            ad.datetime, 
+                            ROUND(SUM(ad.kwh * (mt.ad_pt / mt.me_pt) * (mt.ad_ct / mt.me_ct) / 0.25 / 1000), 4) AS actual_demand_mw 
+                        FROM actualdemand ad 
+                        JOIN meter mt ON ad.meter_no = mt.meter_serial_no 
                         WHERE ad.datetime BETWEEN ? AND ?
                         ${meters ? `AND ad.meter_no IN (?)` : ''}
-                        GROUP BY ad.datetime
-                        ORDER BY ad.datetime ASC
+                        GROUP BY ad.datetime 
+                        ORDER BY ad.datetime ASC;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
