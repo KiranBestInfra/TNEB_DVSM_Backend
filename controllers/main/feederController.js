@@ -1,5 +1,5 @@
 import pool from '../../config/db.js';
-import EDCS from '../../models/main/edcs.model.js';
+import Feeders from '../../models/main/feeders.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -7,18 +7,18 @@ import {
     getYesterdayStartAndEnd,
 } from '../../utils/globalUtils.js';
 
-export const fetchEdcGraphs = async (edcNames) => {
-        console.log(edcNames)
-
+export const fetchFeederGraphs = async (feeders) => {
+    console.log(feeders)
     try {
+
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
-        const edcDemandData = {};
+        const feederDemandData = {};
 
-        for (const edc of edcNames) {
-            const hierarchy = await EDCS.getHierarchyByEdc(pool, edc);
-            const meters = await EDCS.getEdcMeters(
+        for (const feeder of feeders) {
+            const hierarchy = await Feeders.getHierarchyByFeeder(pool, region);
+            const meters = await Feeders.getFeederMeters(
                 pool,
                 null,
                 hierarchy.hierarchy_type_id,
@@ -29,7 +29,7 @@ export const fetchEdcGraphs = async (edcNames) => {
                 (meter) => meter.meter_serial_no
             );
 
-            const todayDemandData = await EDCS.getDemandTrendsData(
+            const todayDemandData = await Feeders.getDemandTrendsData(
                 pool,
                 null,
                 '2025-03-27 00:00:00',
@@ -37,7 +37,7 @@ export const fetchEdcGraphs = async (edcNames) => {
                 hierarchyMeters
             );
 
-            const yesterdayDemandData = await EDCS.getDemandTrendsData(
+            const yesterdayDemandData = await Feeders.getDemandTrendsData(
                 pool,
                 null,
                 '2025-03-26 00:00:00',
@@ -99,12 +99,11 @@ export const fetchEdcGraphs = async (edcNames) => {
                 ],
             };
 
-            edcDemandData[edc] = detailedGraphData;
+            regionDemandData[region] = detailedGraphData;
         }
 
-        return edcDemandData;
+        return regionDemandData;
     } catch (error) {
-        console.error('Error fetching EDC graphs:', error);
-        throw error;
+        console.error('Error fetching region graphs:', error);
     }
-}; 
+};

@@ -1,5 +1,5 @@
 import logger from '../../../utils/logger.js';
-import { fetchEdcGraphs } from '../../../controllers/main/edcController.js';
+import { fetchEdcGraphs } from '../../../controllers/main/edcsController.js';
 import socketService from '../socketService.js';
 import pool from '../../../config/db.js';
 
