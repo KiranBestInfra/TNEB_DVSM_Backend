@@ -118,8 +118,8 @@ class Substations {
         }
     }
     async getSubstationNamesByRegion(connection, region) {
-    try {
-        const sql = `
+        try {
+            const sql = `
             SELECT
                 substation.hierarchy_name AS substation_names
             FROM hierarchy region
@@ -136,24 +136,26 @@ class Substations {
             AND region.hierarchy_name = ?;
         `;
 
-        const [rows] = await connection.query(sql, [region]);
-        console.log('SQL Query Result:', rows); //Log the raw results.
+            const [rows] = await connection.query(sql, [region]);
+            console.log('SQL Query Result:', rows); //Log the raw results.
 
-        if (rows.length === 0) {
-            return [];
+            if (rows.length === 0) {
+                return [];
+            }
+
+            // Collect substation names from each row
+            const substationNames = rows
+                .map((row) => row.substation_names)
+                .filter((name) => name !== null);
+
+            return substationNames;
+        } catch (error) {
+            console.error(
+                `❌ Error fetching Substation names for region: ${region}`,
+                error
+            );
+            throw error;
         }
-
-        // Collect substation names from each row
-        const substationNames = rows.map(row => row.substation_names).filter(name => name !== null);
-
-        return substationNames;
-    } catch (error) {
-        console.error(
-            `❌ Error fetching Substation names for region: ${region}`,
-            error
-        );
-        throw error;
-    }
     }
     async getHierarchyBySubstation(connection, regionID) {
         try {
@@ -188,19 +190,13 @@ class Substations {
                 {
                     sql: `
                         SELECT DISTINCT meter.meter_serial_no
-                        FROM hierarchy region
-                        JOIN hierarchy edc 
-                            ON region.hierarchy_id = edc.parent_id 
-                        JOIN hierarchy district 
-                            ON edc.hierarchy_id = district.parent_id 
-                        JOIN hierarchy substation 
-                            ON district.hierarchy_id = substation.parent_id  
+                        FROM hierarchy substation
                         JOIN hierarchy feeder 
                             ON substation.hierarchy_id = feeder.parent_id  
                         JOIN meter 
                             ON feeder.hierarchy_id = meter.location_id 
-                        WHERE region.hierarchy_type_id = ?  
-                        AND region.hierarchy_id = ?
+                        WHERE substation.hierarchy_type_id = ?
+                        AND substation.hierarchy_id = ?        
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
@@ -228,21 +224,30 @@ class Substations {
         meters = null
     ) {
         try {
+            const queryParams = [start, end];
+            let meterCondition = '';
+
+            if (meters && meters.length > 0) {
+                meterCondition = 'AND ad.meter_no IN (?)';
+                queryParams.push(meters);
+            }
+
             const [results] = await connection.query(
                 {
                     sql: `
                         SELECT 
-                            ad.datetime,
-                            MAX(ad.actual_demand_mw) as actual_demand_mw
-                        FROM actualdemand ad
+                            ad.datetime, 
+                            ROUND(SUM(ad.kwh * (mt.ad_pt / mt.me_pt) * (mt.ad_ct / mt.me_ct) / 0.25 / 1000), 4) AS actual_demand_mw 
+                        FROM actualdemand ad 
+                        JOIN meter mt ON ad.meter_no = mt.meter_serial_no 
                         WHERE ad.datetime BETWEEN ? AND ?
-                        ${meters ? `AND ad.meter_no IN (?)` : ''}
-                        GROUP BY ad.datetime
-                        ORDER BY ad.datetime ASC
+                        ${meterCondition}
+                        GROUP BY ad.datetime 
+                        ORDER BY ad.datetime ASC;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [start, end, meters]
+                queryParams
             );
 
             return results;
@@ -258,7 +263,6 @@ class Substations {
             throw error;
         }
     }
-
 }
 
 export default new Substations();
