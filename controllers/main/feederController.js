@@ -107,3 +107,31 @@ export const fetchFeederGraphs = async (feeders) => {
         console.error('Error fetching region graphs:', error);
     }
 };
+export const getFeedersWidgets = async (req, res) => {
+    try {
+        const totalFeeders = await Feeders.getTotalFeeders(pool);
+        const commMeters = await Feeders.getCommMeters(pool);
+        const nonCommMeters = await Feeders.getNonCommMeters(pool);
+        const regionFeederNames = await Feeders.getRegionFeederNames(pool);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                totalFeeders,
+                commMeters,
+                nonCommMeters,
+                regionFeederNames: regionFeederNames.map(
+                    (region) => region.hierarchy_name
+                ),
+                
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders widgets:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};

@@ -98,17 +98,13 @@ class EDCs {
                     COALESCE(COUNT(feeder.hierarchy_id), 0) AS feeder_count
                 FROM hierarchy region
                 JOIN hierarchy edc 
-                    ON region.hierarchy_id = edc.parent_id 
-                    AND edc.hierarchy_type_id = 11  
+                    ON region.hierarchy_id = edc.parent_id  
                 JOIN hierarchy district 
-                    ON edc.hierarchy_id = district.parent_id 
-                    AND district.hierarchy_type_id = 34  
+                    ON edc.hierarchy_id = district.parent_id  
                 JOIN hierarchy substation 
                     ON district.hierarchy_id = substation.parent_id 
-                    AND substation.hierarchy_type_id = 35  
                 LEFT JOIN hierarchy feeder 
-                    ON substation.hierarchy_id = feeder.parent_id 
-                    AND feeder.hierarchy_type_id = 37  
+                    ON substation.hierarchy_id = feeder.parent_id  
                 WHERE region.hierarchy_type_id = 10  
                 AND region.hierarchy_name = ?
                 GROUP BY edc.hierarchy_name;
@@ -239,6 +235,43 @@ class EDCs {
             throw error;
         }
     }
+    // async getCommAndNonCommMeters(connection, meters, date) {
+    //     try {
+    //         if (!meters || meters.length === 0) {
+    //             throw new Error('No meters provided');
+    //         }
+
+    //         const [results] = await connection.query(
+    //             {
+    //                 sql: `
+    //                 SELECT
+    //                     (SELECT COUNT(DISTINCT meter_no)
+    //                      FROM instant_comm
+    //                      WHERE meter_no IN (?)
+    //                      AND DATE(device_date) = ?) AS commMeters,
+
+    //                     (SELECT COUNT(DISTINCT meter_serial_no)
+    //                      FROM meter
+    //                      WHERE meter_serial_no IN (?)
+    //                      AND meter_serial_no NOT IN (
+    //                          SELECT DISTINCT meter_no FROM instant_comm
+    //                          WHERE DATE(device_date) = ?
+    //                      )) AS nonCommMeters
+    //             `,
+    //                 timeout: QUERY_TIMEOUT,
+    //             },
+    //             [meters, date, meters, date]
+    //         );
+
+    //         return results[0];
+    //     } catch (error) {
+    //         console.error(
+    //             '❌ Error fetching commMeters and nonCommMeters:',
+    //             error
+    //         );
+    //         throw error;
+    //     }
+    // }
 }
 
 export default new EDCs();
