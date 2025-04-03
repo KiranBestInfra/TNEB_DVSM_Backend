@@ -222,6 +222,14 @@ class Regions {
         meters = null
     ) {
         try {
+            const queryParams = [start, end];
+            let meterCondition = '';
+            
+            if (meters && meters.length > 0) {
+                meterCondition = 'AND ad.meter_no IN (?)';
+                queryParams.push(meters);
+            }
+
             const [results] = await connection.query(
                 {
                     sql: `
@@ -231,13 +239,13 @@ class Regions {
                         FROM actualdemand ad 
                         JOIN meter mt ON ad.meter_no = mt.meter_serial_no 
                         WHERE ad.datetime BETWEEN ? AND ?
-                        ${meters ? `AND ad.meter_no IN (?)` : ''}
+                        ${meterCondition}
                         GROUP BY ad.datetime 
                         ORDER BY ad.datetime ASC;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [start, end, meters]
+                queryParams
             );
 
             return results;

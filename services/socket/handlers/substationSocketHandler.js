@@ -5,7 +5,7 @@ import pool from '../../../config/db.js';
 
 class SubstationSocketHandler {
     constructor() {
-        this.updateInterval = 30000;
+        this.updateInterval = 600000;
     }
 
     initialize(socket) {
@@ -17,7 +17,7 @@ class SubstationSocketHandler {
             }
 
             const { substations } = data;
-
+            console.log(substations);
             if (socket.subscribedSubstations) {
                 const existingIntervalId = socketService.getInterval(socket.id);
                 if (existingIntervalId) {
@@ -48,7 +48,8 @@ class SubstationSocketHandler {
 
     async sendSubstationData(socket, substations) {
         try {
-            const substationDemandData = await fetchSubstationGraphs(substations);
+            const substationDemandData = await fetchSubstationGraphs(socket, substations);
+            
             substations.forEach((substation) => {
                 if (substationDemandData[substation]) {
                     socket.emit('substationUpdate', {
