@@ -198,7 +198,7 @@ class EDCs {
         try {
             const queryParams = [start, end];
             let meterCondition = '';
-            
+
             if (meters && meters.length > 0) {
                 meterCondition = 'AND ad.meter_no IN (?)';
                 queryParams.push(meters);
