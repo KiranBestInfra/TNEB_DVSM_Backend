@@ -18,28 +18,37 @@ class Feeders {
             throw error;
         }
     }
-    async getHierarchyByFeeder(connection, regionID) {
+    async getFeederNamesByRegion(connection, region) {
         try {
-            const [[results]] = await connection.query(
-                {
-                    sql: `
-                        SELECT h.hierarchy_id, h.hierarchy_name, h.hierarchy_type_id
-                        FROM hierarchy h
-                        JOIN hierarchy_master hm 
-                            ON h.hierarchy_type_id = hm.hierarchy_type_id 
-                        WHERE hm.hierarchy_title = "FEEDER"
-                        AND h.hierarchy_name = ?
-                    `,
-                    timeout: QUERY_TIMEOUT,
-                },
-                [regionID]
-            );
-            return results;
+            const sql = `
+            SELECT feeder.hierarchy_name 
+            FROM hierarchy region
+            JOIN hierarchy edc 
+                ON region.hierarchy_id = edc.parent_id 
+            JOIN hierarchy district 
+                ON edc.hierarchy_id = district.parent_id  
+            JOIN hierarchy substation 
+                ON district.hierarchy_id = substation.parent_id 
+            LEFT JOIN hierarchy feeder 
+                ON substation.hierarchy_id = feeder.parent_id 
+            WHERE region.hierarchy_name = ?
+            AND region.hierarchy_type_id = 10;
+        `;
+
+            const [rows] = await connection.query(sql, [region]); // Parameterized query for security
+            console.log('Region:', region);
+
+            return rows.map((row) => row.hierarchy_name);
         } catch (error) {
-            console.log('getHierarchyByFeeder', error);
+            console.error(
+                '❌ Error fetching feeder names for region:',
+                region,
+                error
+            );
             throw error;
         }
     }
+
     async getFeederMeters(
         connection,
         accessValues = [],
@@ -151,7 +160,6 @@ class Feeders {
             `,
                 timeout: QUERY_TIMEOUT,
             });
-
             return rows.reduce((acc, row) => {
                 acc[row.region_name] = row.feeder_names
                     ? row.feeder_names.split(', ')
