@@ -121,7 +121,39 @@ class Feeders {
             throw error;
         }
     }
+    async getRegionFeederNames(connection) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    region.hierarchy_name AS region_name,
+                    COALESCE(GROUP_CONCAT(DISTINCT feeder.hierarchy_name ORDER BY feeder.hierarchy_name SEPARATOR ', '), '') AS feeder_names
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                LEFT JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                WHERE region.hierarchy_type_id = 10  
+                GROUP BY region.hierarchy_name;
+            `,
+                timeout: QUERY_TIMEOUT,
+            });
 
+            return rows.reduce((acc, row) => {
+                acc[row.region_name] = row.feeder_names
+                    ? row.feeder_names.split(', ')
+                    : [];
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error('❌ Error fetching Feeder names for Regions:', error);
+            throw error;
+        }
+    }
 }
 
 

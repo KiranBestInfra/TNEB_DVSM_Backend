@@ -118,8 +118,8 @@ class Substations {
         }
     }
     async getSubstationNamesByRegion(connection, region) {
-    try {
-        const sql = `
+        try {
+            const sql = `
             SELECT
                 substation.hierarchy_name AS substation_names
             FROM hierarchy region
@@ -136,24 +136,26 @@ class Substations {
             AND region.hierarchy_name = ?;
         `;
 
-        const [rows] = await connection.query(sql, [region]);
-        console.log('SQL Query Result:', rows); //Log the raw results.
+            const [rows] = await connection.query(sql, [region]);
+            console.log('SQL Query Result:', rows); //Log the raw results.
 
-        if (rows.length === 0) {
-            return [];
+            if (rows.length === 0) {
+                return [];
+            }
+
+            // Collect substation names from each row
+            const substationNames = rows
+                .map((row) => row.substation_names)
+                .filter((name) => name !== null);
+
+            return substationNames;
+        } catch (error) {
+            console.error(
+                `❌ Error fetching Substation names for region: ${region}`,
+                error
+            );
+            throw error;
         }
-
-        // Collect substation names from each row
-        const substationNames = rows.map(row => row.substation_names).filter(name => name !== null);
-
-        return substationNames;
-    } catch (error) {
-        console.error(
-            `❌ Error fetching Substation names for region: ${region}`,
-            error
-        );
-        throw error;
-    }
     }
     async getHierarchyBySubstation(connection, regionID) {
         try {
@@ -258,7 +260,6 @@ class Substations {
             throw error;
         }
     }
-
 }
 
 export default new Substations();

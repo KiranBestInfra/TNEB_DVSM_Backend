@@ -109,16 +109,12 @@ class Regions {
                     FROM hierarchy region
                     JOIN hierarchy edc 
                         ON region.hierarchy_id = edc.parent_id 
-                        AND edc.hierarchy_type_id = 11  
                     JOIN hierarchy district 
-                        ON edc.hierarchy_id = district.parent_id 
-                        AND district.hierarchy_type_id = 34  
+                        ON edc.hierarchy_id = district.parent_id  
                     JOIN hierarchy substation 
                         ON district.hierarchy_id = substation.parent_id 
-                        AND substation.hierarchy_type_id = 35  
                     LEFT JOIN hierarchy feeder 
                         ON substation.hierarchy_id = feeder.parent_id 
-                        AND feeder.hierarchy_type_id = 37  
                     WHERE region.hierarchy_type_id = 10  
                     GROUP BY region.hierarchy_name;
                 `,

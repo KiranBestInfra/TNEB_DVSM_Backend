@@ -39,7 +39,7 @@ export const getEDCWidgets = async (req, res) => {
     }
 };
 export const fetchEdcGraphs = async (edcNames) => {
-        console.log(edcNames)
+    console.log(edcNames);
 
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
@@ -138,6 +138,6 @@ export const fetchEdcGraphs = async (edcNames) => {
         console.error('Error fetching EDC graphs:', error);
         throw error;
     }
-}; 
+};
 
 export default getEDCWidgets;
