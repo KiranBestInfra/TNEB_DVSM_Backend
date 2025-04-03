@@ -67,6 +67,7 @@ class Substations {
             });
 
             return substationFeederCounts;
+            console.log(substationFeederCounts);
         } catch (error) {
             console.error(
                 '❌ Error fetching Substation feeder counts for region:',
@@ -158,6 +159,7 @@ class Substations {
         }
     }
     async getHierarchyBySubstation(connection, regionID) {
+        console.log(regionID);
         try {
             const [[results]] = await connection.query(
                 {

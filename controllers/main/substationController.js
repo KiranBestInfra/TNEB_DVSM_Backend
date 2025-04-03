@@ -73,11 +73,11 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                 hierarchy.hierarchy_type_id,
                 hierarchy.hierarchy_id
             );
-            console.log(meters);
-            count++;
+            // console.log(meters);
+            //count++;
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const todayDemandData = await Substations.getDemandTrendsData(
