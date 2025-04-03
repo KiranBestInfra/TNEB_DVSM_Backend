@@ -8,9 +8,8 @@ import {
 } from '../../utils/globalUtils.js';
 
 export const fetchFeederGraphs = async (feeders) => {
-    console.log(feeders)
+    console.log(feeders);
     try {
-
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
@@ -112,7 +111,7 @@ export const getFeedersWidgets = async (req, res) => {
         const totalFeeders = await Feeders.getTotalFeeders(pool);
         const commMeters = await Feeders.getCommMeters(pool);
         const nonCommMeters = await Feeders.getNonCommMeters(pool);
-        const regionFeederNames = await Feeders.getRegionFeederNames(pool);
+        const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
 
         res.status(200).json({
             status: 'success',
@@ -120,10 +119,12 @@ export const getFeedersWidgets = async (req, res) => {
                 totalFeeders,
                 commMeters,
                 nonCommMeters,
-                regionFeederNames: regionFeederNames.map(
-                    (region) => region.hierarchy_name
-                ),
-                
+                regionFeederNames: regionFeederNames.reduce((acc, region) => {
+                    acc[region.region_name] = region.feeder_names
+                        ? region.feeder_names.split(', ')
+                        : [];
+                    return acc;
+                }, {}),
             },
         });
     } catch (error) {
