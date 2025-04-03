@@ -228,6 +228,7 @@ class Regions {
         try {
             const queryParams = [start, end];
             let meterCondition = '';
+
             
             if (meters && meters.length > 0) {
                 meterCondition = 'AND ad.meter_no IN (?)';
@@ -280,16 +281,20 @@ class Regions {
                         FROM hierarchy region
                         JOIN hierarchy edc 
                             ON region.hierarchy_id = edc.parent_id 
+                            -- AND edc.hierarchy_type_id = 11  
                         JOIN hierarchy district 
                             ON edc.hierarchy_id = district.parent_id 
+                            -- AND district.hierarchy_type_id = 34  
                         JOIN hierarchy substation 
-                            ON district.hierarchy_id = substation.parent_id  
+                            ON district.hierarchy_id = substation.parent_id 
+                            -- AND substation.hierarchy_type_id = 35  
                         JOIN hierarchy feeder 
-                            ON substation.hierarchy_id = feeder.parent_id  
+                            ON substation.hierarchy_id = feeder.parent_id 
+                            -- AND feeder.hierarchy_type_id = 37  
                         JOIN meter 
                             ON feeder.hierarchy_id = meter.location_id 
-                        WHERE region.hierarchy_type_id = ?  
-                        AND region.hierarchy_id = ?
+                        WHERE region.hierarchy_type_id = ?
+                        AND region.hierarchy_id = ?;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },

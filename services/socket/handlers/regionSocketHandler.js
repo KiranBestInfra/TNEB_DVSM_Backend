@@ -12,7 +12,10 @@ class RegionSocketHandler {
         socket.on('subscribe', async (data) => {
             if (!data || !data.regions || !Array.isArray(data.regions)) {
                 logger.error('Invalid subscription data received');
-                socket.emit('error', { message: 'Invalid subscription data. Expected { regions: string[] }' });
+                socket.emit('error', {
+                    message:
+                        'Invalid subscription data. Expected { regions: string[] }',
+                });
                 return;
             }
 
@@ -41,7 +44,9 @@ class RegionSocketHandler {
                 socketService.storeInterval(socket.id, intervalId);
             } catch (error) {
                 logger.error('Error in region subscription:', error);
-                socket.emit('error', { message: 'Error processing region subscription' });
+                socket.emit('error', {
+                    message: 'Error processing region subscription',
+                });
             }
         });
     }
