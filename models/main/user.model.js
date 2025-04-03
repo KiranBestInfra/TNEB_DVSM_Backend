@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 15000;
+const QUERY_TIMEOUT = 30000;
 
 class User {
     // Find user by email
@@ -6,7 +6,7 @@ class User {
         try {
             const [rows] = await Promise.race([
                 connection.query(
-                    'SELECT * FROM users WHERE email = ? OR name = ? LIMIT 1',
+                    'SELECT * FROM user WHERE email = ? OR user_id = ? LIMIT 1',
                     [identifier, identifier]
                 ),
                 new Promise((_, reject) =>
@@ -42,7 +42,7 @@ class User {
             const { name, email, passwordHash } = userData;
             const [result] = await Promise.race([
                 connection.query(
-                    'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+                    'INSERT INTO user (user_id, email, password) VALUES (?, ?, ?)',
                     [name, email, passwordHash]
                 ),
                 new Promise((_, reject) =>
@@ -77,7 +77,7 @@ class User {
             // connection = await pool.getConnection();
             const [rows] = await Promise.race([
                 connection.query(
-                    'SELECT id, name, email FROM users WHERE id = ? LIMIT 1',
+                    'SELECT slno, name, email FROM user WHERE slno = ? LIMIT 1',
                     [id]
                 ),
                 new Promise((_, reject) =>
@@ -382,7 +382,7 @@ class User {
             // connection = await pool.getConnection();
             await Promise.race([
                 connection.query(
-                    'UPDATE users SET email_verified = true, email_verified_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    'UPDATE user SET email_verified = true, email_verified_at = CURRENT_TIMESTAMP WHERE slno = ?',
                     [userId]
                 ),
                 new Promise((_, reject) =>
@@ -416,7 +416,7 @@ class User {
             // connection = await pool.getConnection();
             const [rows] = await Promise.race([
                 connection.query(
-                    'SELECT email_verified FROM users WHERE id = ?',
+                    'SELECT email_verified FROM user WHERE slno = ?',
                     [userId]
                 ),
                 new Promise((_, reject) =>
@@ -499,10 +499,10 @@ class User {
             // connection = await pool.getConnection();
             await Promise.race([
                 connection.query(
-                    `UPDATE users 
+                    `UPDATE user 
                     SET reset_token = ?, 
                         reset_token_expiry = FROM_UNIXTIME(?/1000)
-                    WHERE id = ?`,
+                    WHERE slno = ?`,
                     [token, expiry, userId]
                 ),
                 new Promise((_, reject) =>
@@ -537,8 +537,8 @@ class User {
                 connection.query(
                     `SELECT reset_token as token,
                            UNIX_TIMESTAMP(reset_token_expiry) * 1000 as expiry
-                    FROM users
-                    WHERE id = ?`,
+                    FROM user
+                    WHERE slno = ?`,
                     [userId]
                 ),
                 new Promise((_, reject) =>
@@ -572,7 +572,7 @@ class User {
             // connection = await pool.getConnection();
             await Promise.race([
                 connection.query(
-                    `UPDATE users 
+                    `UPDATE user 
                      SET reset_token = NULL, 
                          reset_token_expiry = NULL 
                      WHERE id = ?`,
@@ -606,7 +606,7 @@ class User {
         try {
             const [[results]] = await Promise.race([
                 connection.query(
-                    `SELECT * FROM user_role_lkea WHERE role_id = ?`,
+                    `SELECT * FROM user_role WHERE role_id = ?`,
                     [id]
                 ),
                 new Promise((_, reject) =>
@@ -641,10 +641,10 @@ class User {
             // connection = await pool.getConnection();
             await Promise.race([
                 connection.query(
-                    `UPDATE users 
+                    `UPDATE user 
                      SET password = ?, 
                          updated_at = CURRENT_TIMESTAMP 
-                     WHERE id = ?`,
+                     WHERE slno = ?`,
                     [passwordHash, userId]
                 ),
                 new Promise((_, reject) =>

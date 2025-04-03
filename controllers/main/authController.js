@@ -156,12 +156,13 @@ const login = async (req, res) => {
         const roledata = await User.getRoleByID(pool, user.role_id);
 
         if (rememberMe) {
-            if (user.role_id == 3) {
+       //     if (user.role_id == 3) {
                 const accessToken = jwt.sign(
                     {
-                        userId: user.id,
+                        userId: user.user_id,
                         email: user.email ? user.email : 'test@gmail.com',
                         role: roledata.role_title,
+                        user_role_id: roledata.role_id,
                         uid: user.name,
                         locationHierarchy: user.location_hierarchy,
                     },
@@ -170,7 +171,7 @@ const login = async (req, res) => {
                 );
 
                 const refreshToken = jwt.sign(
-                    { userId: user.id },
+                    { userId: user.user_id },
                     JWT_REFRESH_SECRET,
                     {
                         expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
@@ -220,77 +221,13 @@ const login = async (req, res) => {
                             ? '.lk-ea.co.in'
                             : 'localhost',
                 });
-            } else if (user.role_id == 1 || user.role_id == 2) {
-                const accessToken = jwt.sign(
-                    {
-                        userId: user.id,
-                        email: user.email ? user.email : 'test@gmail.com',
-                        role: roledata.role_title,
-                        locationHierarchy: user.location_hierarchy,
-                    },
-                    JWT_SECRET,
-                    { expiresIn: JWT_EXPIRES_IN }
-                );
-
-                const refreshToken = jwt.sign(
-                    { userId: user.id },
-                    JWT_REFRESH_SECRET,
-                    {
-                        expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
-                    }
-                );
-
-                await User.saveRefreshToken(
-                    pool,
-                    user.id,
-                    refreshToken,
-                    JWT_REFRESH_EXPIRES_IN
-                );
-
-                res.cookie('accessToken', accessToken, {
-                    httpOnly: config.NODE_ENV === 'production',
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
-
-                res.cookie('accessTokenDuplicate', accessToken, {
-                    httpOnly: false,
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
-
-                res.cookie('refreshToken', refreshToken, {
-                    httpOnly: config.NODE_ENV === 'production',
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    path: '/api/refresh-token',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
-            }
         }
 
         return res.status(200).json({
             status: 'success',
             message: 'Login successful',
             user: {
-                id: user.id,
+                id: user.user_id,
                 email: user.email,
                 name: user.name,
             },

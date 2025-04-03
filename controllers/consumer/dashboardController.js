@@ -66,7 +66,7 @@ export const getTariffRates = async (req, res) => {
 export const getPowerDetails = async (req, res) => {
     try {
         const user = req.user;
-        const power = await Consumer.getVoltage(pool, user);
+        const power = await Consumer.getD2Data(pool, user);
         const last_comm = await Consumer.getMeterLastCommunication(pool, user);
         const due = await Consumer.getOverdueAmount(pool, user);
 
@@ -97,7 +97,6 @@ export const getBillingData = async (req, res) => {
     try {
         const user = req.user;
         const bill = await Consumer.getLatestBill(pool, user);
-        console.log(bill)
 
         res.status(200).json({
             status: 'success',

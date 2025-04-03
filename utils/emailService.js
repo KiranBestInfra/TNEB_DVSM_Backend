@@ -4,6 +4,12 @@ import {
     resetTransporter,
 } from '../config/emailTransporter.js';
 import { isZero } from './dashboardUtils.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const sendVerificationEmail = async (
     email,
@@ -72,115 +78,156 @@ const sendVerificationEmail = async (
 };
 
 const lastEmailSent = new Map();
+const previousErrorStates = new Map();
 const MIN_EMAIL_INTERVAL_MS = 15 * 60 * 1000;
 
 async function sendZeroValueAlert(
     meterSerial,
+    feederName,
+    dtrName,
     zeroValues,
     powerData,
-    last_comm,
-    last_comm_date
+    last_comm_date,
+    msg91
 ) {
     try {
-        const now = Date.now();
+        const currentErrorSignature = generateErrorSignature(
+            zeroValues,
+            powerData
+        );
+
+        const previousSignature = previousErrorStates.get(meterSerial);
+
+        if (previousSignature && previousSignature === currentErrorSignature) {
+            console.log(
+                `Skipping alert for meter ${meterSerial}: No change in error state`
+            );
+            return null;
+        }
+
+        previousErrorStates.set(meterSerial, currentErrorSignature);
 
         const transporter = await getTransporter();
 
-        const zeroValuesList = Object.entries(zeroValues)
-            .filter(([_, isZero]) => isZero)
-            .map(([key, _]) => key)
-            .join(', ');
+        const templatePath = path.join(
+            __dirname,
+            '../config/emails',
+            'zeroAlertMail.html'
+        );
 
-        const powerDataTable = Object.entries(powerData)
-            .filter(([key]) =>
-                [
-                    'vRPh',
-                    'cRPh',
-                    'powerFactor',
-                    'vYPh',
-                    'vBPh',
-                    'cYPh',
-                    'cBPh',
-                ].includes(key)
-            )
-            .map(([key, value]) => {
-                const isValueZero = isZero(value);
-                return {
-                    key,
-                    value:
-                        value === null || value === undefined ? 'N/A' : value,
-                    isZero: isValueZero,
-                };
+        let template = fs.readFileSync(templatePath, 'utf8');
+        template = template.replace(/\${DTRName}/g, dtrName);
+        // template = template.replace(/\${meterSerial}/g, meterSerial);
+        template = template.replace(/\${last_comm_date}/g, last_comm_date);
+
+        // const zeroValuesList = Object.entries(zeroValues)
+        //     .filter(([_, isZero]) => isZero)
+        //     .map(([key, _]) => `<li><strong>${key}</strong></li>`)
+        //     .join('');
+
+        // template = template.replace(
+        //     '<!-- ZERO_VALUES_LIST -->',
+        //     zeroValuesList
+        // );
+
+        const propertyMap = {
+            'Meter Power Fail (R - Phase)': 'powerFactor',
+            'Meter Power Fail (Y - Phase)': 'pfYPh',
+            'Meter Power Fail (B - Phase)': 'pfBPh',
+
+            'R_PH Missing': 'vRPh',
+            'Y_PH Missing': 'vYPh',
+            'B_PH Missing': 'vBPh',
+
+            'R_PH CT Open': 'cRPh',
+            'Y_PH CT Open': 'cYPh',
+            'B_PH CT Open': 'cBPh',
+
+            'R_PH CT Reversed': 'cRPh',
+            'Y_PH CT Reversed': 'cYPh',
+            'B_PH CT Reversed': 'cBPh',
+
+            'Load Imbalance': 'neutral_current',
+
+            'Low PF (R - Phase)': 'powerFactor',
+            'Low PF (Y - Phase)': 'pfYPh',
+            'Low PF (B - Phase)': 'pfBPh',
+
+            'Low Voltage (R - Phase)': 'vRPh',
+            'Low Voltage (R - Phase)': 'vYPh',
+            'Low Voltage (R - Phase)': 'vBPh',
+        };
+
+        let alertMessage = '';
+        let zeroValuesList = '';
+        const zeroEntries = Object.entries(zeroValues).filter(
+            ([key, value]) => value === true
+        );
+
+        if (zeroEntries.length > 0) {
+            const alertLines = zeroEntries.map(([key]) => {
+                const dataKey = propertyMap[key] || key;
+                const value = powerData[dataKey] || '0.000';
+
+                return `${key} (${value})`;
             });
+
+            zeroValuesList = alertLines.join('\n');
+
+            alertMessage = `
+                        <p style="margin: 0; padding: 0; color: black;">
+                            ${alertLines.join('<br>')}
+                        </p>
+                    `;
+        }
+
+        template = template.replace('<!-- POWER_DATA_TABLE -->', alertMessage);
+
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const timestamp = ` ${day}-${month}-${year} at ${hours}:${minutes}:${seconds}`;
+
+        template = template.replace('<!-- TIMESTAMP -->', timestamp);
 
         const mailOptions = {
             from: config.EMAIL_FROM || config.SMTP_USER,
-            to: ['chandrika.bestinfra@gmail.com', 'kiran.bestinfra@gmail.com'],
-            subject: `⚠️ Alert: Zero Power Values Detected for Meter ${meterSerial}`,
-            html: `
-        <h2>Zero Power Values Alert</h2>
-        <p>The following power values are zero for meter <strong>${meterSerial}</strong>:</p>
-        <ul>
-          ${Object.entries(zeroValues)
-              .filter(([_, isZero]) => isZero)
-              .map(([key, _]) => `<li><strong>${key}</strong></li>`)
-              .join('')}
-        </ul>
-        
-        <h3>Current Meter Readings:</h3>
-        <table border="1" cellpadding="5" style="border-collapse: collapse;">
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Status</th>
-          </tr>
-          ${powerDataTable
-              .map(
-                  (item) => `
-            <tr${item.isZero ? ' style="background-color: #ffcccc;"' : ''}>
-              <td>${item.key}</td>
-              <td>${item.value}</td>
-              <td>${item.isZero ? '⚠️ ZERO' : 'OK'}</td>
-            </tr>
-          `
-              )
-              .join('')}
-          <tr>
-            <td>Last Communication</td>
-            <td>${last_comm || 'N/A'}</td>
-            <td>OK</td>
-          </tr>
-          <tr>
-            <td>Last Communication Date</td>
-            <td>${last_comm_date || 'N/A'}</td>
-            <td>OK</td>
-          </tr>
-        </table>
-        
-        <p>This alert was generated at: ${new Date().toLocaleString()}</p>
-        <p>Please investigate this issue promptly.</p>
-        <p><small>This is an automated alert from the power monitoring system.</small></p>
-      `,
-            text: `ZERO POWER VALUES ALERT
-
-The following power values are zero for meter ${meterSerial}: ${zeroValuesList}
-
-Current Meter Readings:
-${powerDataTable
-    .map(
-        (item) =>
-            `${item.key}: ${item.value}${item.isZero ? ' (ZERO - ALERT!)' : ''}`
-    )
-    .join('\n')}
-Last Communication: ${last_comm || 'N/A'}
-Last Communication Date: ${last_comm_date || 'N/A'}
-
-This alert was generated at: ${new Date().toLocaleString()}
-
-Please investigate this issue promptly.
-
-This is an automated alert from the power monitoring system.`,
+            to: [
+                // 'chandrika.bestinfra@gmail.com',
+                // 'kiran.bestinfra@gmail.com',
+                // 'Achantaster@gmail.com',
+                'kirankittu3760@gmail.com',
+            ],
+            subject: `⚠️ Important Alert: Abnormality Detected for ${feederName}`,
+            html: template,
         };
+
+        // SMS Configuration
+        // const smsService = msg91.getSMS();
+        // const recipient = {
+        //     mobile: '917780314837',
+        //     NAME: consumerName,
+        //     METER: meterSerial,
+        //     ZERO: zeroValuesList,
+        //     TIME: timestamp,
+
+        //     DLT_TE_ID: config.DLT_TE_ID,
+        // };
+
+        // const options = {
+        //     senderId: config.MSG_SENDER_ID,
+        // };
+
+        // const response = await smsService.send(
+        //     config.MSG_TEMPLATE_ID,
+        //     recipient,
+        //     options
+        // );
+        // console.log(response);
 
         const info = await transporter.sendMail(mailOptions);
         console.log(
@@ -197,6 +244,45 @@ This is an automated alert from the power monitoring system.`,
         );
         throw error;
     }
+}
+
+function generateErrorSignature(zeroValues, powerData) {
+    let signature = '';
+
+    const sortedKeys = Object.keys(zeroValues).sort();
+
+    for (const key of sortedKeys) {
+        if (zeroValues[key] === true) {
+            const propertyMap = {
+                'Meter Power Fail (R - Phase)': 'powerFactor',
+                'Meter Power Fail (Y - Phase)': 'pfYPh',
+                'Meter Power Fail (B - Phase)': 'pfBPh',
+                'R_PH Missing': 'vRPh',
+                'Y_PH Missing': 'vYPh',
+                'B_PH Missing': 'vBPh',
+                'R_PH CT Open': 'cRPh',
+                'Y_PH CT Open': 'cYPh',
+                'B_PH CT Open': 'cBPh',
+                'R_PH CT Reversed': 'cRPh',
+                'Y_PH CT Reversed': 'cYPh',
+                'B_PH CT Reversed': 'cBPh',
+                'Load Imbalance': 'neutral_current',
+                'Low PF (R - Phase)': 'powerFactor',
+                'Low PF (Y - Phase)': 'pfYPh',
+                'Low PF (B - Phase)': 'pfBPh',
+                'Low Voltage (R - Phase)': 'vRPh',
+                'Low Voltage (Y - Phase)': 'vYPh',
+                'Low Voltage (B - Phase)': 'vBPh',
+            };
+
+            const dataKey = propertyMap[key] || key;
+            const value = powerData[dataKey] || '0.000';
+
+            signature += `${key}:${value};`;
+        }
+    }
+
+    return signature;
 }
 
 export { sendVerificationEmail, sendZeroValueAlert };

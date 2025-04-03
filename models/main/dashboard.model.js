@@ -856,34 +856,38 @@ class Dashboard {
         accessCondition,
         accessValues,
         startDate = null,
-        endDate = null
+        endDate = null,
+        full = false
     ) {
         try {
             let query = `
-            SELECT 
-                COALESCE(SUM(b.amount), 0) AS total_overdue_revenue, 
-                COUNT(b.uid) AS total_overdue_revenue_count
-            FROM bill_lkea b
-            INNER JOIN consumers_lkea c ON c.uid = b.uid
-            WHERE b.status = 'Overdue'
-                AND b.uid != 0
-                AND b.uid NOT IN (
-                    SELECT uid
-                    FROM disconnected_consumers_lkea
-                )
-                ${accessCondition}
-        `;
+        SELECT 
+            COALESCE(SUM(b.amount), 0) AS total_overdue_revenue, 
+            COUNT(b.uid) AS total_overdue_revenue_count
+        FROM bill_lkea b
+        INNER JOIN consumers_lkea c ON c.uid = b.uid
+        WHERE b.status = 'Overdue'
+            AND b.uid != 0
+            AND b.uid NOT IN (
+                SELECT uid
+                FROM disconnected_consumers_lkea
+            )
+            ${accessCondition}
+    `;
             const params = [...accessValues];
 
-            if (startDate && endDate) {
-                query +=
-                    " AND CONVERT_TZ(b.created_at, '+00:00', '+05:30') BETWEEN ? AND ?";
-                params.push(startDate, endDate);
-            } else {
-                query += `
+            if (!full) {
+                // Only apply date filtering if full is false
+                if (startDate && endDate) {
+                    query +=
+                        " AND CONVERT_TZ(b.created_at, '+00:00', '+05:30') BETWEEN ? AND ?";
+                    params.push(startDate, endDate);
+                } else {
+                    query += `
                 AND YEAR(CONVERT_TZ(b.created_at, '+00:00', '+05:30')) = YEAR(CONVERT_TZ(NOW(), '+00:00', '+05:30'))
                 AND MONTH(CONVERT_TZ(b.created_at, '+00:00', '+05:30')) = MONTH(CONVERT_TZ(NOW(), '+00:00', '+05:30'))
             `;
+                }
             }
 
             const [rows] = await connection.query({
@@ -1454,28 +1458,81 @@ class Dashboard {
         accessValues
     ) {
         try {
+            // MySQL 5.5 compatible approach - check if indexes exist first
+            try {
+                // For bill_lkea table
+                const [billIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'bill_lkea' 
+                AND index_name = 'idx_created_at_uid_status'
+            `);
+
+                if (billIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_created_at_uid_status ON bill_lkea (created_at, uid, status)`
+                    );
+                }
+
+                // For consumers_lkea table
+                const [consumerIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'consumers_lkea' 
+                AND index_name = 'idx_uid'
+            `);
+
+                if (consumerIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_uid ON consumers_lkea (uid)`
+                    );
+                }
+
+                // For disconnected_consumers_lkea table
+                const [disconnectedIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'disconnected_consumers_lkea' 
+                AND index_name = 'idx_uid'
+            `);
+
+                if (disconnectedIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_uid ON disconnected_consumers_lkea (uid)`
+                    );
+                }
+            } catch (indexError) {
+                console.warn(
+                    'Index creation warning (continuing anyway):',
+                    indexError.message
+                );
+                // Continue even if index creation fails
+            }
+
+            const [dateRow] = await connection.query(`
+            SELECT DATE_FORMAT(DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+05:30'), INTERVAL 13 MONTH), '%Y-%m-01') AS start_date
+        `);
+            const startDate = dateRow[0].start_date;
+
             const [bills] = await connection.query({
                 sql: `
                 SELECT 
-                    DATE_FORMAT(CONVERT_TZ(b.created_at, '+00:00', '+05:30'), '%Y-%m') AS bill_month,
-                    COUNT(*) AS total_bill_count,
-                    SUM(CASE WHEN b.status = 'pending' THEN 1 ELSE 0 END) AS pending_bill_count,
-                    SUM(CASE WHEN b.status = 'paid' THEN 1 ELSE 0 END) AS paid_bill_count,
-                    SUM(CASE WHEN b.status = 'overdue' THEN 1 ELSE 0 END) AS overdue_bill_count
+                DATE_FORMAT(CONVERT_TZ(b.created_at, '+00:00', '+05:30'), '%Y-%m') AS bill_month,
+                COUNT(*) AS total_bill_count,
+                SUM(b.status = 'pending') AS pending_bill_count,
+                SUM(b.status = 'paid') AS paid_bill_count,
+                SUM(b.status = 'overdue') AS overdue_bill_count
                 FROM bill_lkea b
-                INNER JOIN consumers_lkea c ON c.uid = b.uid
-                WHERE CONVERT_TZ(b.created_at, '+00:00', '+05:30') >= 
-                    DATE_FORMAT(DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+05:30'), INTERVAL 13 MONTH), '%Y-%m-01')
-                    AND b.uid != 0
-                    ${accessCondition}
-                    AND b.uid NOT IN (
-                        SELECT uid
-                        FROM disconnected_consumers_lkea
-                    )
+                STRAIGHT_JOIN consumers_lkea c ON c.uid = b.uid
+                LEFT JOIN disconnected_consumers_lkea d ON d.uid = b.uid
+                WHERE CONVERT_TZ(b.created_at, '+00:00', '+05:30') >= ?
+                AND b.uid != 0
+                ${accessCondition}
+                AND d.uid IS NULL
                 GROUP BY bill_month
                 ORDER BY bill_month
             `,
-                values: accessValues,
+                values: [startDate, ...accessValues],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -2602,22 +2659,46 @@ class Dashboard {
         accessValues
     ) {
         try {
+            // First, check and create indexes if needed (similar to previous function)
+            try {
+                // Check for bill_date index
+                const [billDateIndexExists] = await connection.query(`
+                SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.STATISTICS 
+                WHERE table_schema = DATABASE() 
+                AND table_name = 'bill_lkea' 
+                AND index_name = 'idx_bill_date_uid'
+            `);
+
+                if (billDateIndexExists[0].count === 0) {
+                    await connection.query(
+                        `CREATE INDEX idx_bill_date_uid ON bill_lkea (bill_date, uid)`
+                    );
+                }
+
+                // Other indexes from previous function should be sufficient
+            } catch (indexError) {
+                console.warn(
+                    'Index creation warning (continuing anyway):',
+                    indexError.message
+                );
+            }
+
+            // Optimized query using LEFT JOIN instead of NOT IN
+            // Using EXTRACT(YEAR_MONTH) to avoid repeated DATE_FORMAT calls
             const query = `
             SELECT 
-                DATE_FORMAT(b.bill_date, '%Y-%m') as month,
+                CONCAT(EXTRACT(YEAR FROM b.bill_date), '-', LPAD(EXTRACT(MONTH FROM b.bill_date), 2, '0')) as month,
                 SUM(b.amount) as total_amount_generated,
                 SUM(b.paid_amount) as total_paid_amount,
                 SUM(b.due_amount) as total_overdue_amount
             FROM bill_lkea b
             JOIN consumers_lkea c ON b.uid = c.uid
+            LEFT JOIN disconnected_consumers_lkea d ON b.uid = d.uid
             WHERE 1=1
-            ${accessCondition}
-            AND b.uid NOT IN (
-                    SELECT uid
-                    FROM disconnected_consumers_lkea
-            )
-            GROUP BY DATE_FORMAT(b.bill_date, '%Y-%m')
-            ORDER BY month
+                ${accessCondition}
+                AND d.uid IS NULL
+            GROUP BY EXTRACT(YEAR FROM b.bill_date), EXTRACT(MONTH FROM b.bill_date)
+            ORDER BY EXTRACT(YEAR FROM b.bill_date), EXTRACT(MONTH FROM b.bill_date)
         `;
 
             const queryParams = {
@@ -3102,7 +3183,6 @@ class Dashboard {
                 }
             }
 
-
             const [bills] = await connection.query({
                 sql: query,
                 values: params,
@@ -3471,20 +3551,26 @@ class Dashboard {
         }
     }
 
-    async getVoltage(connection, meter) {
+    async getD2Data(connection, meter) {
         try {
             const [[results]] = await connection.query(
                 {
                     sql: `
                         SELECT
                             RPH_VOLTAGE as voltage,
-                            RPH_LINE_CURRENT as current,
-                            RPH_POWER_FACTOR as powerFactor,
                             YPH_VOLTAGE as vYPh,
                             BPH_VOLTAGE as vBPh,
+                            RPH_LINE_CURRENT as current,
                             YPH_LINE_CURRENT as cYPh,
                             BPH_LINE_CURRENT as cBPh,
-                            FREQUENCY as frequency
+                            RPH_POWER_FACTOR as powerFactor,
+                            FREQUENCY as frequency,
+                            APPARENT_POWER as apparent_power,
+                            RPH_POWER_FACTOR as pfRPh,
+                            YPH_POWER_FACTOR as pfYPh,
+                            BPH_POWER_FACTOR as pfBPh,
+                            AVG_POWER_FACTOR as pfAVG,
+                            NEUTRAL_CURRENT as neutral_current
                         FROM ntpl.d2 
                         WHERE METER_SERIAL_NO = ?
                         ORDER BY METER_TIME_STAMP DESC
@@ -3503,25 +3589,102 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getVoltage', error);
+            console.log('getD2Data', error);
+            throw error;
+        }
+    }
+
+    async getD3Data(connection, meter) {
+        try {
+            const [[results]] = await connection.query(
+                {
+                    sql: `
+                        SELECT
+                            KVAH_IMP as MDkVA
+                        FROM ntpl.d3
+                        WHERE METER_SERIAL_NO = ?
+                        ORDER BY d3_time_stamp DESC
+                        LIMIT 1
+                    `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [meter]
+            );
+            return results;
+        } catch (error) {
+            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
+                throw new Error(
+                    'Dashboard query timed out after ' +
+                        QUERY_TIMEOUT / 1000 +
+                        ' seconds'
+                );
+            }
+            console.log('getD2Data', error);
+            throw error;
+        }
+    }
+
+    async getD3B3Data(connection, meter) {
+        try {
+            const [[results]] = await connection.query(
+                {
+                    sql: `
+                        SELECT
+                            KWH_Imp as ckVAh,
+                            DATA_STRING as ckWh
+                        FROM ntpl.d3_b3
+                        WHERE METER_SERIAL_NO = ?
+                        ORDER BY D3_TIME_STAMP DESC
+                        LIMIT 1
+                    `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [meter]
+            );
+            return results;
+        } catch (error) {
+            if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
+                throw new Error(
+                    'Dashboard query timed out after ' +
+                        QUERY_TIMEOUT / 1000 +
+                        ' seconds'
+                );
+            }
+            console.log('getD2Data', error);
             throw error;
         }
     }
 
     async graphDemoReportsAnalytics(connection, meter) {
         try {
-            const d1 = new Date();
-            const sdf = (date) => date.toISOString().split('T')[0];
-            const presDate = sdf(new Date(d1.setDate(d1.getDate() - 210)));
-            d1.setDate(d1.getDate() + 210);
-            const nextDate = sdf(new Date(d1));
+            const today = new Date();
+            const pastDate = new Date(today);
+            pastDate.setDate(today.getDate() - 210);
+
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const presDate = formatDate(pastDate) + ' 00:00:00';
+
+            const nextDate = formatDate(today) + ' 23:59:59';
+
+            console.log('Query date range:', presDate, 'to', nextDate);
 
             const [results] = await connection.query({
                 sql: `
-                    SELECT
+                SELECT 
+                    dates.consumption_date,
+                    dates.count,
+                    latest.DATA_STRING AS sum
+                FROM (
+                    SELECT 
                         SUBSTR(D3_TIME_STAMP, 1, 10) AS consumption_date,
                         COUNT(*) AS count,
-                        DATA_STRING as sum
+                        MAX(D3_TIME_STAMP) AS latest_timestamp
                     FROM d3_b3
                     WHERE D3_TIME_STAMP >= ?
                       AND D3_TIME_STAMP <= ?
@@ -3529,11 +3692,15 @@ class Dashboard {
                       AND TRIM(METER_SERIAL_NO) != ''
                       AND METER_SERIAL_NO = ?
                     GROUP BY SUBSTR(D3_TIME_STAMP, 1, 10)
-                `,
-                values: [presDate, nextDate, meter],
+                ) AS dates
+                JOIN d3_b3 AS latest ON 
+                    latest.D3_TIME_STAMP = dates.latest_timestamp AND
+                    latest.METER_SERIAL_NO = ?
+                ORDER BY dates.consumption_date
+            `,
+                values: [presDate, nextDate, meter, meter],
                 timeout: QUERY_TIMEOUT,
             });
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
@@ -3590,30 +3757,50 @@ class Dashboard {
 
     async graphDemoCumulativeReportsAnalytics(connection, meter) {
         try {
-            const d1 = new Date();
-            const sdf = (date) => date.toISOString().split('T')[0];
-            const presDate = sdf(new Date(d1.setDate(d1.getDate() - 210)));
-            d1.setDate(d1.getDate() + 210);
-            const nextDate = sdf(new Date(d1));
+            const today = new Date();
+            const pastDate = new Date(today);
+            pastDate.setDate(today.getDate() - 210);
+
+            const formatDatetime = (date, isEndOfDay = false) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const time = isEndOfDay ? '23:59:59' : '00:00:00';
+                return `${year}-${month}-${day} ${time}`;
+            };
+
+            const presDate = formatDatetime(pastDate);
+            const nextDate = formatDatetime(today, true);
+
+            console.log('Query date range:', presDate, 'to', nextDate);
 
             const [results] = await connection.query({
                 sql: `
+                SELECT 
+                    dates.date,
+                    dates.count,
+                    latest.KWH_Imp AS value
+                FROM (
                     SELECT 
-                        SUBSTR(D6_TIME_STAMP, 1, 10) AS date,
+                        SUBSTR(D3_TIME_STAMP, 1, 10) AS date,
                         COUNT(*) AS count,
-                        DATA_STRING as value
-                    FROM d6_data 
-                    WHERE D6_TIME_STAMP >= ?
-                      AND D6_TIME_STAMP <= ?
+                        MAX(D3_TIME_STAMP) AS latest_timestamp
+                    FROM d3_b3
+                    WHERE D3_TIME_STAMP >= ?
+                      AND D3_TIME_STAMP <= ?
                       AND LENGTH(METER_SERIAL_NO) > 0
                       AND TRIM(METER_SERIAL_NO) != ''
                       AND METER_SERIAL_NO = ?
-                    GROUP BY SUBSTR(D6_TIME_STAMP, 1, 10)
-                `,
-                values: [presDate, nextDate, meter],
+                    GROUP BY SUBSTR(D3_TIME_STAMP, 1, 10)
+                ) AS dates
+                JOIN d3_b3 AS latest ON 
+                    latest.D3_TIME_STAMP = dates.latest_timestamp AND
+                    latest.METER_SERIAL_NO = ?
+                ORDER BY dates.date
+            `,
+                values: [presDate, nextDate, meter, meter],
                 timeout: QUERY_TIMEOUT,
             });
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {

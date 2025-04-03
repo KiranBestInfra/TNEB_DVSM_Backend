@@ -1,15 +1,25 @@
 import express from 'express';
 import authRoutes from '../auth.js';
-import dashboardRoutes from '../dashboard.js';
+import regionRoutes from '../regions.js';
 // import demoRoutes from '../demo.js';
 import consumerRoutes from '../consumer.js';
+import edcRoutes from '../edc.js'
+import profileRoutes from '../profile.js';
+import ticketRoutes from '../tickets.js';
+import feederRoutes from '../feeder.js';
 
 
 const router = express.Router();
 
 router.use('/auth', authRoutes);
-router.use('/dashboard', dashboardRoutes);
+router.use('/regions', regionRoutes);
 router.use('/consumer', consumerRoutes);
+router.use('/edcs', edcRoutes);
+router.use('/profile', profileRoutes);
+router.use('/edcs', edcRoutes);
+router.use('/feeders', feederRoutes);
+router.use('/tickets', ticketRoutes);
+
 // router.use('/demo', demoRoutes);
 
 export default router;
