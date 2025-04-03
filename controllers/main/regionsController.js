@@ -82,8 +82,8 @@ export const fetchRegionGraphs = async (regionNames) => {
             const todayDemandData = await REGIONS.getDemandTrendsData(
                 pool,
                 null,
-                '2025-03-27 00:00:00',
-                '2025-03-27 23:59:59',
+                '2025-03-27 12:00:00',
+                '2025-03-27 12:30:00',
                 hierarchyMeters
             );
 

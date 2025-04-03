@@ -269,6 +269,7 @@ class Regions {
         hierarchy_id
     ) {
         try {
+            console.log(hierarchy_type_id, hierarchy_id);
             const [results] = await connection.query(
                 {
                     sql: `
