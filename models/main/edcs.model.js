@@ -235,43 +235,56 @@ class EDCs {
             throw error;
         }
     }
-    // async getCommAndNonCommMeters(connection, meters, date) {
-    //     try {
-    //         if (!meters || meters.length === 0) {
-    //             throw new Error('No meters provided');
-    //         }
+    async getCommMeters(connection, region) {
+        try {
+            const [[{ commMeters }]] = await connection.query(
+                {
+                    sql: `
+                SELECT COUNT(DISTINCT ic.meter_no) AS commMeters
+                FROM instant_comm ic
+                JOIN meter m ON ic.meter_no = m.meter_serial_no
+                JOIN hierarchy h ON m.location_id = h.hierarchy_id
+                WHERE DATE(ic.device_date) ='2025-03-09'
+                AND h.hierarchy_name = ?;
+            `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [region]
+            ); // Passing date & region dynamically
 
-    //         const [results] = await connection.query(
-    //             {
-    //                 sql: `
-    //                 SELECT
-    //                     (SELECT COUNT(DISTINCT meter_no)
-    //                      FROM instant_comm
-    //                      WHERE meter_no IN (?)
-    //                      AND DATE(device_date) = ?) AS commMeters,
+            return commMeters;
+        } catch (error) {
+            console.log('❌ Error in getCommMeters:', error);
+            throw error;
+        }
+    }
 
-    //                     (SELECT COUNT(DISTINCT meter_serial_no)
-    //                      FROM meter
-    //                      WHERE meter_serial_no IN (?)
-    //                      AND meter_serial_no NOT IN (
-    //                          SELECT DISTINCT meter_no FROM instant_comm
-    //                          WHERE DATE(device_date) = ?
-    //                      )) AS nonCommMeters
-    //             `,
-    //                 timeout: QUERY_TIMEOUT,
-    //             },
-    //             [meters, date, meters, date]
-    //         );
+    async getNonCommMeters(connection, region) {
+        try {
+            const [[{ nonCommMeters }]] = await connection.query(
+                {
+                    sql: `
+                SELECT COUNT(DISTINCT m.meter_serial_no) AS nonCommMeters
+                FROM meter m
+                JOIN hierarchy h ON m.location_id = h.hierarchy_id
+                WHERE h.hierarchy_name = ?
+                AND m.meter_serial_no NOT IN (
+                    SELECT DISTINCT ic.meter_no 
+                    FROM instant_comm ic
+                    WHERE DATE(ic.device_date) = '2025-03-09'
+                );
+            `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [region]
+            ); // Passing region & date dynamically
 
-    //         return results[0];
-    //     } catch (error) {
-    //         console.error(
-    //             '❌ Error fetching commMeters and nonCommMeters:',
-    //             error
-    //         );
-    //         throw error;
-    //     }
-    // }
+            return nonCommMeters;
+        } catch (error) {
+            console.log('❌ Error in getNonCommMeters:', error);
+            throw error;
+        }
+    }
 }
 
 export default new EDCs();

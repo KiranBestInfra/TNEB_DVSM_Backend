@@ -9,6 +9,7 @@ import {
 
 export const fetchFeederGraphs = async (feeders) => {
     console.log(feeders);
+    console.log(feeders);
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
@@ -111,7 +112,7 @@ export const getFeedersWidgets = async (req, res) => {
         const totalFeeders = await Feeders.getTotalFeeders(pool);
         const commMeters = await Feeders.getCommMeters(pool);
         const nonCommMeters = await Feeders.getNonCommMeters(pool);
-        const regionFeederNames = await Feeders.getRegionFeederNames(pool);
+        const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
 
         res.status(200).json({
             status: 'success',
@@ -133,3 +134,4 @@ export const getFeedersWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+
