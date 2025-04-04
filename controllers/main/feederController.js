@@ -8,9 +8,8 @@ import {
 } from '../../utils/globalUtils.js';
 
 export const fetchFeederGraphs = async (feeders) => {
-    console.log(feeders)
+    console.log(feeders);
     try {
-
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
@@ -25,8 +24,8 @@ export const fetchFeederGraphs = async (feeders) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const todayDemandData = await Feeders.getDemandTrendsData(
@@ -123,7 +122,6 @@ export const getFeedersWidgets = async (req, res) => {
                 regionFeederNames: regionFeederNames.map(
                     (region) => region.hierarchy_name
                 ),
-                
             },
         });
     } catch (error) {
