@@ -109,16 +109,12 @@ class Regions {
                     FROM hierarchy region
                     JOIN hierarchy edc 
                         ON region.hierarchy_id = edc.parent_id 
-                        AND edc.hierarchy_type_id = 11  
                     JOIN hierarchy district 
-                        ON edc.hierarchy_id = district.parent_id 
-                        AND district.hierarchy_type_id = 34  
+                        ON edc.hierarchy_id = district.parent_id  
                     JOIN hierarchy substation 
                         ON district.hierarchy_id = substation.parent_id 
-                        AND substation.hierarchy_type_id = 35  
                     LEFT JOIN hierarchy feeder 
                         ON substation.hierarchy_id = feeder.parent_id 
-                        AND feeder.hierarchy_type_id = 37  
                     WHERE region.hierarchy_type_id = 10  
                     GROUP BY region.hierarchy_name;
                 `,
@@ -226,24 +222,34 @@ class Regions {
         meters = null
     ) {
         try {
+            const queryParams = [start, end];
+            let meterCondition = '';
+
+            if (meters && meters.length > 0) {
+                meterCondition = 'AND ad.meter_no IN (?)';
+                queryParams.push(meters);
+            }
+
             const [results] = await connection.query(
                 {
                     sql: `
                         SELECT 
-                            ad.datetime,
-                            MAX(ad.actual_demand_mw) as actual_demand_mw
-                        FROM actualdemand ad
+                            ad.datetime, 
+                            ROUND(SUM(ad.kwh * (mt.ad_pt / mt.me_pt) * (mt.ad_ct / mt.me_ct) / 0.25 / 1000), 4) AS actual_demand_mw 
+                        FROM actualdemand ad 
+                        JOIN meter mt ON ad.meter_no = mt.meter_serial_no 
                         WHERE ad.datetime BETWEEN ? AND ?
-                        ${meters ? `AND ad.meter_no IN (?)` : ''}
-                        GROUP BY ad.datetime
-                        ORDER BY ad.datetime ASC
+                        ${meterCondition}
+                        GROUP BY ad.datetime 
+                        ORDER BY ad.datetime ASC;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [start, end, meters]
+                queryParams
             );
-
+            console.log('Query results:', results);
             return results;
+            //console.log(results);
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
                 throw new Error(
@@ -264,6 +270,7 @@ class Regions {
         hierarchy_id
     ) {
         try {
+            //console.log(hierarchy_type_id, hierarchy_id);
             const [results] = await connection.query(
                 {
                     sql: `
@@ -271,16 +278,20 @@ class Regions {
                         FROM hierarchy region
                         JOIN hierarchy edc 
                             ON region.hierarchy_id = edc.parent_id 
+                            -- AND edc.hierarchy_type_id = 11  
                         JOIN hierarchy district 
                             ON edc.hierarchy_id = district.parent_id 
+                            -- AND district.hierarchy_type_id = 34  
                         JOIN hierarchy substation 
-                            ON district.hierarchy_id = substation.parent_id  
+                            ON district.hierarchy_id = substation.parent_id 
+                            -- AND substation.hierarchy_type_id = 35  
                         JOIN hierarchy feeder 
-                            ON substation.hierarchy_id = feeder.parent_id  
+                            ON substation.hierarchy_id = feeder.parent_id 
+                            -- AND feeder.hierarchy_type_id = 37  
                         JOIN meter 
                             ON feeder.hierarchy_id = meter.location_id 
-                        WHERE region.hierarchy_type_id = ?  
-                        AND region.hierarchy_id = ?
+                        WHERE region.hierarchy_type_id = ?
+                        AND region.hierarchy_id = ?;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },

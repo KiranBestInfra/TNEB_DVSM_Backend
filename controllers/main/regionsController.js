@@ -57,7 +57,7 @@ export const getDashboardWidgets = async (req, res) => {
 };
 
 export const fetchRegionGraphs = async (regionNames) => {
-    console.log(regionNames)
+    console.log(regionNames);
     try {
         // const regionNames = await REGIONS.getRegionNames(pool);
 
@@ -67,7 +67,11 @@ export const fetchRegionGraphs = async (regionNames) => {
         const regionDemandData = {};
 
         for (const region of regionNames) {
-            const hierarchy = await REGIONS.getHierarchyByRegion(pool, region);
+            const normalizedRegion = region.toLowerCase().trim();
+            const hierarchy = await REGIONS.getHierarchyByRegion(
+                pool,
+                normalizedRegion
+            );
             const meters = await REGIONS.getRegionMeters(
                 pool,
                 null,
@@ -75,8 +79,8 @@ export const fetchRegionGraphs = async (regionNames) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const todayDemandData = await REGIONS.getDemandTrendsData(
@@ -86,6 +90,7 @@ export const fetchRegionGraphs = async (regionNames) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
+            // console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await REGIONS.getDemandTrendsData(
                 pool,
@@ -232,6 +237,7 @@ export const demandGraph = async (req, res) => {
     try {
         const accessValues = req.locationAccess?.values || [];
         const regionID = req.params.regionID || null;
+        //console.log(regionID);
 
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(
@@ -246,8 +252,8 @@ export const demandGraph = async (req, res) => {
                 regionHierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const { startOfDay, endOfDay } = getTodayStartAndEnd();
@@ -337,6 +343,7 @@ export const demandGraph = async (req, res) => {
             '2025-03-27 00:00:00',
             '2025-03-27 23:59:59'
         );
+        console.log('todayDemandData', todayDemandData);
 
         const yesterdayDemandData = await REGIONS.getDemandTrendsData(
             pool,

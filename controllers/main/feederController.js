@@ -1,5 +1,5 @@
 import pool from '../../config/db.js';
-import EDCs from '../../models/main/edcs.model.js';
+import Feeders from '../../models/main/feeders.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -7,50 +7,18 @@ import {
     getYesterdayStartAndEnd,
 } from '../../utils/globalUtils.js';
 
-export const getEDCWidgets = async (req, res) => {
-    try {
-        const region = req.params.region;
-
-        if (!region) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Region parameter is missing',
-            });
-        }
-
-        const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
-        const substationCounts = await EDCs.getSubstationCountByRegion(
-            pool,
-            region
-        );
-        const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
-        res.status(200).json({
-            status: 'success',
-            data: {
-                region,
-                edcNames,
-                substationCounts,
-                feederCounts,
-            },
-        });
-    } catch (error) {
-        console.error('❌ Error fetching EDC names:', error);
-        res.status(500).json({ status: 'error', message: 'Server Error' });
-    }
-};
-export const fetchEdcGraphs = async (edcNames) => {
-    console.log(edcNames);
-
+export const fetchFeederGraphs = async (feeders) => {
+    console.log(feeders);
+    console.log(feeders);
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
-        const edcDemandData = {};
+        const feederDemandData = {};
 
-        for (const edc of edcNames) {
-            const normalizedEdc = edc.toLowerCase().trim();
-            const hierarchy = await EDCs.getHierarchyByEdc(pool, normalizedEdc);
-            const meters = await EDCs.getEdcMeters(
+        for (const feeder of feeders) {
+            const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
+            const meters = await Feeders.getFeederMeters(
                 pool,
                 null,
                 hierarchy.hierarchy_type_id,
@@ -60,17 +28,16 @@ export const fetchEdcGraphs = async (edcNames) => {
             const hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
             );
-            //console.log(hierarchyMeters);
 
-            const todayDemandData = await EDCs.getDemandTrendsData(
+            const todayDemandData = await Feeders.getDemandTrendsData(
                 pool,
                 null,
                 '2025-03-27 00:00:00',
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-            //console.log('edctodayDemandData', todayDemandData);
-            const yesterdayDemandData = await EDCs.getDemandTrendsData(
+
+            const yesterdayDemandData = await Feeders.getDemandTrendsData(
                 pool,
                 null,
                 '2025-03-26 00:00:00',
@@ -132,14 +99,39 @@ export const fetchEdcGraphs = async (edcNames) => {
                 ],
             };
 
-            edcDemandData[edc] = detailedGraphData;
+            regionDemandData[region] = detailedGraphData;
         }
 
-        return edcDemandData;
+        return regionDemandData;
     } catch (error) {
-        console.error('Error fetching EDC graphs:', error);
-        throw error;
+        console.error('Error fetching region graphs:', error);
+    }
+};
+export const getFeedersWidgets = async (req, res) => {
+    try {
+        const totalFeeders = await Feeders.getTotalFeeders(pool);
+        const commMeters = await Feeders.getCommMeters(pool);
+        const nonCommMeters = await Feeders.getNonCommMeters(pool);
+        const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                totalFeeders,
+                commMeters,
+                nonCommMeters,
+                regionFeederNames: regionFeederNames.map(
+                    (region) => region.hierarchy_name
+                ),
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders widgets:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
 
-export default getEDCWidgets;

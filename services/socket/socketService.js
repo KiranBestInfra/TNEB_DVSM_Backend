@@ -1,6 +1,9 @@
 import { Server } from 'socket.io';
 import logger from '../../utils/logger.js';
 import { regionSocketHandler } from './handlers/regionSocketHandler.js';
+import { edcSocketHandler } from './handlers/edcSocketHandler.js';
+import { substationSocketHandler } from './handlers/substationSocketHandler.js';
+import { feederSocketHandler } from './handlers/feederSocketHandler.js';
 
 class SocketService {
     constructor() {
@@ -31,6 +34,9 @@ class SocketService {
             logger.info('New WebSocket connection established');
 
             regionSocketHandler.initialize(socket);
+            edcSocketHandler.initialize(socket);
+            substationSocketHandler.initialize(socket);
+            feederSocketHandler.initialize(socket);
 
             socket.on('disconnect', () => {
                 logger.info('Client disconnected from WebSocket');
