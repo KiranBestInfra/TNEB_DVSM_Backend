@@ -77,29 +77,31 @@ class Substations {
         }
     }
 
-    async getFeederCountBySubstation(connection, edcs) {
+    async getFeederCountBySubstation(connection, region) {
         try {
             const [rows] = await connection.query({
                 sql: `
                 SELECT 
                     substation.hierarchy_name AS substation_name,
                     COALESCE(COUNT(feeder.hierarchy_id), 0) AS feeder_count
-                FROM hierarchy edc
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                    AND edc.hierarchy_type_id = 11  
                 JOIN hierarchy district 
                     ON edc.hierarchy_id = district.parent_id 
-                    AND district.hierarchy_type_id = 34
+                    AND district.hierarchy_type_id = 34  
                 JOIN hierarchy substation 
                     ON district.hierarchy_id = substation.parent_id 
-                    AND substation.hierarchy_type_id = 35
+                    AND substation.hierarchy_type_id = 35  
                 LEFT JOIN hierarchy feeder 
                     ON substation.hierarchy_id = feeder.parent_id 
-                    AND feeder.hierarchy_type_id = 37
-                WHERE edc.hierarchy_type_id = 11
-                AND edc.hierarchy_name = ?
-                GROUP BY substation.hierarchy_name
-                ORDER BY substation.hierarchy_name;
+                    AND feeder.hierarchy_type_id = 37  
+                WHERE region.hierarchy_type_id = 10  
+                AND region.hierarchy_name = ?
+                GROUP BY substation.hierarchy_name;
             `,
-                values: [edcs],
+                values: [region],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -120,15 +122,18 @@ class Substations {
             const sql = `
            SELECT
                 substation.hierarchy_name AS substation_names
-            FROM hierarchy edc
+            FROM hierarchy region
+            JOIN hierarchy edc 
+                ON region.hierarchy_id = edc.parent_id 
+                AND edc.hierarchy_type_id = 11 
             JOIN hierarchy district 
                 ON edc.hierarchy_id = district.parent_id 
                 AND district.hierarchy_type_id = 34 
             LEFT JOIN hierarchy substation 
                 ON district.hierarchy_id = substation.parent_id 
                 AND substation.hierarchy_type_id = 35 
-            WHERE edc.hierarchy_type_id = 11 
-            AND edc.hierarchy_name = ?;
+            WHERE region.hierarchy_type_id = 10 
+            AND region.hierarchy_name = ? 
         `;
 
             const [rows] = await connection.query(sql, [edcs]);
