@@ -21,18 +21,17 @@ class Feeders {
     async getFeederNamesByRegion(connection, region) {
         try {
             const sql = `
-            SELECT feeder.hierarchy_name 
+            SELECT feeder.hierarchy_name AS feeder_name
             FROM hierarchy region
             JOIN hierarchy edc 
-                ON region.hierarchy_id = edc.parent_id 
+                ON region.hierarchy_id = edc.parent_id
             JOIN hierarchy district 
-                ON edc.hierarchy_id = district.parent_id  
+                ON edc.hierarchy_id = district.parent_id
             JOIN hierarchy substation 
-                ON district.hierarchy_id = substation.parent_id 
-            LEFT JOIN hierarchy feeder 
-                ON substation.hierarchy_id = feeder.parent_id 
-            WHERE region.hierarchy_name = ?
-            AND region.hierarchy_type_id = 10;
+                ON district.hierarchy_id = substation.parent_id
+            JOIN hierarchy feeder 
+                ON substation.hierarchy_id = feeder.parent_id
+            WHERE region.hierarchy_name = ?;
         `;
 
             const [rows] = await connection.query(sql, [region]); // Parameterized query for security
