@@ -19,7 +19,6 @@ export const getSubstationWidgets = async (req, res) => {
             });
         }
 
-        // Fetch substation names and feeder counts
         const substationNames = await Substations.getSubstationNamesByRegion(
             pool,
             region
@@ -29,7 +28,6 @@ export const getSubstationWidgets = async (req, res) => {
             region
         );
 
-        // If feederCounts is an object, transform it as needed
         const substationFeederCounts = Array.isArray(feederCounts)
             ? feederCounts.reduce((acc, feeder) => {
                   acc[feeder.substation_name] = feeder.feeder_count;
