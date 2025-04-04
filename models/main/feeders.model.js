@@ -47,6 +47,28 @@ class Feeders {
             throw error;
         }
     }
+    async getHierarchyByFeeder(connection, regionID) {
+        try {
+            const [[results]] = await connection.query(
+                {
+                    sql: `
+                        SELECT h.hierarchy_id, h.hierarchy_name, h.hierarchy_type_id
+                        FROM hierarchy h
+                        JOIN hierarchy_master hm 
+                            ON h.hierarchy_type_id = hm.hierarchy_type_id 
+                        WHERE hm.hierarchy_title = "FEEDER"
+                        AND h.hierarchy_name = ?
+                    `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [regionID]
+            );
+            return results;
+        } catch (error) {
+            console.log('getHierarchyByFeeder', error);
+            throw error;
+        }
+    }
 
     async getFeederMeters(
         connection,
