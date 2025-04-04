@@ -9,6 +9,7 @@ import {
 
 export const fetchFeederGraphs = async (feeders) => {
     console.log(feeders);
+    console.log(feeders);
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
@@ -24,8 +25,8 @@ export const fetchFeederGraphs = async (feeders) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const todayDemandData = await Feeders.getDemandTrendsData(
@@ -119,12 +120,9 @@ export const getFeedersWidgets = async (req, res) => {
                 totalFeeders,
                 commMeters,
                 nonCommMeters,
-                regionFeederNames: regionFeederNames.reduce((acc, region) => {
-                    acc[region.region_name] = region.feeder_names
-                        ? region.feeder_names.split(', ')
-                        : [];
-                    return acc;
-                }, {}),
+                regionFeederNames: regionFeederNames.map(
+                    (region) => region.hierarchy_name
+                ),
             },
         });
     } catch (error) {
@@ -136,3 +134,4 @@ export const getFeedersWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+
