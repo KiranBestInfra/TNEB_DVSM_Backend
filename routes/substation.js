@@ -3,6 +3,6 @@ import { getSubstationWidgets } from '../controllers/main/substationController.j
 
 const router = express.Router();
 
-router.get('/widgets/:region/substations', getSubstationWidgets);
+router.get('/widgets/:edcs/substations', getSubstationWidgets);
 
 export default router;
