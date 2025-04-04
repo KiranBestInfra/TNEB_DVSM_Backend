@@ -285,6 +285,27 @@ class EDCs {
             throw error;
         }
     }
+    async getDistrictCountByRegion(connection, region) {
+        try {
+            const sql = `
+            SELECT COUNT(DISTINCT district.hierarchy_id) AS district_count
+            FROM hierarchy region
+            JOIN hierarchy edc 
+                ON region.hierarchy_id = edc.parent_id AND edc.hierarchy_type_id = 11
+            JOIN hierarchy district 
+                ON edc.hierarchy_id = district.parent_id AND district.hierarchy_type_id = 34
+            WHERE region.hierarchy_type_id = 10
+            AND region.hierarchy_name = ?
+                    `;
+
+            const [rows] = await connection.query(sql, [region]);
+            console.log('Region ID:', region);
+            return rows;
+        } catch (error) {
+            console.error('❌ Error fetching district count:', error);
+            throw error;
+        }
+    }
 }
 
 export default new EDCs();

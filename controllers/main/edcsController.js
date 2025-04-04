@@ -23,6 +23,7 @@ export const getEDCWidgets = async (req, res) => {
             pool,
             region
         );
+        const districtCount = await EDCs.getDistrictCountByRegion(pool, region);
         const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
         res.status(200).json({
             status: 'success',
@@ -31,6 +32,7 @@ export const getEDCWidgets = async (req, res) => {
                 edcNames,
                 substationCounts,
                 feederCounts,
+                districtCount,
             },
         });
     } catch (error) {
