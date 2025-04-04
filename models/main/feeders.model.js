@@ -21,33 +21,33 @@ class Feeders {
     async getFeederNamesByRegion(connection, region) {
         try {
             const sql = `
-            SELECT feeder.hierarchy_name 
+            SELECT 
+                feeder.hierarchy_name AS name,
+                COUNT(m.meter_serial_no) AS meterCount
             FROM hierarchy region
-            JOIN hierarchy edc 
-                ON region.hierarchy_id = edc.parent_id 
-            JOIN hierarchy district 
-                ON edc.hierarchy_id = district.parent_id  
-            JOIN hierarchy substation 
-                ON district.hierarchy_id = substation.parent_id 
-            LEFT JOIN hierarchy feeder 
-                ON substation.hierarchy_id = feeder.parent_id 
-            WHERE region.hierarchy_name = ?
-            AND region.hierarchy_type_id = 10;
+            JOIN hierarchy edc ON region.hierarchy_id = edc.parent_id
+            JOIN hierarchy district ON edc.hierarchy_id = district.parent_id
+            JOIN hierarchy substation ON district.hierarchy_id = substation.parent_id
+            LEFT JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id
+            LEFT JOIN meter m ON feeder.hierarchy_id = m.location_id
+            WHERE region.hierarchy_type_id = 10
+            AND region.hierarchy_name = ?
+            GROUP BY feeder.hierarchy_id, feeder.hierarchy_name
+            ORDER BY feeder.hierarchy_name
         `;
 
-            const [rows] = await connection.query(sql, [region]); // Parameterized query for security
-            console.log('Region:', region);
-
-            return rows.map((row) => row.hierarchy_name);
+            const [rows] = await connection.query(sql, [region]);
+            return rows; // Each row has: { name: 'feederName', meterCount: 5 }
         } catch (error) {
             console.error(
-                '❌ Error fetching feeder names for region:',
+                '❌ Error fetching feeder names with meter count:',
                 region,
                 error
             );
             throw error;
         }
     }
+
     // async getHierarchyByFeeder(connection, regionID) {
     //     try {
     //         const [[results]] = await connection.query(
@@ -55,8 +55,8 @@ class Feeders {
     //                 sql: `
     //                     SELECT h.hierarchy_id, h.hierarchy_name, h.hierarchy_type_id
     //                     FROM hierarchy h
-    //                     JOIN hierarchy_master hm 
-    //                         ON h.hierarchy_type_id = hm.hierarchy_type_id 
+    //                     JOIN hierarchy_master hm
+    //                         ON h.hierarchy_type_id = hm.hierarchy_type_id
     //                     WHERE hm.hierarchy_title = "FEEDER"
     //                     AND h.hierarchy_name = ?
     //                 `,
@@ -161,7 +161,38 @@ class Feeders {
             throw error;
         }
     }
-    
+    // async getMeterCountByRegion(connection, region) {
+    //     try {
+    //         const sql = `
+    //         SELECT COUNT(*) AS meter_count
+    //         FROM meter
+    //         WHERE location_id IN (
+    //             SELECT feeder.hierarchy_id
+    //             FROM hierarchy region
+    //             JOIN hierarchy edc
+    //                 ON region.hierarchy_id = edc.parent_id
+    //             JOIN hierarchy district
+    //                 ON edc.hierarchy_id = district.parent_id
+    //             JOIN hierarchy substation
+    //                 ON district.hierarchy_id = substation.parent_id
+    //             LEFT JOIN hierarchy feeder
+    //                 ON substation.hierarchy_id = feeder.parent_id
+    //             WHERE region.hierarchy_name = ?
+    //             AND region.hierarchy_type_id = 10
+    //         );
+    //     `;
+
+    //         const [rows] = await connection.query(sql, [region]);
+    //         return rows[0]?.meter_count || 0;
+    //     } catch (error) {
+    //         console.error(
+    //             '❌ Error fetching meter count for region:',
+    //             region,
+    //             error
+    //         );
+    //         throw error;
+    //     }
+    // }
 }
 
 export default new Feeders();
