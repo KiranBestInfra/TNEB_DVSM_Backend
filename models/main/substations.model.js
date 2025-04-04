@@ -137,7 +137,7 @@ class Substations {
         `;
 
             const [rows] = await connection.query(sql, [edcs]);
-            console.log('SQL Query Result:', rows); //Log the raw results.
+            //console.log('SQL Query Result:', rows); //Log the raw results.
 
             if (rows.length === 0) {
                 return [];
@@ -152,6 +152,82 @@ class Substations {
         } catch (error) {
             console.error(
                 `❌ Error fetching Substation names for region: ${edcs}`,
+                error
+            );
+            throw error;
+        }
+    }
+    async getEdcSubstationNamesByRegion(connection, region) {
+        console.log('regionsss', region);
+        try {
+            const sql = `
+          SELECT
+                substation.hierarchy_name AS substation_names
+            FROM hierarchy edc
+            JOIN hierarchy district 
+                ON edc.hierarchy_id = district.parent_id 
+                AND district.hierarchy_type_id = 34 
+            LEFT JOIN hierarchy substation 
+                ON district.hierarchy_id = substation.parent_id 
+                AND substation.hierarchy_type_id = 35 
+            WHERE edc.hierarchy_type_id = 11 
+            AND edc.hierarchy_name like ?;  
+        `;
+
+            const [rows] = await connection.query(sql, [region]);
+            //console.log('SQL Query Result:', rows); //Log the raw results.
+
+            if (rows.length === 0) {
+                return [];
+            }
+
+            // Collect substation names from each row
+            const substationNames = rows
+                .map((row) => row.substation_names)
+                .filter((name) => name !== null);
+
+            return substationNames;
+        } catch (error) {
+            console.error(
+                `❌ Error fetching Substation names for region: ${edcs}`,
+                error
+            );
+            throw error;
+        }
+    }
+    async getFeederCountBySubstationEdc(connection, region) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    substation.hierarchy_name AS substation_name,
+                    COALESCE(COUNT(feeder.hierarchy_id), 0) AS feeder_count
+                FROM hierarchy edc
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id 
+                    AND district.hierarchy_type_id = 34
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                    AND substation.hierarchy_type_id = 35
+                LEFT JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                    AND feeder.hierarchy_type_id = 37
+                WHERE edc.hierarchy_type_id = 11
+                AND edc.hierarchy_name = ?
+                GROUP BY substation.hierarchy_name
+                ORDER BY substation.hierarchy_name;
+            `,
+                values: [region],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.reduce((acc, row) => {
+                acc[row.substation_name] = row.feeder_count;
+                return acc;
+            }, {});
+        } catch (error) {
+            console.error(
+                '❌ Error fetching Feeder counts for Substations:',
                 error
             );
             throw error;

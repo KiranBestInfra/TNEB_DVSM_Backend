@@ -54,6 +54,53 @@ export const getSubstationWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+export const getEdcSubstationWidgets = async (req, res) => {
+    try {
+        //const region = req.params.region || '';
+        const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
+
+        //const param = region ? region : edcs;
+        // console.log('param', param);
+
+        // console.log('region', region);
+        console.log('edcs', edcs);
+
+        if (!edcs) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Edc parameter is missing',
+            });
+        }
+
+        const edcsubstationNames =
+            await Substations.getEdcSubstationNamesByRegion(pool, edcs);
+       // console.log('edcsubstationNames', edcsubstationNames);
+        const feederCountsedc = await Substations.getFeederCountBySubstationEdc(
+            pool,
+            edcs
+        );
+       // console.log('feederCountsedc', feederCountsedc);
+
+        const substationFeederCountsedc = Array.isArray(feederCountsedc)
+            ? feederCountsedc.reduce((acc, feeder) => {
+                  acc[feeder.substation_name] = feeder.feeder_count;
+                  return acc;
+              }, {})
+            : feederCountsedc;
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                edcs,
+                edcsubstationNames,
+                substationFeederCountsedc,
+            },
+        });
+    } catch (error) {
+        console.error('❌ Error fetching substation widgets:', error);
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
 
 export const fetchSubstationGraphs = async (socket, substations) => {
     try {
