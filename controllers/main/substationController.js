@@ -10,10 +10,13 @@ import {
 
 export const getSubstationWidgets = async (req, res) => {
     try {
-        const region = req.params.region;
-        const edcs = req.params.edcs;
+        const region = req.params.region || '';
+        const edcs = req.params.edcs || '';
 
-        console.log(region);
+        const param = region ? region : edcs;
+
+        console.log('region', region);
+        console.log('edcs', edcs);
 
         if (!region) {
             return res.status(400).json({
@@ -22,17 +25,15 @@ export const getSubstationWidgets = async (req, res) => {
             });
         }
 
-        // Fetch substation names and feeder counts
         const substationNames = await Substations.getSubstationNamesByRegion(
             pool,
-            edcs
+            param
         );
         const feederCounts = await Substations.getFeederCountBySubstation(
             pool,
-            edcs
+            param
         );
 
-        // If feederCounts is an object, transform it as needed
         const substationFeederCounts = Array.isArray(feederCounts)
             ? feederCounts.reduce((acc, feeder) => {
                   acc[feeder.substation_name] = feeder.feeder_count;
@@ -40,7 +41,6 @@ export const getSubstationWidgets = async (req, res) => {
               }, {})
             : feederCounts;
 
-        // Return the response
         res.status(200).json({
             status: 'success',
             data: {
