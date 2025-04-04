@@ -8,9 +8,9 @@ import {
 } from '../../utils/globalUtils.js';
 
 export const fetchFeederGraphs = async (feeders) => {
-    console.log(feeders)
+    console.log(feeders);
+    console.log(feeders);
     try {
-
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
@@ -25,8 +25,8 @@ export const fetchFeederGraphs = async (feeders) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const todayDemandData = await Feeders.getDemandTrendsData(
@@ -112,7 +112,7 @@ export const getFeedersWidgets = async (req, res) => {
         const totalFeeders = await Feeders.getTotalFeeders(pool);
         const commMeters = await Feeders.getCommMeters(pool);
         const nonCommMeters = await Feeders.getNonCommMeters(pool);
-        const regionFeederNames = await Feeders.getRegionFeederNames(pool);
+        const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
 
         res.status(200).json({
             status: 'success',
@@ -123,7 +123,6 @@ export const getFeedersWidgets = async (req, res) => {
                 regionFeederNames: regionFeederNames.map(
                     (region) => region.hierarchy_name
                 ),
-                
             },
         });
     } catch (error) {
@@ -135,3 +134,4 @@ export const getFeedersWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+

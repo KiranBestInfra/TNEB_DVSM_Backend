@@ -225,7 +225,6 @@ class Regions {
             const queryParams = [start, end];
             let meterCondition = '';
 
-            
             if (meters && meters.length > 0) {
                 meterCondition = 'AND ad.meter_no IN (?)';
                 queryParams.push(meters);
@@ -248,8 +247,9 @@ class Regions {
                 },
                 queryParams
             );
-
+            console.log('Query results:', results);
             return results;
+            //console.log(results);
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
                 throw new Error(
@@ -270,7 +270,7 @@ class Regions {
         hierarchy_id
     ) {
         try {
-            console.log(hierarchy_type_id, hierarchy_id);
+            //console.log(hierarchy_type_id, hierarchy_id);
             const [results] = await connection.query(
                 {
                     sql: `

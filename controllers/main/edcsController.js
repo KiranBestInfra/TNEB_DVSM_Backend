@@ -48,7 +48,8 @@ export const fetchEdcGraphs = async (edcNames) => {
         const edcDemandData = {};
 
         for (const edc of edcNames) {
-            const hierarchy = await EDCs.getHierarchyByEdc(pool, edc);
+            const normalizedEdc = edc.toLowerCase().trim();
+            const hierarchy = await EDCs.getHierarchyByEdc(pool, normalizedEdc);
             const meters = await EDCs.getEdcMeters(
                 pool,
                 null,
@@ -56,9 +57,10 @@ export const fetchEdcGraphs = async (edcNames) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
+            //console.log(hierarchyMeters);
 
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
@@ -67,7 +69,7 @@ export const fetchEdcGraphs = async (edcNames) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-
+            //console.log('edctodayDemandData', todayDemandData);
             const yesterdayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 null,

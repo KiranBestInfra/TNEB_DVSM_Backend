@@ -11,6 +11,9 @@ import {
 export const getSubstationWidgets = async (req, res) => {
     try {
         const region = req.params.region;
+        const edcs = req.params.edcs;
+
+        console.log(region);
 
         if (!region) {
             return res.status(400).json({
@@ -21,11 +24,11 @@ export const getSubstationWidgets = async (req, res) => {
 
         const substationNames = await Substations.getSubstationNamesByRegion(
             pool,
-            region
+            edcs
         );
         const feederCounts = await Substations.getFeederCountBySubstation(
             pool,
-            region
+            edcs
         );
 
         const substationFeederCounts = Array.isArray(feederCounts)
@@ -39,7 +42,7 @@ export const getSubstationWidgets = async (req, res) => {
         res.status(200).json({
             status: 'success',
             data: {
-                region,
+                edcs,
                 substationNames,
                 substationFeederCounts,
             },
@@ -71,11 +74,11 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                 hierarchy.hierarchy_type_id,
                 hierarchy.hierarchy_id
             );
-            console.log(meters);
-            count++;
+            // console.log(meters);
+            //count++;
 
-            const hierarchyMeters = meters.map(
-                (meter) => meter.meter_serial_no
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
             );
 
             const todayDemandData = await Substations.getDemandTrendsData(
