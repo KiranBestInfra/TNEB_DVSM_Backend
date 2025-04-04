@@ -112,7 +112,7 @@ export const getFeedersWidgets = async (req, res) => {
         const totalFeeders = await Feeders.getTotalFeeders(pool);
         const commMeters = await Feeders.getCommMeters(pool);
         const nonCommMeters = await Feeders.getNonCommMeters(pool);
-        const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
+      //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
 
         res.status(200).json({
             status: 'success',
@@ -120,9 +120,33 @@ export const getFeedersWidgets = async (req, res) => {
                 totalFeeders,
                 commMeters,
                 nonCommMeters,
-                regionFeederNames: regionFeederNames.map(
-                    (region) => region.hierarchy_name
-                ),
+                // regionFeederNames: regionFeederNames.map(
+                //     (region) => region.hierarchy_name
+                // ),
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders widgets:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
+export const getFeedersNamesByRegion = async (req, res) => {
+    try {
+        const region = req.params.region
+        console.log(region);
+        const regionFeederNames = await Feeders.getFeederNamesByRegion(
+            pool,
+            region
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                regionFeederNames: regionFeederNames
             },
         });
     } catch (error) {
