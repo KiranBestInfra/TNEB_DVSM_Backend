@@ -38,6 +38,35 @@ export const getEDCWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+export const getSubstationTotalWidgets = async (req, res) => {
+    try {
+        const totalsubstations = await EDCs.getTotalSubstations(pool);
+        const totalFeeders = await EDCs.getTotalFeeders(pool);
+        const commMeters = await EDCs.getCommMeters(pool);
+        const nonCommMeters = await EDCs.getNonCommMeters(pool);
+        //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                totalsubstations,
+                totalFeeders,
+                commMeters,
+                nonCommMeters,
+                // regionFeederNames: regionFeederNames.map(
+                //     (region) => region.hierarchy_name
+                // ),
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders widgets:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
 export const fetchEdcGraphs = async (edcNames) => {
     console.log(edcNames);
 
