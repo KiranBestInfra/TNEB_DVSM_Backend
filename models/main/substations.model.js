@@ -158,7 +158,6 @@ class Substations {
         }
     }
     async getEdcSubstationNamesByRegion(connection, region) {
-        console.log('regionsss', region);
         try {
             const sql = `
           SELECT
@@ -234,7 +233,6 @@ class Substations {
         }
     }
     async getHierarchyBySubstation(connection, regionID) {
-        console.log(regionID);
         try {
             const [[results]] = await connection.query(
                 {

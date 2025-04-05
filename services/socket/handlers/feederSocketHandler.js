@@ -12,13 +12,16 @@ class FeederSocketHandler {
         socket.on('subscribeFeeder', async (data) => {
             if (!data || !data.feeders || !Array.isArray(data.feeders)) {
                 logger.error('Invalid feeder subscription data received');
-                socket.emit('error', { message: 'Invalid subscription data. Expected { feeders: string[] }' });
+                socket.emit('error', {
+                    message:
+                        'Invalid subscription data. Expected { feeders: string[] }',
+                });
                 return;
             }
 
             const { feeders } = data;
 
-            if (socket.subscribedFeeders) {
+            if (socket.subscribeFeeder) {
                 const existingIntervalId = socketService.getInterval(socket.id);
                 if (existingIntervalId) {
                     clearInterval(existingIntervalId);
@@ -27,7 +30,7 @@ class FeederSocketHandler {
             }
 
             logger.info(`Client subscribed to feeders: ${feeders.join(', ')}`);
-            socket.subscribedFeeders = feeders;
+            socket.subscribeFeeder = feeders;
 
             try {
                 await this.sendFeederData(socket, feeders);
@@ -41,22 +44,25 @@ class FeederSocketHandler {
                 socketService.storeInterval(socket.id, intervalId);
             } catch (error) {
                 logger.error('Error in feeder subscription:', error);
-                socket.emit('error', { message: 'Error processing feeder subscription' });
+                socket.emit('error', {
+                    message: 'Error processing feeder subscription',
+                });
             }
         });
     }
 
     async sendFeederData(socket, feeders) {
         try {
-            const feederDemandData = await fetchFeederGraphs(feeders);
-            feeders.forEach((feeder) => {
-                if (feederDemandData[feeder]) {
-                    socket.emit('feederUpdate', {
-                        feeder,
-                        graphData: feederDemandData[feeder],
-                    });
-                }
-            });
+            await fetchFeederGraphs(socket, feeders);
+            // console.log('feederDemandData', feederDemandData);
+            // feeders.forEach((feeder) => {
+            //     if (feederDemandData[feeder]) {
+            //         socket.emit('feederUpdate', {
+            //             feeder,
+            //             graphData: feederDemandData[feeder],
+            //         });
+            //     }
+            // });
         } catch (error) {
             logger.error('Error sending feeder data:', error);
             socket.emit('error', { message: 'Error fetching feeder data' });
@@ -65,4 +71,4 @@ class FeederSocketHandler {
 }
 
 const feederSocketHandler = new FeederSocketHandler();
-export { feederSocketHandler }; 
+export { feederSocketHandler };

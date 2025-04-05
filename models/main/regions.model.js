@@ -247,7 +247,6 @@ class Regions {
                 },
                 queryParams
             );
-            console.log('Query results:', results);
             return results;
             //console.log(results);
         } catch (error) {
@@ -258,7 +257,6 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
