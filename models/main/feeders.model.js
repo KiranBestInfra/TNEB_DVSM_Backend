@@ -223,23 +223,15 @@ class Feeders {
     // Step 1: Get hierarchy_id from edc name
     async getEdcIdByName(connection, edcName) {
         const sql = `
-    // Step 1: Get hierarchy_id from edc name
-    async getEdcIdByName(connection, edcName) {
-        const sql = `
         SELECT hierarchy_id 
         FROM hierarchy 
         WHERE hierarchy_type_id = 11 AND hierarchy_name = ?
     `;
-        const [rows] = await connection.query(sql, [edcName]);
-        return rows[0]; // return null if not found
-    }
+        
         const [rows] = await connection.query(sql, [edcName]);
         return rows[0]; // return null if not found
     }
 
-    // Step 2: Get feeder names for given EDC ID
-    async getFeederNamesByEdcId(connection, edcId) {
-        const sql = `
     // Step 2: Get feeder names for given EDC ID
     async getFeederNamesByEdcId(connection, edcId) {
         const sql = `
