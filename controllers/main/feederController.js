@@ -16,7 +16,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
         const feederDemandData = {};
         
         for (const feeder of feeders) {
-            //     const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
+            const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
             const meters = await Feeders.getFeederMeters(
                 pool,
                 null,
@@ -192,6 +192,45 @@ export const getFeedersNamesByEdcNameHandler = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error fetching feeder names by EDC name:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
+export const getFeedersBySubstationName = async (req, res) => {
+    try {
+        const substationName = req.params.substationName.replace(/-/g, ' '); // Convert "chennai-substation" -> "chennai substation"
+
+        // Step 1: Get substation ID
+        const substation = await Feeders.getSubstationIdByName(
+            pool,
+            substationName
+        );
+
+        if (!substation) {
+            return res.status(404).json({
+                status: 'error',
+                message: `No substation found with name: ${substationName}`,
+            });
+        }
+
+        // Step 2: Get feeder names by substation ID
+        const feeders = await Feeders.getFeederNamesBySubstationId(
+            pool,
+            substation.hierarchy_id
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                substation_id: substation.hierarchy_id,
+                feeders,
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders by substation name:', {
             error: error.message,
             stack: error.stack,
             timestamp: new Date().toISOString(),

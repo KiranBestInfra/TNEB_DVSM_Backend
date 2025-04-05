@@ -15,7 +15,7 @@ router.use('/auth', authRoutes);
 router.use('/regions', regionRoutes);
 router.use('/consumer', consumerRoutes);
 router.use('/edcs', edcRoutes);
-router.use('/substation', substationRoutes);
+router.use('/substations', substationRoutes);
 router.use('/profile', profileRoutes);
 router.use('/feeders', feederRoutes);
 router.use('/tickets', ticketRoutes);
