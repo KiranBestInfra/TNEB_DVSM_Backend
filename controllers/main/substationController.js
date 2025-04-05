@@ -209,4 +209,6 @@ export const fetchSubstationGraphs = async (socket, substations) => {
     }
 };
 
+
+
 export default getSubstationWidgets;

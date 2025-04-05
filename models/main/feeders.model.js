@@ -191,6 +191,7 @@ class Feeders {
     //     try {
     //         const sql = `
     //         SELECT
+    //         SELECT
     //             edc.hierarchy_id AS edc_id,
     //             feeder.hierarchy_name AS name,
     //             COUNT(m.meter_serial_no) AS meterCount
@@ -226,6 +227,7 @@ class Feeders {
         FROM hierarchy 
         WHERE hierarchy_type_id = 11 AND hierarchy_name = ?
     `;
+        
         const [rows] = await connection.query(sql, [edcName]);
         return rows[0]; // return null if not found
     }
@@ -248,6 +250,33 @@ class Feeders {
         ORDER BY feeder.hierarchy_name;
     `;
         const [rows] = await connection.query(sql, [edcId]);
+        return rows;
+    }
+
+    // Get hierarchy_id of the substation by name
+    async getSubstationIdByName(connection, substationName) {
+        const sql = `
+        SELECT hierarchy_id
+        FROM hierarchy
+            where hierarchy_type_id = "35" and hierarchy_name =?           
+    `;
+        const [rows] = await connection.query(sql, [substationName]);
+        return rows[0]; // may return undefined if not found
+    }
+
+    // Get feeders by substation ID
+    async getFeederNamesBySubstationId(connection, substationId) {
+        const sql = `
+        SELECT 
+            feeder.hierarchy_name AS name,
+            COUNT(m.meter_serial_no) AS meterCount
+        FROM hierarchy feeder
+        LEFT JOIN meter m ON feeder.hierarchy_id = m.location_id
+        WHERE feeder.parent_id = ?
+        GROUP BY feeder.hierarchy_id, feeder.hierarchy_name
+        ORDER BY feeder.hierarchy_name;
+    `;
+        const [rows] = await connection.query(sql, [substationId]);
         return rows;
     }
 }
