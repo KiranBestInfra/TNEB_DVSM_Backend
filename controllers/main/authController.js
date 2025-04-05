@@ -83,12 +83,14 @@ const login = async (req, res) => {
             error,
             value: { email, password, rememberMe },
         } = authSchemas.login.validate(req.body);
+
         if (error) {
             return res
                 .status(400)
                 .json({ status: 'error', message: error.details[0].message });
         }
         const user = await User.findByEmailOrName(pool, email);
+
         if (!user) {
             return res
                 .status(401)
@@ -127,7 +129,10 @@ const login = async (req, res) => {
             });
         }
 
+        console.log(password, user.password);
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log(isMatch);
+        
         if (!isMatch) {
             await User.updateLoginAttempts(pool, user.id);
             return res
@@ -156,71 +161,68 @@ const login = async (req, res) => {
         const roledata = await User.getRoleByID(pool, user.role_id);
 
         if (rememberMe) {
-       //     if (user.role_id == 3) {
-                const accessToken = jwt.sign(
-                    {
-                        userId: user.user_id,
-                        email: user.email ? user.email : 'test@gmail.com',
-                        role: roledata.role_title,
-                        user_role_id: roledata.role_id,
-                        uid: user.name,
-                        locationHierarchy: user.location_hierarchy,
-                    },
-                    JWT_SECRET,
-                    { expiresIn: JWT_EXPIRES_IN }
-                );
+            //     if (user.role_id == 3) {
+            const accessToken = jwt.sign(
+                {
+                    userId: user.user_id,
+                    email: user.email ? user.email : 'test@gmail.com',
+                    role: roledata.role_title,
+                    user_role_id: roledata.role_id,
+                    uid: user.name,
+                    locationHierarchy: user.location_hierarchy,
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
 
-                const refreshToken = jwt.sign(
-                    { userId: user.user_id },
-                    JWT_REFRESH_SECRET,
-                    {
-                        expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
-                    }
-                );
+            const refreshToken = jwt.sign(
+                { userId: user.user_id },
+                JWT_REFRESH_SECRET,
+                {
+                    expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
+                }
+            );
 
-                await User.saveRefreshToken(
-                    pool,
-                    user.id,
-                    refreshToken,
-                    JWT_REFRESH_EXPIRES_IN
-                );
+            await User.saveRefreshToken(
+                pool,
+                user.id,
+                refreshToken,
+                JWT_REFRESH_EXPIRES_IN
+            );
 
-                res.cookie('accessToken', accessToken, {
-                    httpOnly: config.NODE_ENV === 'production',
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
+            res.cookie('accessToken', accessToken, {
+                httpOnly: config.NODE_ENV === 'production',
+                secure: config.NODE_ENV === 'production',
+                sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 24 * 60 * 60 * 1000,
+                domain:
+                    config.NODE_ENV === 'production'
+                        ? '.lk-ea.co.in'
+                        : 'localhost',
+            });
 
-                res.cookie('accessTokenDuplicate', accessToken, {
-                    httpOnly: false,
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
+            res.cookie('accessTokenDuplicate', accessToken, {
+                httpOnly: false,
+                secure: config.NODE_ENV === 'production',
+                sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 24 * 60 * 60 * 1000,
+                domain:
+                    config.NODE_ENV === 'production'
+                        ? '.lk-ea.co.in'
+                        : 'localhost',
+            });
 
-                res.cookie('refreshToken', refreshToken, {
-                    httpOnly: config.NODE_ENV === 'production',
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    path: '/api/refresh-token',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: config.NODE_ENV === 'production',
+                secure: config.NODE_ENV === 'production',
+                sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
+                path: '/api/refresh-token',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                domain:
+                    config.NODE_ENV === 'production'
+                        ? '.lk-ea.co.in'
+                        : 'localhost',
+            });
         }
 
         return res.status(200).json({

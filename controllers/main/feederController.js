@@ -134,19 +134,22 @@ export const getFeedersWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+
 export const getFeedersNamesByRegion = async (req, res) => {
     try {
         const region = req.params.region
-        console.log(region);
+
         const regionFeederNames = await Feeders.getFeederNamesByRegion(
             pool,
             region
         );
+ 
 
         res.status(200).json({
             status: 'success',
             data: {
-                regionFeederNames: regionFeederNames
+                regionFeederNames: regionFeederNames,
+
             },
         });
     } catch (error) {
