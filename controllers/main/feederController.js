@@ -8,15 +8,16 @@ import {
 } from '../../utils/globalUtils.js';
 
 export const fetchFeederGraphs = async (socket, feeders) => {
-    // console.log(feeders);
+    console.log(feeders);
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
         const feederDemandData = {};
-        
+
         for (const feeder of feeders) {
-            //     const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
+            const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
+            console.log('hierarchy', hierarchy);
             const meters = await Feeders.getFeederMeters(
                 pool,
                 null,
