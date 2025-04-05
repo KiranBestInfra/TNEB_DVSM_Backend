@@ -193,6 +193,70 @@ class Feeders {
     //         throw error;
     //     }
     // }
+    // async getFeederNamesByEdc(connection, edc) {
+    //     try {
+    //         const sql = `
+    //         SELECT 
+    //             edc.hierarchy_id AS edc_id,
+    //             feeder.hierarchy_name AS name,
+    //             COUNT(m.meter_serial_no) AS meterCount
+    //         FROM hierarchy region
+    //         JOIN hierarchy edc ON region.hierarchy_id = edc.parent_id
+    //         JOIN hierarchy district ON edc.hierarchy_id = district.parent_id
+    //         JOIN hierarchy substation ON district.hierarchy_id = substation.parent_id
+    //         LEFT JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id
+    //         LEFT JOIN meter m ON feeder.hierarchy_id = m.location_id
+    //         WHERE region.hierarchy_type_id = 10
+    //         AND edc.hierarchy_name = ?
+    //         GROUP BY edc.hierarchy_id, feeder.hierarchy_id, feeder.hierarchy_name
+    //         ORDER BY feeder.hierarchy_name;
+    //     `;
+
+    //         const [rows] = await connection.query(sql, [edc]);
+    //         return rows; // Each row will be { name: 'feederName', meterCount: X }
+    //     } catch (error) {
+    //         console.error(
+    //             '❌ Error fetching feeder names with meter count for EDC:',
+    //             edc,
+    //             error
+    //         );
+    //         throw error;
+    //     }
+    // }
+    // services/feederService.js
+
+// Step 1: Get hierarchy_id from edc name
+async getEdcIdByName(connection, edcName) {
+    const sql = `
+        SELECT hierarchy_id 
+        FROM hierarchy 
+        WHERE hierarchy_type_id = 11 AND hierarchy_name = ?
+    `;
+    const [rows] = await connection.query(sql, [edcName]);
+    return rows[0]; // return null if not found
+}
+
+// Step 2: Get feeder names for given EDC ID
+async  getFeederNamesByEdcId(connection, edcId) {
+    const sql = `
+        SELECT 
+            feeder.hierarchy_name AS name,
+            COUNT(m.meter_serial_no) AS meterCount
+        FROM hierarchy edc
+        JOIN hierarchy district ON edc.hierarchy_id = district.parent_id
+        JOIN hierarchy substation ON district.hierarchy_id = substation.parent_id
+        LEFT JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id
+        LEFT JOIN meter m ON feeder.hierarchy_id = m.location_id
+        WHERE edc.hierarchy_type_id = 11
+        AND edc.hierarchy_id = ?
+        GROUP BY feeder.hierarchy_id, feeder.hierarchy_name
+        ORDER BY feeder.hierarchy_name;
+    `;
+    const [rows] = await connection.query(sql, [edcId]);
+    return rows;
+}
+
+
 }
 
 export default new Feeders();
