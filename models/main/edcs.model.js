@@ -285,6 +285,81 @@ class EDCs {
             throw error;
         }
     }
+    async getTotalSubstations(connection) {
+        try {
+            const [[{ totalFeeders }]] = await connection.query({
+                sql: `
+                        SELECT COUNT(hierarchy_name) AS totalFeeders 
+                        FROM hierarchy h, hierarchy_master hm 
+                        WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
+                        AND hm.hierarchy_title = "SUBSTATION"
+                    `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return totalFeeders;
+        } catch (error) {
+            console.log('getTotalSubstations', error);
+            throw error;
+        }
+    }
+    async getTotalFeeders(connection) {
+        try {
+            const [[{ totalFeeders }]] = await connection.query({
+                sql: `
+                        SELECT COUNT(hierarchy_name) AS totalFeeders 
+                        FROM hierarchy h, hierarchy_master hm 
+                        WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
+                        AND hm.hierarchy_title = "FEEDER"
+                    `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return totalFeeders;
+        } catch (error) {
+            console.log('getTotalFeeders', error);
+            throw error;
+        }
+    }
+    async getCommMeters(connection) {
+        try {
+            const [[{ commMeters }]] = await connection.query({
+                sql: `
+              SELECT COUNT(DISTINCT meter_no) AS commMeters
+              FROM instant_comm 
+              WHERE meter_no IN (
+                  SELECT meter_serial_no FROM meter 
+                  WHERE location_id IS NOT NULL
+              ) 
+              AND DATE(device_date) = '2025-03-09';
+          `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return commMeters;
+        } catch (error) {
+            console.log('getCommMeters', error);
+            throw error;
+        }
+    }
+
+    async getNonCommMeters(connection) {
+        try {
+            const [[{ nonCommMeters }]] = await connection.query({
+                sql: `
+              SELECT COUNT(DISTINCT meter_serial_no) AS nonCommMeters
+              FROM meter 
+              WHERE location_id IS NOT NULL 
+              AND meter_serial_no NOT IN (
+                  SELECT DISTINCT meter_no FROM instant_comm 
+                  WHERE DATE(device_date) = '2025-03-09'
+              );
+          `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return nonCommMeters;
+        } catch (error) {
+            console.log('getNonCommMeters', error);
+            throw error;
+        }
+    }
 }
 
 export default new EDCs();
