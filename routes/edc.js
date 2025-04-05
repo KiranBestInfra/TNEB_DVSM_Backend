@@ -10,4 +10,3 @@ router.get('/widgets/:region/substations', getSubstationWidgets);
 router.get('/:edc/feeders', getFeedersNamesByEdcNameHandler);
 
 export default router;
-
