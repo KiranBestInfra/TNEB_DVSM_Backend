@@ -190,7 +190,7 @@ class Feeders {
     // async getFeederNamesByEdc(connection, edc) {
     //     try {
     //         const sql = `
-    //         SELECT 
+    //         SELECT
     //             edc.hierarchy_id AS edc_id,
     //             feeder.hierarchy_name AS name,
     //             COUNT(m.meter_serial_no) AS meterCount
@@ -219,22 +219,23 @@ class Feeders {
     // }
     // services/feederService.js
 
-// Step 1: Get hierarchy_id from edc name
-async getEdcIdByName(connection, edcName) {
-    const sql = `
+    // Step 1: Get hierarchy_id from edc name
+    async getEdcIdByName(connection, edcName) {
+        const sql = `
         SELECT hierarchy_id 
         FROM hierarchy 
         WHERE hierarchy_type_id = 11 AND hierarchy_name = ?
     `;
-    const [rows] = await connection.query(sql, [edcName]);
-    return rows[0]; // return null if not found
-}
+        const [rows] = await connection.query(sql, [edcName]);
+        return rows[0]; // return null if not found
+    }
 
-// Step 2: Get feeder names for given EDC ID
-async  getFeederNamesByEdcId(connection, edcId) {
-    const sql = `
+    // Step 2: Get feeder names for given EDC ID
+    async getFeederNamesByEdcId(connection, edcId) {
+        const sql = `
         SELECT 
             feeder.hierarchy_name AS name,
+            feeder.hierarchy_id AS id,
             COUNT(m.meter_serial_no) AS meterCount
         FROM hierarchy edc
         JOIN hierarchy district ON edc.hierarchy_id = district.parent_id
@@ -246,11 +247,9 @@ async  getFeederNamesByEdcId(connection, edcId) {
         GROUP BY feeder.hierarchy_id, feeder.hierarchy_name
         ORDER BY feeder.hierarchy_name;
     `;
-    const [rows] = await connection.query(sql, [edcId]);
-    return rows;
-}
-
-
+        const [rows] = await connection.query(sql, [edcId]);
+        return rows;
+    }
 }
 
 export default new Feeders();
