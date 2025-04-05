@@ -7,15 +7,14 @@ import {
     getYesterdayStartAndEnd,
 } from '../../utils/globalUtils.js';
 
-export const fetchFeederGraphs = async (feeders) => {
-    console.log(feeders);
-    console.log(feeders);
+export const fetchFeederGraphs = async (socket, feeders) => {
+    // console.log(feeders);
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
         const feederDemandData = {};
-
+        
         for (const feeder of feeders) {
             const hierarchy = await Feeders.getHierarchyByFeeder(pool, feeder);
             const meters = await Feeders.getFeederMeters(
@@ -24,6 +23,7 @@ export const fetchFeederGraphs = async (feeders) => {
                 hierarchy.hierarchy_type_id,
                 hierarchy.hierarchy_id
             );
+            console.log('hierarchy', meters);
 
             const hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
@@ -99,10 +99,17 @@ export const fetchFeederGraphs = async (feeders) => {
                 ],
             };
 
-            regionDemandData[region] = detailedGraphData;
+            feederDemandData[feeder] = detailedGraphData;
+            if (feederDemandData[feeder]) {
+                socket.emit('feederUpdate', {
+                    feeder,
+                    graphData: feederDemandData[feeder],
+                });
+            }
         }
 
-        return regionDemandData;
+        // console.log('feederDemandData', feederDemandData);
+        // return feederDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
     }
@@ -112,7 +119,7 @@ export const getFeedersWidgets = async (req, res) => {
         const totalFeeders = await Feeders.getTotalFeeders(pool);
         const commMeters = await Feeders.getCommMeters(pool);
         const nonCommMeters = await Feeders.getNonCommMeters(pool);
-      //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
+        //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
 
         res.status(200).json({
             status: 'success',
@@ -181,5 +188,3 @@ export const getFeedersNamesByRegion = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
-
-
