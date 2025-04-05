@@ -56,7 +56,6 @@ export const getDashboardWidgets = async (req, res) => {
 };
 
 export const fetchRegionGraphs = async (regionNames) => {
-    console.log(regionNames);
     try {
         // const regionNames = await REGIONS.getRegionNames(pool);
 
@@ -243,7 +242,6 @@ export const demandGraph = async (req, res) => {
                 pool,
                 regionID
             );
-            console.log(regionHierarchy);
             const meters = await REGIONS.getRegionMeters(
                 pool,
                 null,
@@ -329,7 +327,6 @@ export const demandGraph = async (req, res) => {
                 ],
             };
 
-            console.log(detailedGraphData);
             return res.status(200).json({
                 status: 'success',
                 data: detailedGraphData,
@@ -342,7 +339,6 @@ export const demandGraph = async (req, res) => {
             '2025-03-27 00:00:00',
             '2025-03-27 23:59:59'
         );
-        console.log('todayDemandData', todayDemandData);
 
         const yesterdayDemandData = await REGIONS.getDemandTrendsData(
             pool,

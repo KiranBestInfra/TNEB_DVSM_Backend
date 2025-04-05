@@ -11,7 +11,7 @@ const config = {
     DB_PORT: process.env.DB_PORT,
     DB_NAME: process.env.DB_NAME,
     DB_NAME2: process.env.DB_NAME2,
-    DB_PORT: process.env.DB_PORT, //new modified
+    // DB_PORT: process.env.DB_PORT, //new modified
     SECRET_KEY: process.env.SECRET_KEY,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,

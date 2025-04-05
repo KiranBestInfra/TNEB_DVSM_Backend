@@ -76,7 +76,6 @@ export const getSubstationTotalWidgets = async (req, res) => {
     }
 };
 export const fetchEdcGraphs = async (edcNames) => {
-    console.log(edcNames);
 
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
