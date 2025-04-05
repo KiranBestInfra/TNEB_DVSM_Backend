@@ -332,6 +332,80 @@ class Regions {
             throw error;
         }
     }
+    async getRegionCommMeterCounts(connection, region, date) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    COUNT(DISTINCT ic.meter_no) AS comm_meters
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                JOIN instant_comm ic 
+                    ON ic.meter_no = m.meter_serial_no
+                WHERE region.hierarchy_type_id = 10
+                  AND region.hierarchy_name = ?
+                  AND DATE(ic.device_date) = ?
+            `,
+                values: [region, date],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.length > 0 ? rows[0].comm_meters : 0;
+        } catch (error) {
+            console.error(
+                '❌ Error fetching communication meter counts by Region:',
+                error
+            );
+            throw error;
+        }
+    }
+    async getRegionNonCommMeterCounts(connection, region, date) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    COUNT(DISTINCT m.meter_serial_no) AS non_comm_meters
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                WHERE region.hierarchy_type_id = 10
+                  AND region.hierarchy_name = ?
+                  AND m.meter_serial_no NOT IN (
+                      SELECT DISTINCT ic.meter_no 
+                      FROM instant_comm ic 
+                      WHERE DATE(ic.device_date) = ?
+                  )
+            `,
+                values: [region, date],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.length > 0 ? rows[0].non_comm_meters : 0;
+        } catch (error) {
+            console.error(
+                '❌ Error fetching non-communication meter counts by Region:',
+                error
+            );
+            throw error;
+        }
+    }
 }
 
 export default new Regions();
