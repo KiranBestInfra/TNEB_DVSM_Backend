@@ -24,6 +24,12 @@ export const getEDCWidgets = async (req, res) => {
             region
         );
         const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
+        const commMeters = await EDCs.getCommMeters(pool, region);
+        const nonCommMeters = await EDCs.getNonCommMeters(
+            pool,
+            region
+        );
+
         res.status(200).json({
             status: 'success',
             data: {
@@ -31,6 +37,8 @@ export const getEDCWidgets = async (req, res) => {
                 edcNames,
                 substationCounts,
                 feederCounts,
+                commMeters,
+                nonCommMeters
             },
         });
     } catch (error) {
