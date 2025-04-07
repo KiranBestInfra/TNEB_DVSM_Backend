@@ -1,5 +1,6 @@
 import pool from '../../config/db.js';
 import Feeders from '../../models/main/feeders.model.js';
+import Regions from '../../models/main/regions.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -36,6 +37,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
+            //console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await Feeders.getDemandTrendsData(
                 pool,
@@ -44,6 +46,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 '2025-03-26 23:59:59',
                 hierarchyMeters
             );
+            //console.log('yesterdayDemandData', yesterdayDemandData);
 
             const xAxis = [];
             const currentDayData = [];
@@ -114,44 +117,31 @@ export const fetchFeederGraphs = async (socket, feeders) => {
         console.error('Error fetching region graphs:', error);
     }
 };
-export const getFeedersWidgets = async (req, res) => {
-    try {
-        const totalFeeders = await Feeders.getTotalFeeders(pool);
-        const commMeters = await Feeders.getCommMeters(pool);
-        const nonCommMeters = await Feeders.getNonCommMeters(pool);
-        //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                totalFeeders,
-                commMeters,
-                nonCommMeters,
-                // regionFeederNames: regionFeederNames.map(
-                //     (region) => region.hierarchy_name
-                // ),
-            },
-        });
-    } catch (error) {
-        logger.error('Error fetching feeders widgets:', {
-            error: error.message,
-            stack: error.stack,
-            timestamp: new Date().toISOString(),
-        });
-        res.status(500).json({ status: 'error', message: 'Server Error' });
-    }
-};
-export const getFeedersNamesByRegion = async (req, res) => {
+export const getFeedersDataByRegion = async (req, res) => {
     try {
         const region = req.params.region;
+        const deviceDate = '2025-03-09';
         const feedersWithCount = await Feeders.getFeederNamesByRegion(
             pool,
             region
         );
-
+        const commMeters = await Regions.getRegionCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
+        const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
         res.status(200).json({
             status: 'success',
-            data: feedersWithCount,
+            data: {
+                feedersWithCount,
+                commMeters,
+                nonCommMeters,
+            },
         });
     } catch (error) {
         logger.error('Error fetching feeders widgets:', {
