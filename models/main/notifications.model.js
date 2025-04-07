@@ -59,7 +59,6 @@ class Notification {
                 },
                 [id]
             );
-            console.log('Hola');
             this.getNotificationCount(connection, socket);
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {

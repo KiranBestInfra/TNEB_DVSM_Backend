@@ -1,5 +1,6 @@
 import pool from '../../config/db.js';
 import EDCs from '../../models/main/edcs.model.js';
+import Regions from '../../models/main/regions.model.js'
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -10,7 +11,7 @@ import {
 export const getEDCWidgets = async (req, res) => {
     try {
         const region = req.params.region;
-
+        const deviceDate = '2025-03-09';
         if (!region) {
             return res.status(400).json({
                 status: 'error',
@@ -24,6 +25,23 @@ export const getEDCWidgets = async (req, res) => {
             region
         );
         const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
+        // const commMeters = await EDCs.getCommMeters(pool, region);
+        const commMeters = await Regions.getRegionCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
+
+        // const nonCommMeters = await EDCs.getNonCommMeters(
+        //     pool,
+        //     region
+        // );
+        const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
+
         res.status(200).json({
             status: 'success',
             data: {
@@ -31,6 +49,8 @@ export const getEDCWidgets = async (req, res) => {
                 edcNames,
                 substationCounts,
                 feederCounts,
+                commMeters,
+                nonCommMeters
             },
         });
     } catch (error) {
@@ -68,7 +88,6 @@ export const getSubstationTotalWidgets = async (req, res) => {
     }
 };
 export const fetchEdcGraphs = async (edcNames) => {
-    console.log(edcNames);
 
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();

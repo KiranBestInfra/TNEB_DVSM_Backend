@@ -84,7 +84,6 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
-    console.log('accessToken', req.cookies);
 
     if (!accessToken) {
         return next();

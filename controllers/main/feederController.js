@@ -7,8 +7,7 @@ import {
     getYesterdayStartAndEnd,
 } from '../../utils/globalUtils.js';
 
-export const fetchFeederGraphs = async (feeders) => {
-    console.log(feeders);
+export const fetchFeederGraphs = async (socket, feeders) => {
     console.log(feeders);
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
@@ -24,6 +23,7 @@ export const fetchFeederGraphs = async (feeders) => {
                 hierarchy.hierarchy_type_id,
                 hierarchy.hierarchy_id
             );
+            console.log('hierarchy', meters);
 
             const hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
@@ -99,10 +99,17 @@ export const fetchFeederGraphs = async (feeders) => {
                 ],
             };
 
-            regionDemandData[region] = detailedGraphData;
+            feederDemandData[feeder] = detailedGraphData;
+            if (feederDemandData[feeder]) {
+                socket.emit('feederUpdate', {
+                    feeder,
+                    graphData: feederDemandData[feeder],
+                });
+            }
         }
 
-        return regionDemandData;
+        // console.log('feederDemandData', feederDemandData);
+        // return feederDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
     }
@@ -112,7 +119,7 @@ export const getFeedersWidgets = async (req, res) => {
         const totalFeeders = await Feeders.getTotalFeeders(pool);
         const commMeters = await Feeders.getCommMeters(pool);
         const nonCommMeters = await Feeders.getNonCommMeters(pool);
-      //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
+        //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
 
         res.status(200).json({
             status: 'success',
@@ -134,32 +141,6 @@ export const getFeedersWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
-// export const getFeedersNamesByRegion = async (req, res) => {
-//     try {
-//         const region = req.params.region
-//         console.log(region);
-//         const regionFeederNames = await Feeders.getFeederNamesByRegion(
-//             pool,
-//             region
-//         );
-//         const meterCount = await Feeders.getMeterCountByRegion(pool, region);
-
-//         res.status(200).json({
-//             status: 'success',
-//             data: {
-//                 regionFeederNames: regionFeederNames,
-//                 meterCount: meterCount,
-//             },
-//         });
-//     } catch (error) {
-//         logger.error('Error fetching feeders widgets:', {
-//             error: error.message,
-//             stack: error.stack,
-//             timestamp: new Date().toISOString(),
-//         });
-//         res.status(500).json({ status: 'error', message: 'Server Error' });
-//     }
-// };
 export const getFeedersNamesByRegion = async (req, res) => {
     try {
         const region = req.params.region;
@@ -170,7 +151,7 @@ export const getFeedersNamesByRegion = async (req, res) => {
 
         res.status(200).json({
             status: 'success',
-            data: feedersWithCount, // array of { name, meterCount }
+            data: feedersWithCount,
         });
     } catch (error) {
         logger.error('Error fetching feeders widgets:', {
@@ -182,4 +163,78 @@ export const getFeedersNamesByRegion = async (req, res) => {
     }
 };
 
+export const getFeedersNamesByEdcNameHandler = async (req, res) => {
+    try {
+        let edcName = req.params.edc;
+        edcName = edcName.replace(/-/g, ' ');
+        const edcInfo = await Feeders.getEdcIdByName(pool, edcName);
 
+        if (!edcInfo) {
+            return res.status(404).json({
+                status: 'error',
+                message: `No EDC found with name: ${edcName}`,
+            });
+        }
+
+        const edcId = edcInfo.hierarchy_id;
+
+        const feedersWithCount = await Feeders.getFeederNamesByEdcId(
+            pool,
+            edcId
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                edc_id: edcId,
+                edcFeederNames: feedersWithCount,
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeder names by EDC name:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
+export const getFeedersBySubstationName = async (req, res) => {
+    try {
+        const substationName = req.params.substationName.replace(/-/g, ' '); // Convert "chennai-substation" -> "chennai substation"
+
+        // Step 1: Get substation ID
+        const substation = await Feeders.getSubstationIdByName(
+            pool,
+            substationName
+        );
+
+        if (!substation) {
+            return res.status(404).json({
+                status: 'error',
+                message: `No substation found with name: ${substationName}`,
+            });
+        }
+
+        // Step 2: Get feeder names by substation ID
+        const feeders = await Feeders.getFeederNamesBySubstationId(
+            pool,
+            substation.hierarchy_id
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                substation_id: substation.hierarchy_id,
+                feeders,
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders by substation name:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};

@@ -237,6 +237,7 @@ class EDCs {
     }
     async getCommMeters(connection, region) {
         try {
+
             const [[{ commMeters }]] = await connection.query(
                 {
                     sql: `
@@ -269,7 +270,7 @@ class EDCs {
                 JOIN hierarchy h ON m.location_id = h.hierarchy_id
                 WHERE h.hierarchy_name = ?
                 AND m.meter_serial_no NOT IN (
-                    SELECT DISTINCT ic.meter_no 
+                    SELECT DISTINCT ic.meter_no
                     FROM instant_comm ic
                     WHERE DATE(ic.device_date) = '2025-03-09'
                 );
@@ -285,6 +286,7 @@ class EDCs {
             throw error;
         }
     }
+
     async getTotalSubstations(connection) {
         try {
             const [[{ totalFeeders }]] = await connection.query({
@@ -319,47 +321,69 @@ class EDCs {
             throw error;
         }
     }
-    async getCommMeters(connection) {
-        try {
-            const [[{ commMeters }]] = await connection.query({
-                sql: `
-              SELECT COUNT(DISTINCT meter_no) AS commMeters
-              FROM instant_comm 
-              WHERE meter_no IN (
-                  SELECT meter_serial_no FROM meter 
-                  WHERE location_id IS NOT NULL
-              ) 
-              AND DATE(device_date) = '2025-03-09';
-          `,
-                timeout: QUERY_TIMEOUT,
-            });
-            return commMeters;
-        } catch (error) {
-            console.log('getCommMeters', error);
-            throw error;
-        }
-    }
 
-    async getNonCommMeters(connection) {
-        try {
-            const [[{ nonCommMeters }]] = await connection.query({
-                sql: `
-              SELECT COUNT(DISTINCT meter_serial_no) AS nonCommMeters
-              FROM meter 
-              WHERE location_id IS NOT NULL 
-              AND meter_serial_no NOT IN (
-                  SELECT DISTINCT meter_no FROM instant_comm 
-                  WHERE DATE(device_date) = '2025-03-09'
-              );
-          `,
-                timeout: QUERY_TIMEOUT,
-            });
-            return nonCommMeters;
-        } catch (error) {
-            console.log('getNonCommMeters', error);
-            throw error;
-        }
-    }
+    // async getCommMeter(connection, meters = []) {
+    //     try {
+    //         const queryParams = ['2025-03-09'];
+    //         let meterCondition = '';
+
+    //         if (meters.length > 0) {
+    //             meterCondition = 'AND meter_no IN (?)';
+    //             queryParams.push(meters);
+    //         }
+
+    //         const [results] = await connection.query(
+    //             {
+    //                 sql: `
+    //                 SELECT COUNT(DISTINCT meter_no) AS commMeters
+    //                 FROM instant_comm
+    //                 WHERE DATE(device_date) = ?
+    //                 ${meterCondition};
+    //             `,
+    //                 timeout: QUERY_TIMEOUT,
+    //             },
+    //             queryParams
+    //         );
+
+    //         return results[0].commMeters;
+    //     } catch (error) {
+    //         console.log('getCommMeter', error);
+    //         return 0;
+    //     }
+    // }
+
+    // async getNonCommMeters(connection, meters = []) {
+    //     try {
+    //         const queryParams = ['2025-03-09'];
+    //         let meterCondition = '';
+
+    //         if (meters.length > 0) {
+    //             meterCondition = 'AND meter_serial_no IN (?)';
+    //             queryParams.push(meters);
+    //         }
+
+    //         const [results] = await connection.query(
+    //             {
+    //                 sql: `
+    //                 SELECT COUNT(DISTINCT meter_serial_no) AS nonCommMeters
+    //                 FROM meter
+    //                 WHERE meter_serial_no NOT IN (
+    //                     SELECT DISTINCT meter_no FROM instant_comm
+    //                     WHERE DATE(device_date) = ?
+    //                 )
+    //                 ${meterCondition};
+    //             `,
+    //                 timeout: QUERY_TIMEOUT,
+    //             },
+    //             queryParams
+    //         );
+
+    //         return results[0].nonCommMeters;
+    //     } catch (error) {
+    //         console.log('getNonCommMeters', error);
+    //         return 0;
+    //     }
+    // }
 }
 
 export default new EDCs();

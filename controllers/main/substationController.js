@@ -15,8 +15,6 @@ export const getSubstationWidgets = async (req, res) => {
 
         const param = region ? region : edcs;
 
-        console.log('region', region);
-        console.log('edcs', edcs);
 
         if (!region) {
             return res.status(400).json({
@@ -60,10 +58,6 @@ export const getEdcSubstationWidgets = async (req, res) => {
         const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
 
         //const param = region ? region : edcs;
-        // console.log('param', param);
-
-        // console.log('region', region);
-        console.log('edcs', edcs);
 
         if (!edcs) {
             return res.status(400).json({
@@ -214,5 +208,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
         console.error('Error fetching region graphs:', error);
     }
 };
+
+
 
 export default getSubstationWidgets;

@@ -32,7 +32,6 @@ const uploadProfileImage = async (req, res) => {
 
         const userId = req.user.userId;
         const imagePath = req.file.path;
-        console.log(userId, imagePath);
 
         await pool.query(
             'UPDATE user SET user_image = ? WHERE user_id = ?',
