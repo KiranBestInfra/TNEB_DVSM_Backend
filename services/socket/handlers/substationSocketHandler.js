@@ -62,7 +62,7 @@ class SubstationSocketHandler {
                 socket,
                 substations
             );
-            console.log(substationDemandData);
+            //console.log(substationDemandData);
 
             substations.forEach((substation) => {
                 if (substationDemandData[substation]) {

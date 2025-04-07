@@ -236,8 +236,8 @@ class EDCs {
         }
     }
     async getCommMeters(connection, region) {
+        console.log('region', region);
         try {
-
             const [[{ commMeters }]] = await connection.query(
                 {
                     sql: `
@@ -283,6 +283,79 @@ class EDCs {
             return nonCommMeters;
         } catch (error) {
             console.log('❌ Error in getNonCommMeters:', error);
+            throw error;
+        }
+    }
+
+    async getEdcCommMeterCounts(connection, edc, date) {
+        console.log('edc', edc);
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    COUNT(DISTINCT ic.meter_no) AS comm_meters
+                FROM hierarchy edc
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                JOIN instant_comm ic 
+                    ON ic.meter_no = m.meter_serial_no
+                WHERE edc.hierarchy_type_id = 11
+                  AND edc.hierarchy_name = ?
+                  AND DATE(ic.device_date) = '2025-03-09'
+                `,
+                values: [edc, date],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.length > 0 ? rows[0].comm_meters : 0;
+        } catch (error) {
+            console.error(
+                '❌ Error fetching communication meter counts by EDC:',
+                error
+            );
+            throw error;
+        }
+    }
+
+    async getEdcNonCommMeterCounts(connection, edc, date) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    COUNT(DISTINCT m.meter_serial_no) AS non_comm_meters
+                FROM hierarchy edc
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                WHERE edc.hierarchy_type_id = 11
+                  AND edc.hierarchy_name = ?
+                  AND m.meter_serial_no NOT IN (
+                      SELECT DISTINCT ic.meter_no 
+                      FROM instant_comm ic 
+                      WHERE DATE(ic.device_date) = '2025-03-09'
+                  )
+                `,
+                values: [edc, date],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.length > 0 ? rows[0].non_comm_meters : 0;
+        } catch (error) {
+            console.error(
+                '❌ Error fetching non-communication meter counts by EDC:',
+                error
+            );
             throw error;
         }
     }
