@@ -37,6 +37,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
+            //console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await Feeders.getDemandTrendsData(
                 pool,
@@ -45,6 +46,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 '2025-03-26 23:59:59',
                 hierarchyMeters
             );
+            //console.log('yesterdayDemandData', yesterdayDemandData);
 
             const xAxis = [];
             const currentDayData = [];

@@ -227,7 +227,7 @@ class Feeders {
         FROM hierarchy 
         WHERE hierarchy_type_id = 11 AND hierarchy_name = ?
     `;
-        
+
         const [rows] = await connection.query(sql, [edcName]);
         return rows[0]; // return null if not found
     }
@@ -269,6 +269,7 @@ class Feeders {
         const sql = `
         SELECT 
             feeder.hierarchy_name AS name,
+            feeder.hierarchy_id AS id,
             COUNT(m.meter_serial_no) AS meterCount
         FROM hierarchy feeder
         LEFT JOIN meter m ON feeder.hierarchy_id = m.location_id
