@@ -134,23 +134,43 @@ export const getFeedersWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+// export const getFeedersNamesByRegion = async (req, res) => {
+//     try {
+//         const region = req.params.region
+//         console.log(region);
+//         const regionFeederNames = await Feeders.getFeederNamesByRegion(
+//             pool,
+//             region
+//         );
+//         const meterCount = await Feeders.getMeterCountByRegion(pool, region);
 
+//         res.status(200).json({
+//             status: 'success',
+//             data: {
+//                 regionFeederNames: regionFeederNames,
+//                 meterCount: meterCount,
+//             },
+//         });
+//     } catch (error) {
+//         logger.error('Error fetching feeders widgets:', {
+//             error: error.message,
+//             stack: error.stack,
+//             timestamp: new Date().toISOString(),
+//         });
+//         res.status(500).json({ status: 'error', message: 'Server Error' });
+//     }
+// };
 export const getFeedersNamesByRegion = async (req, res) => {
     try {
-        const region = req.params.region
-
-        const regionFeederNames = await Feeders.getFeederNamesByRegion(
+        const region = req.params.region;
+        const feedersWithCount = await Feeders.getFeederNamesByRegion(
             pool,
             region
         );
- 
 
         res.status(200).json({
             status: 'success',
-            data: {
-                regionFeederNames: regionFeederNames,
-
-            },
+            data: feedersWithCount, // array of { name, meterCount }
         });
     } catch (error) {
         logger.error('Error fetching feeders widgets:', {
@@ -161,4 +181,5 @@ export const getFeedersNamesByRegion = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+
 

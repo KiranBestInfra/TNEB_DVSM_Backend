@@ -10,14 +10,20 @@ class SubstationSocketHandler {
 
     initialize(socket) {
         socket.on('subscribeSubstation', async (data) => {
-            if (!data || !data.substations || !Array.isArray(data.substations)) {
+            if (
+                !data ||
+                !data.substations ||
+                !Array.isArray(data.substations)
+            ) {
                 logger.error('Invalid substation subscription data received');
-                socket.emit('error', { message: 'Invalid subscription data. Expected { substations: string[] }' });
+                socket.emit('error', {
+                    message:
+                        'Invalid subscription data. Expected { substations: string[] }',
+                });
                 return;
             }
 
             const { substations } = data;
-            console.log(substations);
             if (socket.subscribedSubstations) {
                 const existingIntervalId = socketService.getInterval(socket.id);
                 if (existingIntervalId) {
@@ -26,7 +32,9 @@ class SubstationSocketHandler {
                 }
             }
 
-            logger.info(`Client subscribed to substations: ${substations.join(', ')}`);
+            logger.info(
+                `Client subscribed to substations: ${substations.join(', ')}`
+            );
             socket.subscribedSubstations = substations;
 
             try {
@@ -41,15 +49,21 @@ class SubstationSocketHandler {
                 socketService.storeInterval(socket.id, intervalId);
             } catch (error) {
                 logger.error('Error in substation subscription:', error);
-                socket.emit('error', { message: 'Error processing substation subscription' });
+                socket.emit('error', {
+                    message: 'Error processing substation subscription',
+                });
             }
         });
     }
 
     async sendSubstationData(socket, substations) {
         try {
-            const substationDemandData = await fetchSubstationGraphs(socket, substations);
-            
+            const substationDemandData = await fetchSubstationGraphs(
+                socket,
+                substations
+            );
+            console.log(substationDemandData);
+
             substations.forEach((substation) => {
                 if (substationDemandData[substation]) {
                     socket.emit('substationUpdate', {
@@ -66,4 +80,4 @@ class SubstationSocketHandler {
 }
 
 const substationSocketHandler = new SubstationSocketHandler();
-export { substationSocketHandler }; 
+export { substationSocketHandler };

@@ -1,8 +1,8 @@
 import express from 'express';
-import { getSubstationWidgets } from '../controllers/main/substationController.js';
+import { getEdcSubstationWidgets, getSubstationWidgets } from '../controllers/main/substationController.js';
 
 const router = express.Router();
 
-router.get('/widgets/:edcs/substations', getSubstationWidgets);
+router.get('/widgets/:edcs/substations', getEdcSubstationWidgets);
 
 export default router;
