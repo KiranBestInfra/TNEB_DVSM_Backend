@@ -1,5 +1,6 @@
 import pool from '../../config/db.js';
 import Substations from '../../models/main/substations.model.js';
+import Regions from '../../models/main/regions.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -14,6 +15,7 @@ export const getSubstationWidgets = async (req, res) => {
         const edcs = req.params.edcs || '';
 
         const param = region ? region : edcs;
+        const deviceDate = '2025-03-09';
 
 
         if (!region) {
@@ -31,6 +33,17 @@ export const getSubstationWidgets = async (req, res) => {
             pool,
             param
         );
+         const commMeters = await Regions.getRegionCommMeterCounts(
+             pool,
+             region,
+             deviceDate
+        );
+        const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
+
 
         const substationFeederCounts = Array.isArray(feederCounts)
             ? feederCounts.reduce((acc, feeder) => {
@@ -45,6 +58,8 @@ export const getSubstationWidgets = async (req, res) => {
                 edcs,
                 substationNames,
                 substationFeederCounts,
+                commMeters,
+                nonCommMeters,
             },
         });
     } catch (error) {
@@ -74,7 +89,7 @@ export const getEdcSubstationWidgets = async (req, res) => {
             edcs
         );
        // console.log('feederCountsedc', feederCountsedc);
-
+        
         const substationFeederCountsedc = Array.isArray(feederCountsedc)
             ? feederCountsedc.reduce((acc, feeder) => {
                   acc[feeder.substation_name] = feeder.feeder_count;
