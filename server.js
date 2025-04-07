@@ -81,7 +81,6 @@ app.use(cookieParser());
 app.use(xss());
 app.use(hpp());
 app.use(compression());
-// app.use(rateLimiterMiddleware);
 
 const extractTokenData = async (req, res, next) => {
     const accessToken = req.cookies.accessToken;
@@ -130,12 +129,10 @@ app.get('/health', (req, res) => {
 
 app.use(`/api/${config.API_VERSION}`, v1Routes);
 
-// File access route
 app.get('/static/uploads/:filename', (req, res) => {
     const { filename } = req.params;
     const filePath = `${process.cwd()}/static/uploads/${filename}`;
 
-    // Log the request details
     logger.info('File access request:', {
         filename,
         filePath,
@@ -143,8 +140,7 @@ app.get('/static/uploads/:filename', (req, res) => {
         fullPath: `${process.cwd()}/${filePath}`,
     });
 
-    // Check if file exists before trying to send it
-    // const fs = require('fs');
+
     if (!fs.existsSync(filePath)) {
         logger.error('File not found:', {
             filePath,
