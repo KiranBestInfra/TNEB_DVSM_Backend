@@ -67,10 +67,7 @@ export const getSubstationWidgets = async (req, res) => {
 };
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
-        //const region = req.params.region || '';
-        const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
-
-        //const param = region ? region : edcs;
+        const edcs = req.params.edcs || null
 
         if (!edcs) {
             return res.status(400).json({

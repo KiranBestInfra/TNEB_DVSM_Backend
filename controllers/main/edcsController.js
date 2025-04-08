@@ -72,7 +72,6 @@ export const getSubstationTotalWidgets = async (req, res) => {
             edcs
         );
 
-        console.log(regionFeederNames);
         res.status(200).json({
             status: 'success',
             data: {
