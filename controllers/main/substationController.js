@@ -109,7 +109,6 @@ export const getEdcSubstationWidgets = async (req, res) => {
 export const fetchSubstationGraphs = async (socket, substations) => {
     try {
         // const regionNames = await REGIONS.getRegionNames(pool);
-        console.log('substations', substations);
 
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
@@ -128,7 +127,6 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                 hierarchy.hierarchy_type_id,
                 hierarchy.hierarchy_id
             );
-            // console.log(meters);
             //count++;
 
             const hierarchyMeters = meters.map((meter) =>
@@ -142,7 +140,6 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-            console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await Substations.getDemandTrendsData(
                 pool,
@@ -204,18 +201,17 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                         data: previousDayData,
                     },
                 ],
-            };
+            };  
 
             substationDemandData[substation] = detailedGraphData;
-            // if (substationDemandData[substation]) {
-            //     socket.emit('substationUpdate', {
-            //         substation,
-            //         graphData: substationDemandData[substation],
-            //     });
-            // }
-            console.log('substationDemandData', substationDemandData);
+            if (substationDemandData[substation]) {
+                socket.emit('substationUpdate', {
+                    substation,
+                    graphData: substationDemandData[substation],
+                });
+            }
         }
-        return substationDemandData;
+        // return substationDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
     }
@@ -232,7 +228,6 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
         if (substationID) {
             const substationHierarchy =
                 await Substations.getHierarchyBySubstation(pool, substationID);
-            console.log('substationHierarchy', substationHierarchy);
             const meters = await Substations.getSubstationMeters(
                 pool,
                 null,

@@ -235,7 +235,6 @@ export const demandGraph = async (req, res) => {
     try {
         const accessValues = req.locationAccess?.values || [];
         const regionID = req.params.regionID || null;
-        console.log(regionID);
 
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(

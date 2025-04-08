@@ -43,7 +43,6 @@ export const getEDCWidgets = async (req, res) => {
             deviceDate
         );
 
-        console.log(edcNames);
         res.status(200).json({
             status: 'success',
             data: {

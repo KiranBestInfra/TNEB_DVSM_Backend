@@ -101,7 +101,6 @@ export const fetchFeederGraphs = async (socket, feeders) => {
             };
 
             feederDemandData[feeder] = detailedGraphData;
-            console.log(detailedGraphData);
             if (feederDemandData[feeder]) {
                 socket.emit('feederUpdate', {
                     feeder,
