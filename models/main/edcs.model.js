@@ -131,11 +131,11 @@ class EDCs {
                         JOIN hierarchy_master hm 
                             ON h.hierarchy_type_id = hm.hierarchy_type_id 
                         WHERE hm.hierarchy_title = "EDC"
-                        AND h.hierarchy_name = ?
+                        AND  h.hierarchy_name = ? OR h.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [edcName]
+                [edcName, edcName]
             );
             return results;
         } catch (error) {

@@ -188,6 +188,33 @@ export const getFeedersNamesByEdcNameHandler = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
+export const getFeedersWidgets = async (req, res) => {
+    try {
+        const totalFeeders = await Feeders.getTotalFeeders(pool);
+        const commMeters = await Feeders.getCommMeters(pool);
+        const nonCommMeters = await Feeders.getNonCommMeters(pool);
+        //  const regionFeederNames = await Feeders.getFeederNamesByRegion(pool,region);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                totalFeeders,
+                commMeters,
+                nonCommMeters,
+                // regionFeederNames: regionFeederNames.map(
+                //     (region) => region.hierarchy_name
+                // ),
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders widgets:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
 export const getFeedersBySubstationName = async (req, res) => {
     try {
         const substationName = req.params.substationName.replace(/-/g, ' '); // Convert "chennai-substation" -> "chennai substation"
