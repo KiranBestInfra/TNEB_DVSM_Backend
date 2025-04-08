@@ -17,7 +17,6 @@ export const getSubstationWidgets = async (req, res) => {
         const param = region ? region : edcs;
         const deviceDate = '2025-03-09';
 
-
         if (!region) {
             return res.status(400).json({
                 status: 'error',
@@ -33,17 +32,16 @@ export const getSubstationWidgets = async (req, res) => {
             pool,
             param
         );
-         const commMeters = await Regions.getRegionCommMeterCounts(
-             pool,
-             region,
-             deviceDate
+        const commMeters = await Regions.getRegionCommMeterCounts(
+            pool,
+            region,
+            deviceDate
         );
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
             region,
             deviceDate
         );
-
 
         const substationFeederCounts = Array.isArray(feederCounts)
             ? feederCounts.reduce((acc, feeder) => {
@@ -69,10 +67,7 @@ export const getSubstationWidgets = async (req, res) => {
 };
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
-        //const region = req.params.region || '';
-        const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
-
-        //const param = region ? region : edcs;
+        const edcs = req.params.edcs || null
 
         if (!edcs) {
             return res.status(400).json({
@@ -83,13 +78,12 @@ export const getEdcSubstationWidgets = async (req, res) => {
 
         const edcsubstationNames =
             await Substations.getEdcSubstationNamesByRegion(pool, edcs);
-       // console.log('edcsubstationNames', edcsubstationNames);
         const feederCountsedc = await Substations.getFeederCountBySubstationEdc(
             pool,
             edcs
         );
-       // console.log('feederCountsedc', feederCountsedc);
-        
+        console.log('1212', feederCountsedc);
+
         const substationFeederCountsedc = Array.isArray(feederCountsedc)
             ? feederCountsedc.reduce((acc, feeder) => {
                   acc[feeder.substation_name] = feeder.feeder_count;
@@ -223,7 +217,5 @@ export const fetchSubstationGraphs = async (socket, substations) => {
         console.error('Error fetching region graphs:', error);
     }
 };
-
-
 
 export default getSubstationWidgets;

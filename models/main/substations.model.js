@@ -159,7 +159,8 @@ class Substations {
         try {
             const sql = `
           SELECT
-                substation.hierarchy_name AS substation_names
+                substation.hierarchy_name AS substation_names,
+                substation.hierarchy_id
             FROM hierarchy edc
             JOIN hierarchy district 
                 ON edc.hierarchy_id = district.parent_id 
@@ -168,24 +169,20 @@ class Substations {
                 ON district.hierarchy_id = substation.parent_id 
                 AND substation.hierarchy_type_id = 35 
             WHERE edc.hierarchy_type_id = 11 
-            AND edc.hierarchy_name like ?;  
+            AND edc.hierarchy_name like ?
+            OR edc.hierarchy_id = ?
         `;
 
-            const [rows] = await connection.query(sql, [region]);
+            const [rows] = await connection.query(sql, [region, region]);
 
             if (rows.length === 0) {
                 return [];
             }
 
-            // Collect substation names from each row
-            const substationNames = rows
-                .map((row) => row.substation_names)
-                .filter((name) => name !== null);
-
-            return substationNames;
+            return rows;
         } catch (error) {
             console.error(
-                `❌ Error fetching Substation names for region: ${edcs}`,
+                `❌ Error fetching Substation names for region`,
                 error
             );
             throw error;
@@ -210,10 +207,11 @@ class Substations {
                     AND feeder.hierarchy_type_id = 37
                 WHERE edc.hierarchy_type_id = 11
                 AND edc.hierarchy_name = ?
+                OR edc.hierarchy_id
                 GROUP BY substation.hierarchy_name
                 ORDER BY substation.hierarchy_name;
             `,
-                values: [region],
+                values: [region, region],
                 timeout: QUERY_TIMEOUT,
             });
 
