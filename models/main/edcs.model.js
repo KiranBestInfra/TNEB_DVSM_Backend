@@ -34,14 +34,14 @@ class EDCs {
             });
             return totalEdcs;
         } catch (error) {
-            console.log('getTotalEdcs', error);
+            console.error('getTotalEdcs', error);
             throw error;
         }
     }
     async getEdcNamesByRegion(connection, region) {
         try {
             const sql = `
-            SELECT hierarchy_name 
+            SELECT hierarchy_name , h.hierarchy_id
                     FROM hierarchy h
                     JOIN hierarchy_master hm 
                         ON h.hierarchy_type_id = hm.hierarchy_type_id 
@@ -50,9 +50,8 @@ class EDCs {
         `;
 
             const [rows] = await connection.query(sql, [region]); // Correct way
-            console.log('Region ID:', region);
 
-            return rows.map((row) => row.hierarchy_name);
+            return rows;
         } catch (error) {
             console.error(
                 '❌ Error fetching EDC names for region:',
@@ -82,7 +81,6 @@ class EDCs {
                      GROUP BY edc.hierarchy_name`;
 
             const [rows] = await connection.query(sql, [region]);
-            console.log('Region ID:', region);
             return rows;
         } catch (error) {
             console.error('❌ Error fetching substation count:', error);
@@ -141,7 +139,6 @@ class EDCs {
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByEdc', error);
             throw error;
         }
     }
@@ -183,7 +180,6 @@ class EDCs {
                         ' seconds'
                 );
             }
-            console.log('getEdcMeters', error);
             throw error;
         }
     }
@@ -231,12 +227,10 @@ class EDCs {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
     async getCommMeters(connection, region) {
-        console.log('region', region);
         try {
             const [[{ commMeters }]] = await connection.query(
                 {
@@ -255,7 +249,7 @@ class EDCs {
 
             return commMeters;
         } catch (error) {
-            console.log('❌ Error in getCommMeters:', error);
+            console.error('Error in getCommMeters:', error);
             throw error;
         }
     }
@@ -282,13 +276,12 @@ class EDCs {
 
             return nonCommMeters;
         } catch (error) {
-            console.log('❌ Error in getNonCommMeters:', error);
+            console.error('Error in getNonCommMeters:', error);
             throw error;
         }
     }
 
     async getEdcCommMeterCounts(connection, edc, date) {
-        console.log('edc', edc);
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -373,7 +366,6 @@ class EDCs {
             });
             return totalFeeders;
         } catch (error) {
-            console.log('getTotalSubstations', error);
             throw error;
         }
     }
@@ -390,7 +382,6 @@ class EDCs {
             });
             return totalFeeders;
         } catch (error) {
-            console.log('getTotalFeeders', error);
             throw error;
         }
     }

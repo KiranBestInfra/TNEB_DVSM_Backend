@@ -14,7 +14,6 @@ class Substations {
             });
             return totalSubstations;
         } catch (error) {
-            console.log('getTotalSubstations', error);
             throw error;
         }
     }
@@ -137,7 +136,6 @@ class Substations {
         `;
 
             const [rows] = await connection.query(sql, [edcs]);
-            //console.log('SQL Query Result:', rows); //Log the raw results.
 
             if (rows.length === 0) {
                 return [];
@@ -174,7 +172,6 @@ class Substations {
         `;
 
             const [rows] = await connection.query(sql, [region]);
-            //console.log('SQL Query Result:', rows); //Log the raw results.
 
             if (rows.length === 0) {
                 return [];
@@ -250,7 +247,6 @@ class Substations {
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByRegion', error);
             throw error;
         }
     }
@@ -287,7 +283,6 @@ class Substations {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -334,7 +329,6 @@ class Substations {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }

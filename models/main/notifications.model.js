@@ -20,7 +20,6 @@ class Notification {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -43,7 +42,6 @@ class Notification {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -68,7 +66,6 @@ class Notification {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }

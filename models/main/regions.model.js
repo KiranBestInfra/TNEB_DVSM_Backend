@@ -14,7 +14,6 @@ class Regions {
             });
             return totalRegions;
         } catch (error) {
-            console.log('getTotalRegions', error);
             throw error;
         }
     }
@@ -150,7 +149,6 @@ class Regions {
             });
             return commMeters;
         } catch (error) {
-            console.log('getCommMeters', error);
             throw error;
         }
     }
@@ -171,7 +169,6 @@ class Regions {
             });
             return nonCommMeters;
         } catch (error) {
-            console.log('getNonCommMeters', error);
             throw error;
         }
     }
@@ -209,7 +206,6 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('search', error);
             throw error;
         }
     }
@@ -305,7 +301,6 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -328,7 +323,6 @@ class Regions {
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByRegion', error);
             throw error;
         }
     }
