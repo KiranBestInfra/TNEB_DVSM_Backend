@@ -121,7 +121,8 @@ class Substations {
         try {
             const sql = `
            SELECT
-                substation.hierarchy_name AS substation_names
+                substation.hierarchy_name AS substation_names,
+                substation.hierarchy_id AS id
             FROM hierarchy region
             JOIN hierarchy edc 
                 ON region.hierarchy_id = edc.parent_id 
@@ -139,16 +140,16 @@ class Substations {
             const [rows] = await connection.query(sql, [edcs]);
             //console.log('SQL Query Result:', rows); //Log the raw results.
 
-            if (rows.length === 0) {
-                return [];
-            }
+            // if (rows.length === 0) {
+            //     return [];
+            // }
 
-            // Collect substation names from each row
-            const substationNames = rows
-                .map((row) => row.substation_names)
-                .filter((name) => name !== null);
+            // // Collect substation names from each row
+            // const substationNames = rows
+            //     .map((row) => row.substation_names)
+            //     .filter((name) => name !== null);
 
-            return substationNames;
+            return rows;
         } catch (error) {
             console.error(
                 `❌ Error fetching Substation names for region: ${edcs}`,
@@ -233,6 +234,7 @@ class Substations {
         }
     }
     async getHierarchyBySubstation(connection, regionID) {
+        console.log('regionID', regionID);
         try {
             const [[results]] = await connection.query(
                 {
