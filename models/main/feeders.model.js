@@ -14,7 +14,6 @@ class Feeders {
             });
             return totalFeeders;
         } catch (error) {
-            console.log('getTotalFeeders', error);
             throw error;
         }
     }
@@ -33,12 +32,13 @@ class Feeders {
             LEFT JOIN meter m ON feeder.hierarchy_id = m.location_id
             WHERE region.hierarchy_type_id = 10
             AND region.hierarchy_name = ?
+            OR region.hierarchy_id = ?
             GROUP BY feeder.hierarchy_id, feeder.hierarchy_name
             ORDER BY feeder.hierarchy_name
         `;
 
-            const [rows] = await connection.query(sql, [region]);
-            return rows; // Each row has: { name: 'feederName', meterCount: 5 }
+            const [rows] = await connection.query(sql, [region, region]);
+            return rows;
         } catch (error) {
             console.error(
                 '❌ Error fetching feeder names with meter count:',
@@ -68,7 +68,6 @@ class Feeders {
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByFeeder', error);
             throw error;
         }
     }
@@ -104,7 +103,6 @@ class Feeders {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -151,7 +149,6 @@ class Feeders {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -232,7 +229,6 @@ class Feeders {
         return rows[0]; // return null if not found
     }
 
-    // Step 2: Get feeder names for given EDC ID
     async getFeederNamesByEdcId(connection, edcId) {
         const sql = `
         SELECT 
@@ -253,7 +249,6 @@ class Feeders {
         return rows;
     }
 
-    // Get hierarchy_id of the substation by name
     async getSubstationIdByName(connection, substationName) {
         const sql = `
         SELECT hierarchy_id
@@ -264,7 +259,6 @@ class Feeders {
         return rows[0]; // may return undefined if not found
     }
 
-    // Get feeders by substation ID
     async getFeederNamesBySubstationId(connection, substationId) {
         const sql = `
         SELECT 
@@ -279,6 +273,40 @@ class Feeders {
     `;
         const [rows] = await connection.query(sql, [substationId]);
         return rows;
+    }
+
+    async getAllFeedersByEdcId(connection, edcId) {
+        try {
+            const sql = `
+            SELECT 
+                feeder.hierarchy_id,
+                feeder.hierarchy_name,
+                feeder.parent_id AS substation_id,
+                substation.hierarchy_name AS substation_name,
+                district.hierarchy_id AS district_id,
+                district.hierarchy_name AS district_name
+            FROM hierarchy edc
+            JOIN hierarchy district ON edc.hierarchy_id = district.parent_id
+            JOIN hierarchy substation ON district.hierarchy_id = substation.parent_id
+            JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id
+            WHERE edc.hierarchy_id = ?
+            AND feeder.hierarchy_type_id = 37
+            ORDER BY district.hierarchy_name, substation.hierarchy_name, feeder.hierarchy_name
+            `;
+
+            const [rows] = await connection.query(
+                {
+                    sql: sql,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [edcId]
+            );
+
+            return rows;
+        } catch (error) {
+            console.error('Error fetching feeders for EDC:', error);
+            throw error;
+        }
     }
 }
 

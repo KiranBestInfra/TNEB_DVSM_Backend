@@ -145,6 +145,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
+            console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await Substations.getDemandTrendsData(
                 pool,
@@ -215,8 +216,8 @@ export const fetchSubstationGraphs = async (socket, substations) => {
             //         graphData: substationDemandData[substation],
             //     });
             // }
+            console.log('substationDemandData', substationDemandData);
         }
-
         return substationDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
@@ -229,7 +230,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             .toUpperCase()
             .replace(/-/g, ' ');
 
-        console.log(substationID);
+        // console.log(substationID);
 
         if (substationID) {
             const substationHierarchy =

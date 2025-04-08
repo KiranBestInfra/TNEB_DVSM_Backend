@@ -129,9 +129,7 @@ const login = async (req, res) => {
             });
         }
 
-        console.log(password, user.password);
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log(isMatch);
         
         if (!isMatch) {
             await User.updateLoginAttempts(pool, user.id);

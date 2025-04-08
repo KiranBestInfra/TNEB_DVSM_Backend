@@ -24,7 +24,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -101,7 +100,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -126,7 +124,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -151,7 +148,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -179,7 +175,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getFeederData', error);
             throw error;
         }
     }
@@ -206,7 +201,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }
@@ -275,7 +269,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }
@@ -312,7 +305,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }
@@ -348,7 +340,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }
@@ -383,7 +374,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }
@@ -419,7 +409,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }
@@ -456,7 +445,6 @@ class DTR {
                         ' seconds'
                 );
             }
-            console.log('getDTRMeters', error);
             throw error;
         }
     }

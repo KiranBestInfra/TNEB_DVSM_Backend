@@ -17,7 +17,6 @@ const createTransporter = async () => {
         });
 
         await transporter.verify();
-        console.log('Email transporter configured successfully');
         return transporter;
     } catch (error) {
         console.error('Email transporter configuration failed:', error);

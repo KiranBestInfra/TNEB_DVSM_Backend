@@ -44,7 +44,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getConsumerTypeCount', error);
             throw error;
         }
     }
@@ -91,7 +90,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getActiveStatus', error);
             throw error;
         }
     }
@@ -121,7 +119,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getTotalConsumption', error);
             throw error;
         }
     }
@@ -179,7 +176,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getUserConsumptionCategory', error);
             throw error;
         }
     }
@@ -199,7 +195,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getTariffRates', error);
             throw error;
         }
     }
@@ -252,7 +247,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getTotalRevenueCurrentMonth', error);
             throw error;
         }
     }
@@ -293,7 +287,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getTotalRevenueLastMonth', error);
             throw error;
         }
     }
@@ -327,7 +320,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getOverdueConsumersCount', error);
             throw error;
         }
     }
@@ -357,7 +349,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getPendingConsumersCount', error);
             throw error;
         }
     }
@@ -405,7 +396,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getConsumptionWithStartAndEndDate', error);
             throw error;
         }
     }
@@ -433,7 +423,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getConsumerUsingMeterNo', error);
             throw error;
         }
     }
@@ -556,7 +545,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getTotalRevenueByStartAndEndDate', error);
             throw error;
         }
     }
@@ -611,7 +599,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('disconnectConsumer', error);
             throw error;
         }
     }
@@ -782,7 +769,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('gaphDashboardAnalytics', error);
             throw error;
         }
     }
@@ -819,7 +805,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getBillingAndCollectionGraphData', error);
             throw error;
         }
     }
@@ -895,7 +880,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getOverdueConsumerTable', error);
             throw error;
         }
     }
@@ -965,7 +949,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getDisconnectedMeters', error);
             throw error;
         }
     }
@@ -1095,7 +1078,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getConsumersTable', error);
             throw error;
         }
     }
@@ -1133,7 +1115,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getConsumerActiveStatus', error);
             throw error;
         }
     }
@@ -1167,7 +1148,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getActiveMeters', error);
             throw error;
         }
     }
@@ -1219,7 +1199,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getInActiveMeters', error);
             throw error;
         }
     }
@@ -1239,7 +1218,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getTariffRates', error);
             throw error;
         }
     }
@@ -1269,7 +1247,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('getHierarchy', error);
             throw error;
         }
     }
@@ -1305,7 +1282,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('newConnections', error);
             throw error;
         }
     }
@@ -1336,7 +1312,6 @@ class Demo {
                         ' seconds'
                 );
             }
-            console.log('newConnectionsLastMonth', error);
             throw error;
         }
     }

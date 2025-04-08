@@ -14,7 +14,6 @@ class Substations {
             });
             return totalSubstations;
         } catch (error) {
-            console.log('getTotalSubstations', error);
             throw error;
         }
     }
@@ -138,7 +137,6 @@ class Substations {
         `;
 
             const [rows] = await connection.query(sql, [edcs]);
-            //console.log('SQL Query Result:', rows); //Log the raw results.
 
             // if (rows.length === 0) {
             //     return [];
@@ -175,7 +173,6 @@ class Substations {
         `;
 
             const [rows] = await connection.query(sql, [region]);
-            //console.log('SQL Query Result:', rows); //Log the raw results.
 
             if (rows.length === 0) {
                 return [];
@@ -234,7 +231,7 @@ class Substations {
         }
     }
     async getHierarchyBySubstation(connection, regionID) {
-        console.log('regionID', regionID);
+        // console.log('regionID', regionID);
         try {
             const [[results]] = await connection.query(
                 {
@@ -244,15 +241,14 @@ class Substations {
                         JOIN hierarchy_master hm 
                             ON h.hierarchy_type_id = hm.hierarchy_type_id 
                         WHERE hm.hierarchy_title = "SUBSTATION"
-                        AND h.hierarchy_name = ?
+                        AND  h.hierarchy_name = ? OR h.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [regionID]
+                [regionID, regionID]
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByRegion', error);
             throw error;
         }
     }
@@ -289,7 +285,6 @@ class Substations {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -336,7 +331,6 @@ class Substations {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
