@@ -140,7 +140,6 @@ app.get('/static/uploads/:filename', (req, res) => {
         fullPath: `${process.cwd()}/${filePath}`,
     });
 
-
     if (!fs.existsSync(filePath)) {
         logger.error('File not found:', {
             filePath,
@@ -186,11 +185,9 @@ app.use((req, res) => {
 
 // Start the server
 server.listen(config.SOCKET_PORT, () => {
-    console.log('Server running on port:', config.PORT);
 });
 
 app.listen(config.PORT, () => {
-    console.log('Running on port: ', config.SOCKET_PORT);
 });
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
