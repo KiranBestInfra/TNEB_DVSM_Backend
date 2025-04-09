@@ -253,8 +253,8 @@ class Feeders {
         const sql = `
         SELECT hierarchy_id
         FROM hierarchy
-            where hierarchy_type_id = "35" and hierarchy_name =?           
-    `;
+            where hierarchy_type_id = "35" and hierarchy_name = ?           
+        `;
         const [rows] = await connection.query(sql, [substationName]);
         return rows[0]; // may return undefined if not found
     }

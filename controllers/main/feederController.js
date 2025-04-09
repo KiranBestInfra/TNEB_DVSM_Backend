@@ -216,9 +216,8 @@ export const getFeedersWidgets = async (req, res) => {
 };
 export const getFeedersBySubstationName = async (req, res) => {
     try {
-        const substationName = req.params.substationName.replace(/-/g, ' '); // Convert "chennai-substation" -> "chennai substation"
+        const substationName = req.params.substationName.replace(/-/g, ' ');
 
-        // Step 1: Get substation ID
         const substation = await Feeders.getSubstationIdByName(
             pool,
             substationName
@@ -231,7 +230,6 @@ export const getFeedersBySubstationName = async (req, res) => {
             });
         }
 
-        // Step 2: Get feeder names by substation ID
         const feeders = await Feeders.getFeederNamesBySubstationId(
             pool,
             substation.hierarchy_id
