@@ -67,7 +67,7 @@ export const getSubstationWidgets = async (req, res) => {
 };
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
-        const edcs = req.params.edcs || null
+        const edcs = req.params.edcs || null;
 
         if (!edcs) {
             return res.status(400).json({
@@ -201,7 +201,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                         data: previousDayData,
                     },
                 ],
-            };  
+            };
 
             substationDemandData[substation] = detailedGraphData;
             if (substationDemandData[substation]) {
@@ -401,6 +401,41 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             message: 'Internal Server Error',
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
+    }
+};
+export const getFeedersDataBySubstation = async (req, res) => {
+    try {
+        // Extract and clean substation name
+        const substation = req.params.substationId || '';
+        const deviceDate = '2025-03-09';
+
+        const commMeters = await Substations.getSubstationCommMeterCounts(
+            pool,
+            substation,
+            deviceDate
+        );
+
+        const nonCommMeters = await Substations.getSubstationNonCommMeterCounts(
+            pool,
+            substation,
+            deviceDate
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                commMeters,
+                nonCommMeters,
+            },
+        });
+    } catch (error) {
+        logger.error('❌ Error fetching feeders widgets by Substation:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
 

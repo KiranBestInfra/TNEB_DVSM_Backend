@@ -54,15 +54,15 @@ class EdcSocketHandler {
 
     async sendEdcData(socket, edcs) {
         try {
-            const edcDemandData = await fetchEdcGraphs(edcs);
-            edcs.forEach((edc) => {
-                if (edcDemandData[edc]) {
-                    socket.emit('edcUpdate', {
-                        edc,
-                        graphData: edcDemandData[edc],
-                    });
-                }
-            });
+            const edcDemandData = await fetchEdcGraphs(socket, edcs);
+            // edcs.forEach((edc) => {
+            //     if (edcDemandData[edc]) {
+            //         socket.emit('edcUpdate', {
+            //             edc,
+            //             graphData: edcDemandData[edc],
+            //         });
+            //     }
+            // });
         } catch (error) {
             logger.error('Error sending EDC data:', error);
             socket.emit('error', { message: 'Error fetching EDC data' });

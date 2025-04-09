@@ -57,7 +57,7 @@ export const getDashboardWidgets = async (req, res) => {
     }
 };
 
-export const fetchRegionGraphs = async (regionNames) => {
+export const fetchRegionGraphs = async (socket, regionNames) => {
     try {
         // const regionNames = await REGIONS.getRegionNames(pool);
 
@@ -155,6 +155,12 @@ export const fetchRegionGraphs = async (regionNames) => {
             };
 
             regionDemandData[region] = detailedGraphData;
+            if (regionDemandData[region]) {
+                socket.emit('regionUpdate', {
+                    region,
+                    graphData: regionDemandData[region],
+                });
+            }
         }
 
         return regionDemandData;
