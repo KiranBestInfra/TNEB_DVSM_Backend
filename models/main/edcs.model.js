@@ -299,8 +299,8 @@ class EDCs {
                 JOIN instant_comm ic 
                     ON ic.meter_no = m.meter_serial_no
                 WHERE edc.hierarchy_type_id = 11
-                  AND edc.hierarchy_name = ?
-                  AND DATE(ic.device_date) = '2025-03-09'
+                  AND edc.hierarchy_id = ?
+                  AND DATE(ic.device_date) = ?
                 `,
                 values: [edc, date],
                 timeout: QUERY_TIMEOUT,
@@ -332,11 +332,11 @@ class EDCs {
                 JOIN meter m 
                     ON feeder.hierarchy_id = m.location_id
                 WHERE edc.hierarchy_type_id = 11
-                  AND edc.hierarchy_name = ?
+                  AND edc.hierarchy_id = ?
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
-                      WHERE DATE(ic.device_date) = '2025-03-09'
+                      WHERE DATE(ic.device_date) = ?
                   )
                 `,
                 values: [edc, date],

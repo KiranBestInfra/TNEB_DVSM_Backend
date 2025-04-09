@@ -67,7 +67,7 @@ export const getSubstationWidgets = async (req, res) => {
 };
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
-        const edcs = req.params.edcs || null
+        const edcs = req.params.edcs || null;
 
         if (!edcs) {
             return res.status(400).json({
@@ -201,7 +201,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                         data: previousDayData,
                     },
                 ],
-            };  
+            };
 
             substationDemandData[substation] = detailedGraphData;
             if (substationDemandData[substation]) {
@@ -406,10 +406,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
 export const getFeedersDataBySubstation = async (req, res) => {
     try {
         // Extract and clean substation name
-        const substation = (req.params.substationName || '')
-            .toUpperCase()
-            .replace(/-/g, ' '); // convert "110KV-METROZONE-SS" → "110KV METROZONE SS"
-
+        const substation = req.params.substationId || '';
         const deviceDate = '2025-03-09';
 
         const commMeters = await Substations.getSubstationCommMeterCounts(
@@ -441,6 +438,5 @@ export const getFeedersDataBySubstation = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
-
 
 export default getSubstationWidgets;
