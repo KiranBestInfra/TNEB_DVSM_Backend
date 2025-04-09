@@ -55,12 +55,17 @@ export const getEDCWidgets = async (req, res) => {
     }
 };
 export const getSubstationTotalWidgets = async (req, res) => {
-    const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
+    const edcs = req.params.edcs || '';
+    const date = '2025-03-09';
     try {
         const totalsubstations = await EDCs.getTotalSubstations(pool);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
-        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcs);
-        const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(pool, edcs);
+        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcs, date);
+        const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
+            pool,
+            edcs,
+            date
+        );
         const regionFeederNames = await Feeders.getFeederNamesByEdcId(
             pool,
             edcs
