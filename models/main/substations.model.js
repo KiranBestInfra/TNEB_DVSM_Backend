@@ -332,7 +332,7 @@ class Substations {
             throw error;
         }
     }
-    async getSubstationCommMeterCounts(connection, substationName, date) {
+    async getSubstationCommMeterCounts(connection, substationId, date) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -346,10 +346,10 @@ class Substations {
                 JOIN meter m ON feeder.hierarchy_id = m.location_id
                 JOIN instant_comm ic ON ic.meter_no = m.meter_serial_no
                 WHERE substation.hierarchy_type_id = 35
-                  AND substation.hierarchy_name = ?
+                  AND substation.hierarchy_id = ?
                   AND DATE(ic.device_date) = ?
             `,
-                values: [substationName, date],
+                values: [substationId, date],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -363,7 +363,7 @@ class Substations {
         }
     }
 
-    async getSubstationNonCommMeterCounts(connection, substationName, date) {
+    async getSubstationNonCommMeterCounts(connection, substationId, date) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -376,14 +376,14 @@ class Substations {
                 JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id 
                 JOIN meter m ON feeder.hierarchy_id = m.location_id
                 WHERE substation.hierarchy_type_id = 35
-                  AND substation.hierarchy_name = ?
+                  AND substation.hierarchy_id = ?
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
                       WHERE DATE(ic.device_date) = ?
                   )
             `,
-                values: [substationName, date],
+                values: [substationId, date],
                 timeout: QUERY_TIMEOUT,
             });
 
