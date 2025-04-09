@@ -19,6 +19,7 @@ export const getDashboardWidgets = async (req, res) => {
     try {
         const totalRegions = await REGIONS.getTotalRegions(pool);
         const totalEdcs = await EDCS.getTotalEdcs(pool);
+        const totalDistricts = await REGIONS.getTotalDistricts(pool);
         const totalSubstations = await SUBSTATIONS.getTotalSubstations(pool);
         const totalFeeders = await FEEDERS.getTotalFeeders(pool);
         const commMeters = await REGIONS.getCommMeters(pool);
@@ -35,6 +36,7 @@ export const getDashboardWidgets = async (req, res) => {
             data: {
                 totalRegions,
                 totalEdcs,
+                totalDistricts,
                 totalSubstations,
                 totalFeeders,
                 commMeters,
