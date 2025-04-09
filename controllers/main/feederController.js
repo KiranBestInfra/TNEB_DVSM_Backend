@@ -216,30 +216,30 @@ export const getFeedersWidgets = async (req, res) => {
 };
 export const getFeedersBySubstationName = async (req, res) => {
     try {
-        const substationName = req.params.substationName.replace(/-/g, ' '); // Convert "chennai-substation" -> "chennai substation"
+        const substationId = req.params.substationId;
 
-        // Step 1: Get substation ID
-        const substation = await Feeders.getSubstationIdByName(
-            pool,
-            substationName
-        );
+        // // Step 1: Get substation ID
+        // const substation = await Feeders.getSubstationIdByName(
+        //     pool,
+        //     substationName
+        // );
 
-        if (!substation) {
-            return res.status(404).json({
-                status: 'error',
-                message: `No substation found with name: ${substationName}`,
-            });
-        }
+        // if (!substation) {
+        //     return res.status(404).json({
+        //         status: 'error',
+        //         message: `No substation found with name: ${substationName}`,
+        //     });
+        // }
 
         // Step 2: Get feeder names by substation ID
         const feeders = await Feeders.getFeederNamesBySubstationId(
             pool,
-            substation.hierarchy_id
+            substationId
         );
         res.status(200).json({
             status: 'success',
             data: {
-                substation_id: substation.hierarchy_id,
+                substation_id: substationId,
                 feeders,
             },
         });

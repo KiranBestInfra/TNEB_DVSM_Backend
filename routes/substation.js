@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/widgets/:edcs/substations', getEdcSubstationWidgets);
 
 // Use 'substationName' instead of 'substationId'
-router.get('/:substationName/feeders', getFeedersBySubstationName);
+router.get('/:substationId/feeders', getFeedersBySubstationName);
 router.get('/graph/:substationID/demand', getSubstationDemandGraphDetails);
 
 router.get('/:substationName/widgets', getFeedersDataBySubstation);

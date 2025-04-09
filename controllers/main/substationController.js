@@ -36,10 +36,6 @@ export const getSubstationWidgets = async (req, res) => {
             pool,
             region,
             deviceDate
-        const commMeters = await Regions.getRegionCommMeterCounts(
-            pool,
-            region,
-            deviceDate
         );
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
