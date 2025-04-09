@@ -85,7 +85,7 @@ export const getSubstationTotalWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
-export const fetchEdcGraphs = async (edcNames) => {
+export const fetchEdcGraphs = async (socket, edcNames) => {
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
@@ -178,6 +178,12 @@ export const fetchEdcGraphs = async (edcNames) => {
             };
 
             edcDemandData[edc] = detailedGraphData;
+            if (edcDemandData[edc]) {
+                socket.emit('edcUpdate', {
+                    edc,
+                    graphData: edcDemandData[edc],
+                });
+            }
         }
 
         return edcDemandData;
