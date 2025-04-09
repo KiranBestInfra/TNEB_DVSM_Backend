@@ -211,7 +211,6 @@ export const getFeedersBySubstationName = async (req, res) => {
             pool,
             substation.hierarchy_id
         );
-
         res.status(200).json({
             status: 'success',
             data: {

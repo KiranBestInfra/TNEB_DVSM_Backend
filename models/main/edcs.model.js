@@ -235,58 +235,6 @@ class EDCs {
             throw error;
         }
     }
-    async getCommMeters(connection, region) {
-        console.log('region', region);
-        try {
-            const [[{ commMeters }]] = await connection.query(
-                {
-                    sql: `
-                SELECT COUNT(DISTINCT ic.meter_no) AS commMeters
-                FROM instant_comm ic
-                JOIN meter m ON ic.meter_no = m.meter_serial_no
-                JOIN hierarchy h ON m.location_id = h.hierarchy_id
-                WHERE DATE(ic.device_date) ='2025-03-09'
-                AND h.hierarchy_name = ?;
-            `,
-                    timeout: QUERY_TIMEOUT,
-                },
-                [region]
-            ); // Passing date & region dynamically
-
-            return commMeters;
-        } catch (error) {
-            console.log('❌ Error in getCommMeters:', error);
-            throw error;
-        }
-    }
-
-    async getNonCommMeters(connection, region) {
-        try {
-            const [[{ nonCommMeters }]] = await connection.query(
-                {
-                    sql: `
-                SELECT COUNT(DISTINCT m.meter_serial_no) AS nonCommMeters
-                FROM meter m
-                JOIN hierarchy h ON m.location_id = h.hierarchy_id
-                WHERE h.hierarchy_name = ?
-                AND m.meter_serial_no NOT IN (
-                    SELECT DISTINCT ic.meter_no
-                    FROM instant_comm ic
-                    WHERE DATE(ic.device_date) = '2025-03-09'
-                );
-            `,
-                    timeout: QUERY_TIMEOUT,
-                },
-                [region]
-            ); // Passing region & date dynamically
-
-            return nonCommMeters;
-        } catch (error) {
-            console.log('❌ Error in getNonCommMeters:', error);
-            throw error;
-        }
-    }
-
     async getEdcCommMeterCounts(connection, edc, date) {
         console.log('edc', edc);
         try {
@@ -394,69 +342,6 @@ class EDCs {
             throw error;
         }
     }
-
-    // async getCommMeter(connection, meters = []) {
-    //     try {
-    //         const queryParams = ['2025-03-09'];
-    //         let meterCondition = '';
-
-    //         if (meters.length > 0) {
-    //             meterCondition = 'AND meter_no IN (?)';
-    //             queryParams.push(meters);
-    //         }
-
-    //         const [results] = await connection.query(
-    //             {
-    //                 sql: `
-    //                 SELECT COUNT(DISTINCT meter_no) AS commMeters
-    //                 FROM instant_comm
-    //                 WHERE DATE(device_date) = ?
-    //                 ${meterCondition};
-    //             `,
-    //                 timeout: QUERY_TIMEOUT,
-    //             },
-    //             queryParams
-    //         );
-
-    //         return results[0].commMeters;
-    //     } catch (error) {
-    //         console.log('getCommMeter', error);
-    //         return 0;
-    //     }
-    // }
-
-    // async getNonCommMeters(connection, meters = []) {
-    //     try {
-    //         const queryParams = ['2025-03-09'];
-    //         let meterCondition = '';
-
-    //         if (meters.length > 0) {
-    //             meterCondition = 'AND meter_serial_no IN (?)';
-    //             queryParams.push(meters);
-    //         }
-
-    //         const [results] = await connection.query(
-    //             {
-    //                 sql: `
-    //                 SELECT COUNT(DISTINCT meter_serial_no) AS nonCommMeters
-    //                 FROM meter
-    //                 WHERE meter_serial_no NOT IN (
-    //                     SELECT DISTINCT meter_no FROM instant_comm
-    //                     WHERE DATE(device_date) = ?
-    //                 )
-    //                 ${meterCondition};
-    //             `,
-    //                 timeout: QUERY_TIMEOUT,
-    //             },
-    //             queryParams
-    //         );
-
-    //         return results[0].nonCommMeters;
-    //     } catch (error) {
-    //         console.log('getNonCommMeters', error);
-    //         return 0;
-    //     }
-    // }
 }
 
 export default new EDCs();

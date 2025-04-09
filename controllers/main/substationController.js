@@ -17,7 +17,6 @@ export const getSubstationWidgets = async (req, res) => {
         const param = region ? region : edcs;
         const deviceDate = '2025-03-09';
 
-
         if (!region) {
             return res.status(400).json({
                 status: 'error',
@@ -33,17 +32,16 @@ export const getSubstationWidgets = async (req, res) => {
             pool,
             param
         );
-         const commMeters = await Regions.getRegionCommMeterCounts(
-             pool,
-             region,
-             deviceDate
+        const commMeters = await Regions.getRegionCommMeterCounts(
+            pool,
+            region,
+            deviceDate
         );
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
             region,
             deviceDate
         );
-
 
         const substationFeederCounts = Array.isArray(feederCounts)
             ? feederCounts.reduce((acc, feeder) => {
@@ -83,13 +81,13 @@ export const getEdcSubstationWidgets = async (req, res) => {
 
         const edcsubstationNames =
             await Substations.getEdcSubstationNamesByRegion(pool, edcs);
-       // console.log('edcsubstationNames', edcsubstationNames);
+        // console.log('edcsubstationNames', edcsubstationNames);
         const feederCountsedc = await Substations.getFeederCountBySubstationEdc(
             pool,
             edcs
         );
-       // console.log('feederCountsedc', feederCountsedc);
-        
+        // console.log('feederCountsedc', feederCountsedc);
+
         const substationFeederCountsedc = Array.isArray(feederCountsedc)
             ? feederCountsedc.reduce((acc, feeder) => {
                   acc[feeder.substation_name] = feeder.feeder_count;
@@ -223,7 +221,44 @@ export const fetchSubstationGraphs = async (socket, substations) => {
         console.error('Error fetching region graphs:', error);
     }
 };
+export const getFeedersDataBySubstation = async (req, res) => {
+    try {
+        // Extract and clean substation name
+        const substation = (req.params.substationName || '')
+            .toUpperCase()
+            .replace(/-/g, ' '); // convert "110KV-METROZONE-SS" → "110KV METROZONE SS"
 
+        const deviceDate = '2025-03-09';
+
+        const commMeters = await Substations.getSubstationCommMeterCounts(
+            pool,
+            substation,
+            deviceDate
+        );
+
+        const nonCommMeters = await Substations.getSubstationNonCommMeterCounts(
+            pool,
+            substation,
+            deviceDate
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                commMeters,
+                nonCommMeters,
+            },
+        });
+    } catch (error) {
+        logger.error('❌ Error fetching feeders widgets by Substation:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
 
 
 export default getSubstationWidgets;

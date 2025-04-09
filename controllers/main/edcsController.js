@@ -25,17 +25,12 @@ export const getEDCWidgets = async (req, res) => {
             region
         );
         const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
-        // const commMeters = await EDCs.getCommMeters(pool, region);
+
         const commMeters = await Regions.getRegionCommMeterCounts(
             pool,
             region,
             deviceDate
         );
-
-        // const nonCommMeters = await EDCs.getNonCommMeters(
-        //     pool,
-        //     region
-        // );
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
             region,
