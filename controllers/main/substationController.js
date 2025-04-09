@@ -36,6 +36,10 @@ export const getSubstationWidgets = async (req, res) => {
             pool,
             region,
             deviceDate
+        const commMeters = await Regions.getRegionCommMeterCounts(
+            pool,
+            region,
+            deviceDate
         );
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
@@ -67,10 +71,7 @@ export const getSubstationWidgets = async (req, res) => {
 };
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
-        //const region = req.params.region || '';
-        const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
-
-        //const param = region ? region : edcs;
+        const edcs = req.params.edcs || null
 
         if (!edcs) {
             return res.status(400).json({
@@ -130,7 +131,6 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                 hierarchy.hierarchy_type_id,
                 hierarchy.hierarchy_id
             );
-            // console.log(meters);
             //count++;
 
             const hierarchyMeters = meters.map((meter) =>
@@ -205,20 +205,206 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                         data: previousDayData,
                     },
                 ],
-            };
+            };  
 
             substationDemandData[substation] = detailedGraphData;
-            // if (substationDemandData[substation]) {
-            //     socket.emit('substationUpdate', {
-            //         substation,
-            //         graphData: substationDemandData[substation],
-            //     });
-            // }
+            if (substationDemandData[substation]) {
+                socket.emit('substationUpdate', {
+                    substation,
+                    graphData: substationDemandData[substation],
+                });
+            }
         }
-
-        return substationDemandData;
+        // return substationDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
+    }
+};
+export const getSubstationDemandGraphDetails = async (req, res) => {
+    try {
+        const accessValues = req.locationAccess?.values || [];
+        const substationID = (req.params.substationID || '')
+            .toUpperCase()
+            .replace(/-/g, ' ');
+
+        // console.log(substationID);
+
+        if (substationID) {
+            const substationHierarchy =
+                await Substations.getHierarchyBySubstation(pool, substationID);
+            const meters = await Substations.getSubstationMeters(
+                pool,
+                null,
+                substationHierarchy.hierarchy_type_id,
+                substationHierarchy.hierarchy_id
+            );
+
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
+            );
+
+            const { startOfDay, endOfDay } = getTodayStartAndEnd();
+            const { startOfYesterday, endOfYesterday } =
+                getYesterdayStartAndEnd();
+
+            const todayDemandData = await Substations.getDemandTrendsData(
+                pool,
+                accessValues,
+                '2025-03-27 00:00:00',
+                '2025-03-27 23:59:59',
+                hierarchyMeters
+            );
+
+            const yesterdayDemandData = await Substations.getDemandTrendsData(
+                pool,
+                accessValues,
+                '2025-03-26 00:00:00',
+                '2025-03-26 23:59:59',
+                hierarchyMeters
+            );
+
+            const xAxis = [];
+            const currentDayData = [];
+            const previousDayData = [];
+
+            const allTimestamps = new Set([
+                ...todayDemandData.map((d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ),
+                ...yesterdayDemandData.map((d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ),
+            ]);
+
+            const sortedTimestamps = Array.from(allTimestamps).sort(
+                (a, b) =>
+                    moment(a, 'HH:mm:ss').valueOf() -
+                    moment(b, 'HH:mm:ss').valueOf()
+            );
+            sortedTimestamps.forEach((timestamp) => {
+                xAxis.push(timestamp);
+
+                const todayData = todayDemandData.find(
+                    (d) =>
+                        moment(d.datetime)
+                            .tz('Asia/Kolkata')
+                            .format('HH:mm:ss') === timestamp
+                );
+                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+
+                const yesterdayData = yesterdayDemandData.find(
+                    (d) =>
+                        moment(d.datetime)
+                            .tz('Asia/Kolkata')
+                            .format('HH:mm:ss') === timestamp
+                );
+                previousDayData.push(
+                    yesterdayData ? yesterdayData.actual_demand_mw : 0
+                );
+            });
+
+            const detailedGraphData = {
+                xAxis,
+                series: [
+                    {
+                        name: 'Current Day',
+                        data: currentDayData,
+                    },
+                    {
+                        name: 'Previous Day',
+                        data: previousDayData,
+                    },
+                ],
+            };
+
+            return res.status(200).json({
+                status: 'success',
+                data: detailedGraphData,
+            });
+        }
+
+        const todayDemandData = await Substations.getDemandTrendsData(
+            pool,
+            accessValues,
+            '2025-03-27 00:00:00',
+            '2025-03-27 23:59:59'
+        );
+
+        const yesterdayDemandData = await Substations.getDemandTrendsData(
+            pool,
+            accessValues,
+            '2025-03-26 00:00:00',
+            '2025-03-26 23:59:59'
+        );
+
+        const xAxis = [];
+        const currentDayData = [];
+        const previousDayData = [];
+
+        const allTimestamps = new Set([
+            ...todayDemandData.map((d) =>
+                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ),
+            ...yesterdayDemandData.map((d) =>
+                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ),
+        ]);
+
+        const sortedTimestamps = Array.from(allTimestamps).sort(
+            (a, b) =>
+                moment(a, 'HH:mm:ss').valueOf() -
+                moment(b, 'HH:mm:ss').valueOf()
+        );
+        sortedTimestamps.forEach((timestamp) => {
+            xAxis.push(timestamp);
+
+            const todayData = todayDemandData.find(
+                (d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    timestamp
+            );
+            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+
+            const yesterdayData = yesterdayDemandData.find(
+                (d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    timestamp
+            );
+            previousDayData.push(
+                yesterdayData ? yesterdayData.actual_demand_mw : 0
+            );
+        });
+
+        const detailedGraphData = {
+            xAxis,
+            series: [
+                {
+                    name: 'Current Day',
+                    data: currentDayData,
+                },
+                {
+                    name: 'Previous Day',
+                    data: previousDayData,
+                },
+            ],
+        };
+
+        return res.status(200).json({
+            status: 'success',
+            data: detailedGraphData,
+        });
+    } catch (error) {
+        logger.error('Error fetching demand graph data:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        return res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
     }
 };
 export const getFeedersDataBySubstation = async (req, res) => {

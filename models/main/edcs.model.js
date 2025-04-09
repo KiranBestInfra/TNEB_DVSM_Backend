@@ -34,14 +34,14 @@ class EDCs {
             });
             return totalEdcs;
         } catch (error) {
-            console.log('getTotalEdcs', error);
+            console.error('getTotalEdcs', error);
             throw error;
         }
     }
     async getEdcNamesByRegion(connection, region) {
         try {
             const sql = `
-            SELECT hierarchy_name 
+            SELECT hierarchy_name , h.hierarchy_id
                     FROM hierarchy h
                     JOIN hierarchy_master hm 
                         ON h.hierarchy_type_id = hm.hierarchy_type_id 
@@ -50,9 +50,8 @@ class EDCs {
         `;
 
             const [rows] = await connection.query(sql, [region]); // Correct way
-            console.log('Region ID:', region);
 
-            return rows.map((row) => row.hierarchy_name);
+            return rows;
         } catch (error) {
             console.error(
                 '❌ Error fetching EDC names for region:',
@@ -82,7 +81,6 @@ class EDCs {
                      GROUP BY edc.hierarchy_name`;
 
             const [rows] = await connection.query(sql, [region]);
-            console.log('Region ID:', region);
             return rows;
         } catch (error) {
             console.error('❌ Error fetching substation count:', error);
@@ -133,15 +131,14 @@ class EDCs {
                         JOIN hierarchy_master hm 
                             ON h.hierarchy_type_id = hm.hierarchy_type_id 
                         WHERE hm.hierarchy_title = "EDC"
-                        AND h.hierarchy_name = ?
+                        AND  h.hierarchy_name = ? OR h.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [edcName]
+                [edcName, edcName]
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByEdc', error);
             throw error;
         }
     }
@@ -183,7 +180,6 @@ class EDCs {
                         ' seconds'
                 );
             }
-            console.log('getEdcMeters', error);
             throw error;
         }
     }
@@ -231,12 +227,61 @@ class EDCs {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
+    async getCommMeters(connection, region) {
+        try {
+            const [[{ commMeters }]] = await connection.query(
+                {
+                    sql: `
+                SELECT COUNT(DISTINCT ic.meter_no) AS commMeters
+                FROM instant_comm ic
+                JOIN meter m ON ic.meter_no = m.meter_serial_no
+                JOIN hierarchy h ON m.location_id = h.hierarchy_id
+                WHERE DATE(ic.device_date) ='2025-03-09'
+                AND h.hierarchy_name = ?;
+            `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [region]
+            ); // Passing date & region dynamically
+
+            return commMeters;
+        } catch (error) {
+            console.error('Error in getCommMeters:', error);
+            throw error;
+        }
+    }
+
+    async getNonCommMeters(connection, region) {
+        try {
+            const [[{ nonCommMeters }]] = await connection.query(
+                {
+                    sql: `
+                SELECT COUNT(DISTINCT m.meter_serial_no) AS nonCommMeters
+                FROM meter m
+                JOIN hierarchy h ON m.location_id = h.hierarchy_id
+                WHERE h.hierarchy_name = ?
+                AND m.meter_serial_no NOT IN (
+                    SELECT DISTINCT ic.meter_no
+                    FROM instant_comm ic
+                    WHERE DATE(ic.device_date) = '2025-03-09'
+                );
+            `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [region]
+            ); // Passing region & date dynamically
+
+            return nonCommMeters;
+        } catch (error) {
+            console.error('Error in getNonCommMeters:', error);
+            throw error;
+        }
+    }
+
     async getEdcCommMeterCounts(connection, edc, date) {
-        console.log('edc', edc);
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -321,7 +366,6 @@ class EDCs {
             });
             return totalFeeders;
         } catch (error) {
-            console.log('getTotalSubstations', error);
             throw error;
         }
     }
@@ -338,7 +382,6 @@ class EDCs {
             });
             return totalFeeders;
         } catch (error) {
-            console.log('getTotalFeeders', error);
             throw error;
         }
     }
