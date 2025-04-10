@@ -233,8 +233,16 @@ export const searchConsumers = async (req, res) => {
 
 export const demandGraph = async (req, res) => {
     try {
+        const user = req.user || null;
         const accessValues = req.locationAccess?.values || [];
-        const regionID = req.params.regionID || null;
+        const regionID = user
+            ? user.user_hierarchy_id
+            : req.params.regionID || null;
+
+        const { startOfDay, endOfDay } = getTodayStartAndEnd();
+        const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
+
+        let hierarchyMeters = null;
 
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(
@@ -248,102 +256,25 @@ export const demandGraph = async (req, res) => {
                 regionHierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
+            hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
             );
-
-            const { startOfDay, endOfDay } = getTodayStartAndEnd();
-            const { startOfYesterday, endOfYesterday } =
-                getYesterdayStartAndEnd();
-
-            const todayDemandData = await REGIONS.getDemandTrendsData(
-                pool,
-                accessValues,
-                '2025-03-27 00:00:00',
-                '2025-03-27 23:59:59',
-                hierarchyMeters
-            );
-
-            const yesterdayDemandData = await REGIONS.getDemandTrendsData(
-                pool,
-                accessValues,
-                '2025-03-26 00:00:00',
-                '2025-03-26 23:59:59',
-                hierarchyMeters
-            );
-
-            const xAxis = [];
-            const currentDayData = [];
-            const previousDayData = [];
-
-            const allTimestamps = new Set([
-                ...todayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
-                ),
-                ...yesterdayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
-                ),
-            ]);
-
-            const sortedTimestamps = Array.from(allTimestamps).sort(
-                (a, b) =>
-                    moment(a, 'HH:mm:ss').valueOf() -
-                    moment(b, 'HH:mm:ss').valueOf()
-            );
-            sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
-
-                const todayData = todayDemandData.find(
-                    (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
-                );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
-                const yesterdayData = yesterdayDemandData.find(
-                    (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
-                );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
-            });
-
-            const detailedGraphData = {
-                xAxis,
-                series: [
-                    {
-                        name: 'Current Day',
-                        data: currentDayData,
-                    },
-                    {
-                        name: 'Previous Day',
-                        data: previousDayData,
-                    },
-                ],
-            };
-
-            return res.status(200).json({
-                status: 'success',
-                data: detailedGraphData,
-            });
         }
 
         const todayDemandData = await REGIONS.getDemandTrendsData(
             pool,
             accessValues,
             '2025-03-27 00:00:00',
-            '2025-03-27 23:59:59'
+            '2025-03-27 23:59:59',
+            hierarchyMeters
         );
 
         const yesterdayDemandData = await REGIONS.getDemandTrendsData(
             pool,
             accessValues,
             '2025-03-26 00:00:00',
-            '2025-03-26 23:59:59'
+            '2025-03-26 23:59:59',
+            hierarchyMeters
         );
 
         const xAxis = [];
