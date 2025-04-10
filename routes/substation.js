@@ -9,8 +9,6 @@ import { getFeedersBySubstationName } from '../controllers/main/feederController
 const router = express.Router();
 
 router.get('/widgets/:edcs/substations', getEdcSubstationWidgets);
-
-// Use 'substationName' instead of 'substationId'
 router.get('/:substationId/feeders', getFeedersBySubstationName);
 router.get('/graph/:substationID/demand', getSubstationDemandGraphDetails);
 

@@ -188,21 +188,24 @@ class User {
         // }
     }
 
-    // Save refresh token
     async saveRefreshToken(connection, userId, refreshToken, expiresIn) {
-        // let connection;
         try {
-            // connection = await pool.getConnection();
+            let expiresInSeconds = expiresIn;
+            if (typeof expiresIn === 'string' && expiresIn.endsWith('d')) {
+                const days = parseInt(expiresIn.slice(0, -1), 10);
+                expiresInSeconds = days * 24 * 60 * 60;
+            }
+
             await Promise.race([
                 connection.query(
                     `INSERT INTO refresh_tokens 
-                    (user_id, token, expires_at) 
-                    VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND))
+                    (user_id, token, expires_at, created_at) 
+                    VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), CURRENT_TIMESTAMP)
                     ON DUPLICATE KEY UPDATE
                         token = VALUES(token),
                         expires_at = VALUES(expires_at),
-                        created_at = CURRENT_TIMESTAMP`,
-                    [userId, refreshToken, expiresIn]
+                        created_at = VALUES(created_at)`,
+                    [userId, refreshToken, expiresInSeconds]
                 ),
                 new Promise((_, reject) =>
                     setTimeout(
@@ -265,9 +268,7 @@ class User {
 
     // Get refresh token
     async getRefreshToken(connection, userId) {
-        // let connection;
         try {
-            // connection = await pool.getConnection();
             const [rows] = await Promise.race([
                 connection.query(
                     'SELECT token FROM refresh_tokens WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC LIMIT 1',
@@ -291,11 +292,23 @@ class User {
             }
             throw error;
         }
-        // finally {
-        //     if (connection) {
-        //         connection.release();
-        //     }
-        // }
+    }
+
+    // Verify if refresh token matches the most recent one
+    async verifyRefreshToken(connection, userId, token) {
+        try {
+            const storedToken = await this.getRefreshToken(connection, userId);
+            console.log('storedToken', storedToken);
+            console.log('token', token);
+            if (!storedToken) {
+                return false;
+            }
+
+            return token === storedToken;
+        } catch (error) {
+            console.error('Refresh token verification error:', error);
+            return false;
+        }
     }
 
     // Save verification code
@@ -605,10 +618,9 @@ class User {
     async getRoleByID(connection, id) {
         try {
             const [[results]] = await Promise.race([
-                connection.query(
-                    `SELECT * FROM user_role WHERE role_id = ?`,
-                    [id]
-                ),
+                connection.query(`SELECT * FROM user_role WHERE role_id = ?`, [
+                    id,
+                ]),
                 new Promise((_, reject) =>
                     setTimeout(
                         () => reject(new Error('Query timeout')),

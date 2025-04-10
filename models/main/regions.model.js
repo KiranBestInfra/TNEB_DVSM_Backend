@@ -333,10 +333,11 @@ class Regions {
                             ON h.hierarchy_type_id = hm.hierarchy_type_id 
                         WHERE hm.hierarchy_title = "REGION"
                         AND h.hierarchy_name = ?
+                        OR h.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [regionID]
+                [regionID, regionID]
             );
             return results;
         } catch (error) {
