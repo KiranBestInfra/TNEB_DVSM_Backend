@@ -20,6 +20,11 @@ export const getEDCWidgets = async (req, res) => {
             });
         }
 
+        const regionDistricts = await Regions.getDistrictsByRegion(
+            pool,
+            region
+        );
+
         const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
         const substationCounts = await EDCs.getSubstationCountByRegion(
             pool,
@@ -43,6 +48,7 @@ export const getEDCWidgets = async (req, res) => {
             data: {
                 region,
                 edcNames,
+                regionDistricts,
                 substationCounts,
                 feederCounts,
                 commMeters,
