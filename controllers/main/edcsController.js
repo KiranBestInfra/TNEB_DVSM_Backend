@@ -11,7 +11,9 @@ import {
 
 export const getEDCWidgets = async (req, res) => {
     try {
-        const region = req.params.region;
+        const user = req.user || null;
+        const region = user ? user.user_hierarchy_id : req.params.region;
+
         const deviceDate = '2025-03-09';
         if (!region) {
             return res.status(400).json({
@@ -21,6 +23,7 @@ export const getEDCWidgets = async (req, res) => {
         }
 
         const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
+
         const substationCounts = await EDCs.getSubstationCountByRegion(
             pool,
             region
@@ -37,6 +40,15 @@ export const getEDCWidgets = async (req, res) => {
             region,
             deviceDate
         );
+
+        console.log('edcNames', {
+            region,
+            edcNames,
+            substationCounts,
+            feederCounts,
+            commMeters,
+            nonCommMeters,
+        });
 
         res.status(200).json({
             status: 'success',

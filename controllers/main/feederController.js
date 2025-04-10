@@ -117,7 +117,9 @@ export const fetchFeederGraphs = async (socket, feeders) => {
 };
 export const getFeedersDataByRegion = async (req, res) => {
     try {
-        const region = req.params.region;
+        const user = req.user || null;
+        const region = user ? user.user_hierarchy_id : req.params.region;
+
         const deviceDate = '2025-03-09';
         const feedersWithCount = await Feeders.getFeederNamesByRegion(
             pool,
