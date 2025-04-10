@@ -345,9 +345,9 @@ class Substations {
                 JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id 
                 JOIN meter m ON feeder.hierarchy_id = m.location_id
                 JOIN instant_comm ic ON ic.meter_no = m.meter_serial_no
-                WHERE substation.hierarchy_type_id = 35
-                  AND substation.hierarchy_id = ?
-                  AND DATE(ic.device_date) = ?
+                WHERE edc.hierarchy_id = ?
+                AND DATE(ic.device_date) = ?
+                AND substation.hierarchy_type_id = 35
             `,
                 values: [substationId, date],
                 timeout: QUERY_TIMEOUT,
