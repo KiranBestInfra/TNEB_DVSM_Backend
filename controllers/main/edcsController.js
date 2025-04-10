@@ -22,6 +22,11 @@ export const getEDCWidgets = async (req, res) => {
             });
         }
 
+        const regionDistricts = await Regions.getDistrictsByRegion(
+            pool,
+            region
+        );
+
         const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
 
         const substationCounts = await EDCs.getSubstationCountByRegion(
@@ -46,6 +51,7 @@ export const getEDCWidgets = async (req, res) => {
             data: {
                 region,
                 edcNames,
+                regionDistricts,
                 substationCounts,
                 feederCounts,
                 commMeters,
@@ -59,7 +65,8 @@ export const getEDCWidgets = async (req, res) => {
 };
 export const getSubstationTotalWidgets = async (req, res) => {
     const user = req.user || null;
-    const edcsID = req.params.edcs || null;
+    const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
+
     const date = '2025-03-09';
 
     if (user) {
@@ -79,7 +86,9 @@ export const getSubstationTotalWidgets = async (req, res) => {
     }
 
     try {
-        const totalsubstations = await EDCs.getTotalSubstations(pool);
+        const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcs);
+        const substationCounts = await EDCs.getSubstationCountByEDC(pool, edcs);
+        // const totalsubstations = await EDCs.getTotalSubstations(pool);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
         const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
         const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
@@ -95,7 +104,8 @@ export const getSubstationTotalWidgets = async (req, res) => {
         res.status(200).json({
             status: 'success',
             data: {
-                totalsubstations,
+                districtCounts,
+                substationCounts,
                 totalFeeders,
                 commMeters,
                 nonCommMeters,

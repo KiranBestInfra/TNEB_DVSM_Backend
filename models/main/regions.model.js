@@ -17,6 +17,33 @@ class Regions {
             throw error;
         }
     }
+    async getDistrictsByRegion(connection, region) {
+        try {
+            const [[{ DistrictsByRegion }]] = await connection.query(
+                {
+                    sql: `
+                 SELECT
+    COUNT(district.hierarchy_id) AS DistrictsByRegion
+FROM hierarchy region
+JOIN hierarchy edc 
+    ON region.hierarchy_id = edc.parent_id 
+    AND edc.hierarchy_type_id = 11
+JOIN hierarchy district 
+    ON edc.hierarchy_id = district.parent_id 
+    AND district.hierarchy_type_id = 34
+WHERE region.hierarchy_type_id = 10
+  AND region.hierarchy_name = ?
+GROUP BY region.hierarchy_name;
+                `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [region]
+            );
+            return DistrictsByRegion;
+        } catch (error) {
+            throw error;
+        }
+    }
 
     async getTotalRegions(connection) {
         try {
@@ -346,7 +373,7 @@ class Regions {
         try {
             const [rows] = await connection.query({
                 sql: `
-                SELECT 
+                    SELECT 
                     COUNT(DISTINCT ic.meter_no) AS comm_meters
                 FROM hierarchy region
                 JOIN hierarchy edc 
@@ -363,10 +390,9 @@ class Regions {
                     ON ic.meter_no = m.meter_serial_no
                 WHERE region.hierarchy_type_id = 10
                   AND region.hierarchy_name = ?
-                  OR region.hierarchy_id = ?
                   AND DATE(ic.device_date) = ?
             `,
-                values: [region, region, date],
+                values: [region, date],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -398,14 +424,13 @@ class Regions {
                     ON feeder.hierarchy_id = m.location_id
                 WHERE region.hierarchy_type_id = 10
                   AND region.hierarchy_name = ?
-                  OR region.hierarchy_id = ?
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
                       WHERE DATE(ic.device_date) = ?
                   )
             `,
-                values: [region, region, date],
+                values: [region, date],
                 timeout: QUERY_TIMEOUT,
             });
 
