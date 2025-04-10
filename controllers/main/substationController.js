@@ -1,5 +1,6 @@
 import pool from '../../config/db.js';
 import Substations from '../../models/main/substations.model.js';
+import EDCs from '../../models/main/edcs.model.js';
 import Regions from '../../models/main/regions.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
@@ -51,13 +52,6 @@ export const getSubstationWidgets = async (req, res) => {
               }, {})
             : feederCounts;
 
-        console.log('substationFeederCounts', {
-            edcs,
-            substationNames,
-            substationFeederCounts,
-            commMeters,
-            nonCommMeters,
-        });
 
         res.status(200).json({
             status: 'success',
@@ -76,23 +70,38 @@ export const getSubstationWidgets = async (req, res) => {
 };
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
-        const edcs = req.params.edcs || null;
+        const user = req.user || null;
+        const edcID = req.params.edcs || null;
 
-        if (!edcs) {
+        if (!edcID) {
             return res.status(400).json({
                 status: 'error',
                 message: 'Edc parameter is missing',
             });
         }
 
+        if (user) {
+            const edcs = await EDCs.getEdcNamesByRegion(
+                pool,
+                user.user_hierarchy_id
+            );
+
+            const edcIds = edcs.map((edc) => edc.hierarchy_id);
+
+            if (!edcIds.map((id) => Number(id)).includes(Number(edcID))) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Unauthorized access to substation data',
+                });
+            }
+        }
+
         const edcsubstationNames =
-            await Substations.getEdcSubstationNamesByRegion(pool, edcs);
-        // console.log('edcsubstationNames', edcsubstationNames);
+            await Substations.getEdcSubstationNamesByRegion(pool, edcID);
         const feederCountsedc = await Substations.getFeederCountBySubstationEdc(
             pool,
-            edcs
+            edcID
         );
-        // console.log('feederCountsedc', feederCountsedc);
 
         const substationFeederCountsedc = Array.isArray(feederCountsedc)
             ? feederCountsedc.reduce((acc, feeder) => {
@@ -104,7 +113,7 @@ export const getEdcSubstationWidgets = async (req, res) => {
         res.status(200).json({
             status: 'success',
             data: {
-                edcs,
+                edcID,
                 edcsubstationNames,
                 substationFeederCountsedc,
             },
@@ -232,7 +241,6 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             .toUpperCase()
             .replace(/-/g, ' ');
 
-        // console.log(substationID);
 
         if (substationID) {
             const substationHierarchy =
@@ -414,10 +422,32 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
 };
 export const getFeedersDataBySubstation = async (req, res) => {
     try {
-        // Extract and clean substation name
+        const user = req.user || null;
         const substationId = req.params.substationId || '';
-        const date = '2025-03-09';
 
+        if (user) {
+            const substations = await Substations.getSubstationNamesByRegion(
+                pool,
+                user.user_hierarchy_id
+            );
+
+            const substationIDs = substations.map(
+                (substation) => substation.id
+            );
+
+            if (
+                !substationIDs
+                    .map((id) => Number(id))
+                    .includes(Number(substationId))
+            ) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Unauthorized access to substation data',
+                });
+            }
+        }
+
+        const date = '2025-03-09';
         const commMeters = await Substations.getSubstationCommMeterCounts(
             pool,
             substationId,

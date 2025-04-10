@@ -210,7 +210,7 @@ class Substations {
                     AND feeder.hierarchy_type_id = 37
                 WHERE edc.hierarchy_type_id = 11
                 AND edc.hierarchy_name = ?
-                OR edc.hierarchy_id
+                OR edc.hierarchy_id = ?
                 GROUP BY substation.hierarchy_name
                 ORDER BY substation.hierarchy_name;
             `,
@@ -231,7 +231,6 @@ class Substations {
         }
     }
     async getHierarchyBySubstation(connection, regionID) {
-        // console.log('regionID', regionID);
         try {
             const [[results]] = await connection.query(
                 {
@@ -474,7 +473,6 @@ WHERE substation.hierarchy_type_id = 35
             throw error;
         }
     }
-    
 }
 
 export default new Substations();

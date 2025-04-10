@@ -46,15 +46,6 @@ export const getEDCWidgets = async (req, res) => {
             deviceDate
         );
 
-        console.log('edcNames', {
-            region,
-            edcNames,
-            substationCounts,
-            feederCounts,
-            commMeters,
-            nonCommMeters,
-        });
-
         res.status(200).json({
             status: 'success',
             data: {
@@ -73,25 +64,41 @@ export const getEDCWidgets = async (req, res) => {
     }
 };
 export const getSubstationTotalWidgets = async (req, res) => {
-    const edcs = (req.params.edcs || '').toUpperCase().replace(/-/g, ' ');
-    console.log('edcs', edcs);
+    const user = req.user || null;
+    const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
+
     const date = '2025-03-09';
+
+    if (user) {
+        const edcs = await EDCs.getEdcNamesByRegion(
+            pool,
+            user.user_hierarchy_id
+        );
+
+        const edcIds = edcs.map((edc) => edc.hierarchy_id);
+
+        if (!edcIds.map((id) => Number(id)).includes(Number(edcsID))) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Unauthorized access to substation data',
+            });
+        }
+    }
+
     try {
         const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcs);
-        console.log('districtCounts', districtCounts);
         const substationCounts = await EDCs.getSubstationCountByEDC(pool, edcs);
-        console.log('substationCounts', substationCounts);
         // const totalsubstations = await EDCs.getTotalSubstations(pool);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
-        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcs, date);
+        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
         const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
             pool,
-            edcs,
+            edcsID,
             date
         );
         const regionFeederNames = await Feeders.getFeederNamesByEdcId(
             pool,
-            edcs
+            edcsID
         );
 
         res.status(200).json({
@@ -134,7 +141,6 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
             const hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
             );
-            //console.log(hierarchyMeters);
 
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
@@ -143,7 +149,6 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-            //console.log('edctodayDemandData', todayDemandData);
             const yesterdayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 null,
@@ -225,11 +230,9 @@ export const getEdcDemandGraphDetails = async (req, res) => {
     try {
         const accessValues = req.locationAccess?.values || [];
         const edcID = (req.params.edcID || '').toUpperCase().replace(/-/g, ' ');
-        // console.log('edcID', edcID);
 
         if (edcID) {
             const edcHierarchy = await EDCs.getHierarchyByEdc(pool, edcID);
-            // console.log('edcHierarchy', edcHierarchy);
             const meters = await EDCs.getEdcMeters(
                 pool,
                 null,

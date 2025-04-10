@@ -90,7 +90,6 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-            // console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await REGIONS.getDemandTrendsData(
                 pool,
