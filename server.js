@@ -15,10 +15,11 @@ import v1Routes from './routes/v1/index.js';
 import pool from './config/db.js';
 import dashboardModel from './models/main/regions.model.js';
 import socketService from './services/socket/socketService.js';
+import crypto from 'crypto';
 
 // import bcrypt from 'bcrypt';
-
 // import dashboardModel from './models/dashboard.model.js';
+
 import {
     calculateTotalAmount,
     generateInvoiceNumber,
@@ -32,6 +33,7 @@ import {
 import { getPowerDetails } from './controllers/consumer/dashboardController.js';
 import { sendZeroValueAlert } from './utils/emailService.js';
 import notificationsModel from './models/main/notifications.model.js';
+import User from './models/main/user.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
@@ -83,26 +85,40 @@ app.use(hpp());
 app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
-    const accessToken = req.cookies.accessToken;
-
-    if (!accessToken) {
+    if (req.path.includes('/auth')) {
         return next();
     }
 
     try {
-        const decoded = jwtDecode(accessToken);
-        req.user = decoded;
-        if (decoded.locationHierarchy) {
-            const access = await dashboardModel.getLocationAccessCondition(
-                pool,
-                decoded
-            );
-            req.locationAccess = access;
-        } else if (!decoded.locationHierarchy && decoded.user == 'User') {
+        const accessToken = req.cookies.accessToken;
+
+        if (!accessToken) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        const decoded = jwtDecode(accessToken, config.JWT_SECRET);
+
+        const userId = decoded.userId;
+        const isValidToken = await User.verifyRefreshToken(
+            pool,
+            userId,
+            accessToken
+        );
+
+        console.log('isValidToken', isValidToken);
+        if (!isValidToken) {
+            return res
+                .status(401)
+                .json({ message: 'Invalid session. Please login again.' });
+        }
+
+        if (decoded.role.toLowerCase().includes('admin')) {
+            return next();
+        } else {
             req.user = decoded;
         }
     } catch (error) {
         logger.error('Token/Location access error:', error);
+        return res.status(401).json({ message: 'Unauthorized' });
     }
 
     next();
@@ -183,12 +199,16 @@ app.use((req, res) => {
     });
 });
 
-// Start the server
 server.listen(config.SOCKET_PORT, () => {
+    logger.info(`Socket server is running on port ${config.SOCKET_PORT}`);
+    console.log(`Socket server is running on port ${config.SOCKET_PORT}`);
 });
 
 app.listen(config.PORT, () => {
+    logger.info(`Server is running on port ${config.PORT}`);
+    console.log(`Server is running on port ${config.PORT}`);
 });
+
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
 //      try {
