@@ -53,15 +53,15 @@ class RegionSocketHandler {
 
     async sendRegionData(socket, regions) {
         try {
-            const regionDemandData = await fetchRegionGraphs(regions);
-            regions.forEach((region) => {
-                if (regionDemandData[region]) {
-                    socket.emit('regionUpdate', {
-                        region,
-                        graphData: regionDemandData[region],
-                    });
-                }
-            });
+            const regionDemandData = await fetchRegionGraphs(socket, regions);
+            // regions.forEach((region) => {
+            //     if (regionDemandData[region]) {
+            //         socket.emit('regionUpdate', {
+            //             region,
+            //             graphData: regionDemandData[region],
+            //         });
+            //     }
+            // });
         } catch (error) {
             logger.error('Error sending region data:', error);
             socket.emit('error', { message: 'Error fetching region data' });

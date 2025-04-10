@@ -11,6 +11,7 @@ const router = express.Router();
 router.get('/widgets/:edcs/substations', getEdcSubstationWidgets);
 router.get('/:substationId/feeders', getFeedersBySubstationName);
 router.get('/graph/:substationID/demand', getSubstationDemandGraphDetails);
-router.get('/:substationName/widgets', getFeedersDataBySubstation);
+
+router.get('/:substationId/widgets', getFeedersDataBySubstation);
 
 export default router;

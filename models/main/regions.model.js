@@ -1,6 +1,23 @@
 const QUERY_TIMEOUT = 30000;
 
 class Regions {
+    async getTotalDistricts(connection) {
+        try {
+            const [[{ totalDistricts }]] = await connection.query({
+                sql: `
+                  SELECT COUNT(hierarchy_name) AS totalDistricts 
+                        FROM hierarchy h, hierarchy_master hm 
+                        WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
+                        AND hm.hierarchy_title = "DISTRICT"
+                `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return totalDistricts;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async getTotalRegions(connection) {
         try {
             const [[{ totalRegions }]] = await connection.query({

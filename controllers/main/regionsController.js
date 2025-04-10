@@ -19,6 +19,7 @@ export const getDashboardWidgets = async (req, res) => {
     try {
         const totalRegions = await REGIONS.getTotalRegions(pool);
         const totalEdcs = await EDCS.getTotalEdcs(pool);
+        const totalDistricts = await REGIONS.getTotalDistricts(pool);
         const totalSubstations = await SUBSTATIONS.getTotalSubstations(pool);
         const totalFeeders = await FEEDERS.getTotalFeeders(pool);
         const commMeters = await REGIONS.getCommMeters(pool);
@@ -35,6 +36,7 @@ export const getDashboardWidgets = async (req, res) => {
             data: {
                 totalRegions,
                 totalEdcs,
+                totalDistricts,
                 totalSubstations,
                 totalFeeders,
                 commMeters,
@@ -55,7 +57,7 @@ export const getDashboardWidgets = async (req, res) => {
     }
 };
 
-export const fetchRegionGraphs = async (regionNames) => {
+export const fetchRegionGraphs = async (socket, regionNames) => {
     try {
         // const regionNames = await REGIONS.getRegionNames(pool);
 
@@ -153,6 +155,12 @@ export const fetchRegionGraphs = async (regionNames) => {
             };
 
             regionDemandData[region] = detailedGraphData;
+            if (regionDemandData[region]) {
+                socket.emit('regionUpdate', {
+                    region,
+                    graphData: regionDemandData[region],
+                });
+            }
         }
 
         return regionDemandData;
