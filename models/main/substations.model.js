@@ -98,9 +98,10 @@ class Substations {
                     AND feeder.hierarchy_type_id = 37  
                 WHERE region.hierarchy_type_id = 10  
                 AND region.hierarchy_name = ?
+                OR region.hierarchy_id = ?
                 GROUP BY substation.hierarchy_name;
             `,
-                values: [region],
+                values: [region, region],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -133,10 +134,11 @@ class Substations {
                 ON district.hierarchy_id = substation.parent_id 
                 AND substation.hierarchy_type_id = 35 
             WHERE region.hierarchy_type_id = 10 
-            AND region.hierarchy_name = ? 
+            AND region.hierarchy_name = ?
+            OR region.hierarchy_id = ?
         `;
 
-            const [rows] = await connection.query(sql, [edcs]);
+            const [rows] = await connection.query(sql, [edcs, edcs]);
 
             // if (rows.length === 0) {
             //     return [];
@@ -345,9 +347,9 @@ class Substations {
                 JOIN hierarchy feeder ON substation.hierarchy_id = feeder.parent_id 
                 JOIN meter m ON feeder.hierarchy_id = m.location_id
                 JOIN instant_comm ic ON ic.meter_no = m.meter_serial_no
-                WHERE substation.hierarchy_type_id = 35
-                  AND substation.hierarchy_id = ?
-                  AND DATE(ic.device_date) = ?
+                WHERE edc.hierarchy_id = ?
+                AND DATE(ic.device_date) = ?
+                AND substation.hierarchy_type_id = 35
             `,
                 values: [substationId, date],
                 timeout: QUERY_TIMEOUT,

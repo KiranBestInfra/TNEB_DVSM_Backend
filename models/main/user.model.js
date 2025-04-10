@@ -188,7 +188,14 @@ class User {
         // }
     }
 
-    async saveRefreshToken(connection, userId, refreshToken, expiresIn) {
+    async saveRefreshToken(
+        connection,
+        userId,
+        refreshToken,
+        expiresIn,
+        ipAddress,
+        deviceFingerprint
+    ) {
         try {
             let expiresInSeconds = expiresIn;
             if (typeof expiresIn === 'string' && expiresIn.endsWith('d')) {
@@ -199,13 +206,21 @@ class User {
             await Promise.race([
                 connection.query(
                     `INSERT INTO refresh_tokens 
-                    (user_id, token, expires_at, created_at) 
-                    VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), CURRENT_TIMESTAMP)
+                    (user_id, token, expires_at, ip_address, device_fingerprint, created_at) 
+                    VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), ?, ?, CURRENT_TIMESTAMP)
                     ON DUPLICATE KEY UPDATE
                         token = VALUES(token),
                         expires_at = VALUES(expires_at),
+                        ip_address = VALUES(ip_address),
+                        device_fingerprint = VALUES(device_fingerprint),
                         created_at = VALUES(created_at)`,
-                    [userId, refreshToken, expiresInSeconds]
+                    [
+                        userId,
+                        refreshToken,
+                        expiresInSeconds,
+                        ipAddress,
+                        deviceFingerprint,
+                    ]
                 ),
                 new Promise((_, reject) =>
                     setTimeout(
@@ -267,12 +282,17 @@ class User {
     }
 
     // Get refresh token
-    async getRefreshToken(connection, userId) {
+    async getRefreshToken(connection, userId, ipAddress, deviceFingerprint) {
         try {
             const [rows] = await Promise.race([
                 connection.query(
-                    'SELECT token FROM refresh_tokens WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC LIMIT 1',
-                    [userId]
+                    `SELECT token 
+                    FROM refresh_tokens 
+                    WHERE user_id = ? 
+                    AND (ip_address = ? OR device_fingerprint = ?)
+                    AND expires_at > CURRENT_TIMESTAMP 
+                    ORDER BY created_at DESC LIMIT 1`,
+                    [userId, ipAddress, deviceFingerprint]
                 ),
                 new Promise((_, reject) =>
                     setTimeout(
@@ -295,11 +315,21 @@ class User {
     }
 
     // Verify if refresh token matches the most recent one
-    async verifyRefreshToken(connection, userId, token) {
+    async verifyRefreshToken(
+        connection,
+        userId,
+        token,
+        ipAddress,
+        deviceFingerprint
+    ) {
         try {
-            const storedToken = await this.getRefreshToken(connection, userId);
-            console.log('storedToken', storedToken);
-            console.log('token', token);
+            const storedToken = await this.getRefreshToken(
+                connection,
+                userId,
+                ipAddress,
+                deviceFingerprint
+            );
+
             if (!storedToken) {
                 return false;
             }

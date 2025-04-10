@@ -11,7 +11,8 @@ import {
 
 export const getSubstationWidgets = async (req, res) => {
     try {
-        const region = req.params.region || '';
+        const user = req.user || null;
+        const region = user ? user.user_hierarchy_id : req.params.region || '';
         const edcs = req.params.edcs || '';
 
         const param = region ? region : edcs;
@@ -49,6 +50,14 @@ export const getSubstationWidgets = async (req, res) => {
                   return acc;
               }, {})
             : feederCounts;
+
+        console.log('substationFeederCounts', {
+            edcs,
+            substationNames,
+            substationFeederCounts,
+            commMeters,
+            nonCommMeters,
+        });
 
         res.status(200).json({
             status: 'success',
@@ -406,19 +415,19 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
 export const getFeedersDataBySubstation = async (req, res) => {
     try {
         // Extract and clean substation name
-        const substation = req.params.substationId || '';
-        const deviceDate = '2025-03-09';
+        const substationId = req.params.substationId || '';
+        const date = '2025-03-09';
 
         const commMeters = await Substations.getSubstationCommMeterCounts(
             pool,
-            substation,
-            deviceDate
+            substationId,
+            date
         );
 
         const nonCommMeters = await Substations.getSubstationNonCommMeterCounts(
             pool,
-            substation,
-            deviceDate
+            substationId,
+            date
         );
 
         res.status(200).json({
