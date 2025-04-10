@@ -59,16 +59,7 @@ class SubstationSocketHandler {
     async sendSubstationData(socket, substations) {
         try {
             await fetchSubstationGraphs(socket, substations);
-            //console.log(substationDemandData);
-
-            // substations.forEach((substation) => {
-            //     if (substationDemandData[substation]) {
-            //         socket.emit('substationUpdate', {
-            //             substation,
-            //             graphData: substationDemandData[substation],
-            //         });
-            //     }
-            // });
+           
         } catch (error) {
             logger.error('Error sending substation data:', error);
             socket.emit('error', { message: 'Error fetching substation data' });

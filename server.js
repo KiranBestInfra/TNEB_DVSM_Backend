@@ -95,7 +95,6 @@ const extractTokenData = async (req, res, next) => {
 
     try {
         const accessToken = req.cookies.refreshToken;
-        console.log('accessToken', accessToken);
         if (!accessToken) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -128,7 +127,6 @@ const extractTokenData = async (req, res, next) => {
             decoded.ip !== clientIP &&
             (!decoded.dfp || decoded.dfp !== deviceFingerprint.substring(0, 16))
         ) {
-            console.log('IP mismatch', decoded.ip, clientIP);
             return res.status(401).json({
                 message:
                     'Session invalid. Access from different location detected.',
@@ -143,7 +141,6 @@ const extractTokenData = async (req, res, next) => {
             deviceFingerprint
         );
 
-        console.log('isValidToken', isValidToken);
         if (!isValidToken) {
             return res
                 .status(401)
