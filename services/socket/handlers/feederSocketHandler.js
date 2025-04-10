@@ -54,15 +54,7 @@ class FeederSocketHandler {
     async sendFeederData(socket, feeders) {
         try {
             await fetchFeederGraphs(socket, feeders);
-            // console.log('feederDemandData', feederDemandData);
-            // feeders.forEach((feeder) => {
-            //     if (feederDemandData[feeder]) {
-            //         socket.emit('feederUpdate', {
-            //             feeder,
-            //             graphData: feederDemandData[feeder],
-            //         });
-            //     }
-            // });
+            
         } catch (error) {
             logger.error('Error sending feeder data:', error);
             socket.emit('error', { message: 'Error fetching feeder data' });

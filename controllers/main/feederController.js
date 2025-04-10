@@ -36,7 +36,6 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-            //console.log('todayDemandData', todayDemandData);
 
             const yesterdayDemandData = await Feeders.getDemandTrendsData(
                 pool,
@@ -45,7 +44,6 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 '2025-03-26 23:59:59',
                 hierarchyMeters
             );
-            //console.log('yesterdayDemandData', yesterdayDemandData);
 
             const xAxis = [];
             const currentDayData = [];
@@ -110,7 +108,6 @@ export const fetchFeederGraphs = async (socket, feeders) => {
             }
         }
 
-        // console.log('feederDemandData', feederDemandData);
         // return feederDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
@@ -219,22 +216,32 @@ export const getFeedersWidgets = async (req, res) => {
 };
 export const getFeedersBySubstationName = async (req, res) => {
     try {
+        const user = req.user || null;
         const substationId = req.params.substationId;
         const date = '2025-03-09';
-        // // Step 1: Get substation ID
-        // const substation = await Feeders.getSubstationIdByName(
-        //     pool,
-        //     substationName
-        // );
 
-        // if (!substation) {
-        //     return res.status(404).json({
-        //         status: 'error',
-        //         message: `No substation found with name: ${substationName}`,
-        //     });
-        // }
+        if (user) {
+            const substations = await Substations.getSubstationNamesByRegion(
+                pool,
+                user.user_hierarchy_id
+            );
 
-        // Step 2: Get feeder names by substation ID
+            const substationIDs = substations.map(
+                (substation) => substation.id
+            );
+
+            if (
+                !substationIDs
+                    .map((id) => Number(id))
+                    .includes(Number(substationId))
+            ) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Unauthorized access to substation data',
+                });
+            }
+        }
+
         const feeders = await Feeders.getFeederNamesBySubstationId(
             pool,
             substationId
@@ -249,6 +256,7 @@ export const getFeedersBySubstationName = async (req, res) => {
             substationId,
             date
         );
+
         res.status(200).json({
             status: 'success',
             data: {

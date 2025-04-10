@@ -227,7 +227,6 @@ async function sendZeroValueAlert(
         //     recipient,
         //     options
         // );
-        // console.log(response);
 
         const info = await transporter.sendMail(mailOptions);
         console.log(
