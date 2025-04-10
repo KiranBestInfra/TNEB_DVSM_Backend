@@ -353,22 +353,22 @@ class EDCs {
         }
     }
 
-    async getTotalSubstations(connection) {
-        try {
-            const [[{ totalFeeders }]] = await connection.query({
-                sql: `
-                        SELECT COUNT(hierarchy_name) AS totalFeeders 
-                        FROM hierarchy h, hierarchy_master hm 
-                        WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
-                        AND hm.hierarchy_title = "SUBSTATION"
-                    `,
-                timeout: QUERY_TIMEOUT,
-            });
-            return totalFeeders;
-        } catch (error) {
-            throw error;
-        }
-    }
+    // async getTotalSubstations(connection) {
+    //     try {
+    //         const [[{ totalFeeders }]] = await connection.query({
+    //             sql: `
+    //                     SELECT COUNT(hierarchy_name) AS totalFeeders
+    //                     FROM hierarchy h, hierarchy_master hm
+    //                     WHERE h.hierarchy_type_id = hm.hierarchy_type_id
+    //                     AND hm.hierarchy_title = "SUBSTATION"
+    //                 `,
+    //             timeout: QUERY_TIMEOUT,
+    //         });
+    //         return totalFeeders;
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
     async getTotalFeeders(connection) {
         try {
             const [[{ totalFeeders }]] = await connection.query({
@@ -382,6 +382,57 @@ class EDCs {
             });
             return totalFeeders;
         } catch (error) {
+            throw error;
+        }
+    }
+
+    async getDistrictCountByEDC(connection, edc) {
+        try {
+            const [[{ district_count }]] = await connection.query({
+                sql: `
+                    SELECT 
+                        COUNT(district.hierarchy_id) AS district_count
+                    FROM hierarchy edc
+                    JOIN hierarchy district 
+                        ON edc.hierarchy_id = district.parent_id 
+                        AND district.hierarchy_type_id = 34
+                    WHERE edc.hierarchy_type_id = 11
+                    AND edc.hierarchy_name = ? OR edc.hierarchy_id = ?;
+                `,
+                values: [edc, edc],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return district_count || 0;
+        } catch (error) {
+            console.error('❌ Error fetching district count for EDC:', error);
+            throw error;
+        }
+    }
+
+    async getSubstationCountByEDC(connection, edc) {
+        try {
+            const [[{ substation_count }]] = await connection.query({
+                sql: `
+                    SELECT 
+                        COUNT(substation.hierarchy_id) AS substation_count
+                    FROM hierarchy edc
+                    JOIN hierarchy district 
+                        ON edc.hierarchy_id = district.parent_id 
+                        AND district.hierarchy_type_id = 34
+                    JOIN hierarchy substation 
+                        ON district.hierarchy_id = substation.parent_id 
+                        AND substation.hierarchy_type_id = 35
+                    WHERE edc.hierarchy_type_id = 11
+                    AND edc.hierarchy_name = ? OR edc.hierarchy_id = ?;
+                `,
+                values: [edc, edc],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return substation_count || 0;
+        } catch (error) {
+            console.error('❌ Error fetching substation count for EDC:', error);
             throw error;
         }
     }
