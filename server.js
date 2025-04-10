@@ -16,6 +16,10 @@ import pool from './config/db.js';
 import dashboardModel from './models/main/regions.model.js';
 import socketService from './services/socket/socketService.js';
 import crypto from 'crypto';
+import {
+    generateDeviceFingerprint,
+    validateDeviceFingerprint,
+} from './utils/deviceFingerprint.js';
 
 // import bcrypt from 'bcrypt';
 // import dashboardModel from './models/dashboard.model.js';
@@ -90,18 +94,53 @@ const extractTokenData = async (req, res, next) => {
     }
 
     try {
-        const accessToken = req.cookies.accessToken;
-
+        const accessToken = req.cookies.refreshToken;
+        console.log('accessToken', accessToken);
         if (!accessToken) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        const decoded = jwtDecode(accessToken, config.JWT_SECRET);
 
+        const decoded = jwtDecode(accessToken, config.JWT_SECRET);
         const userId = decoded.userId;
+
+        const clientIP =
+            req.ip ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.headers['x-forwarded-for']?.split(',')[0];
+
+        const deviceFingerprint = generateDeviceFingerprint(req);
+
+        if (decoded.dfp && deviceFingerprint.substring(0, 16) !== decoded.dfp) {
+            console.log(
+                'Device fingerprint mismatch',
+                decoded.dfp,
+                deviceFingerprint.substring(0, 16)
+            );
+            return res.status(401).json({
+                message:
+                    'Session invalid. Access from different device detected.',
+            });
+        }
+
+        if (
+            decoded.ip &&
+            decoded.ip !== clientIP &&
+            (!decoded.dfp || decoded.dfp !== deviceFingerprint.substring(0, 16))
+        ) {
+            console.log('IP mismatch', decoded.ip, clientIP);
+            return res.status(401).json({
+                message:
+                    'Session invalid. Access from different location detected.',
+            });
+        }
+
         const isValidToken = await User.verifyRefreshToken(
             pool,
             userId,
-            accessToken
+            accessToken,
+            clientIP,
+            deviceFingerprint
         );
 
         console.log('isValidToken', isValidToken);
@@ -111,7 +150,7 @@ const extractTokenData = async (req, res, next) => {
                 .json({ message: 'Invalid session. Please login again.' });
         }
 
-        if (decoded.role.toLowerCase().includes('admin')) {
+        if (decoded.role && decoded.role.toLowerCase().includes('admin')) {
             return next();
         } else {
             req.user = decoded;
