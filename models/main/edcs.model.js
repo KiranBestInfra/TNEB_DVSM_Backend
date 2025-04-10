@@ -46,10 +46,10 @@ class EDCs {
                     JOIN hierarchy_master hm 
                         ON h.hierarchy_type_id = hm.hierarchy_type_id 
                     WHERE hm.hierarchy_title = "EDC" 
-                    AND h.parent_id in (select hierarchy_id from hierarchy where hierarchy_name = ? )
+                    AND h.parent_id in (select hierarchy_id from hierarchy where hierarchy_name = ? OR hierarchy_id = ?)
         `;
 
-            const [rows] = await connection.query(sql, [region]); // Correct way
+            const [rows] = await connection.query(sql, [region, region]); 
 
             return rows;
         } catch (error) {
@@ -77,10 +77,11 @@ class EDCs {
                          ON district.hierarchy_id = substation.parent_id 
                          AND substation.hierarchy_type_id = 35  
                      WHERE region.hierarchy_type_id = 10  
-                     AND region.hierarchy_name = ?  
+                     AND region.hierarchy_name = ?
+                     OR region.hierarchy_id = ?
                      GROUP BY edc.hierarchy_name`;
 
-            const [rows] = await connection.query(sql, [region]);
+            const [rows] = await connection.query(sql, [region, region]);
             return rows;
         } catch (error) {
             console.error('❌ Error fetching substation count:', error);
@@ -105,10 +106,11 @@ class EDCs {
                     ON substation.hierarchy_id = feeder.parent_id  
                 WHERE region.hierarchy_type_id = 10  
                 AND region.hierarchy_name = ?
+                OR region.hierarchy_id = ?
                 GROUP BY edc.hierarchy_name;
             `,
                 timeout: QUERY_TIMEOUT,
-                values: [region], // Filter by region
+                values: [region, region], 
             });
 
             return rows.reduce((acc, row) => {

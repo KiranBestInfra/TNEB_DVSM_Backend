@@ -6,6 +6,7 @@ import { authSchemas } from '../../schemas/auth.schema.js';
 import { sendVerificationEmail } from '../../utils/emailService.js';
 import crypto from 'crypto';
 import pool from '../../config/db.js';
+import { generateDeviceFingerprint } from '../../utils/deviceFingerprint.js';
 
 const JWT_SECRET = config.SECRET_KEY;
 const JWT_REFRESH_SECRET = config.SECRET_KEY;
@@ -158,6 +159,16 @@ const login = async (req, res) => {
         const roledata = await User.getRoleByID(pool, user.role_id);
 
         if (rememberMe) {
+            // Get client IP address
+            const ipAddress =
+                req.ip ||
+                req.connection.remoteAddress ||
+                req.socket.remoteAddress ||
+                req.headers['x-forwarded-for']?.split(',')[0];
+
+            // Generate device fingerprint
+            const deviceFingerprint = generateDeviceFingerprint(req);
+
             const accessToken = jwt.sign(
                 {
                     userId: user.slno,
@@ -166,31 +177,27 @@ const login = async (req, res) => {
                     user_name: user.user_id,
                     role: roledata.role_title,
                     user_role_id: roledata.role_id,
+                    ip: ipAddress,
+                    dfp: deviceFingerprint.substring(0, 16), // Include abbreviated fingerprint
                 },
                 JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN }
-            );
-
-            const refreshToken = jwt.sign(
-                { userId: user.slno },
-                JWT_REFRESH_SECRET,
-                {
-                    expiresIn: JWT_REFRESH_EXPIRES_IN,
-                }
+                { expiresIn: JWT_REFRESH_EXPIRES_IN }
             );
 
             await User.saveRefreshToken(
                 pool,
                 user.slno,
                 accessToken,
-                JWT_REFRESH_EXPIRES_IN
+                JWT_REFRESH_EXPIRES_IN,
+                ipAddress,
+                deviceFingerprint
             );
 
             res.cookie('accessToken', accessToken, {
                 httpOnly: config.NODE_ENV === 'production',
                 secure: config.NODE_ENV === 'production',
                 sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
-                maxAge: 24 * 60 * 60 * 1000,
+                maxAge: 7 * 24 * 60 * 60 * 1000,
                 domain:
                     config.NODE_ENV === 'production'
                         ? '.lk-ea.co.in'
@@ -201,18 +208,17 @@ const login = async (req, res) => {
                 httpOnly: false,
                 secure: config.NODE_ENV === 'production',
                 sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
-                maxAge: 24 * 60 * 60 * 1000,
+                maxAge: 7 * 24 * 60 * 60 * 1000,
                 domain:
                     config.NODE_ENV === 'production'
                         ? '.lk-ea.co.in'
                         : 'localhost',
             });
 
-            res.cookie('refreshToken', refreshToken, {
+            res.cookie('refreshToken', accessToken, {
                 httpOnly: config.NODE_ENV === 'production',
                 secure: config.NODE_ENV === 'production',
                 sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
-                path: '/api/refresh-token',
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 domain:
                     config.NODE_ENV === 'production'
@@ -332,7 +338,6 @@ const verifyEmail = async (req, res) => {
             });
         }
 
-        // Check if email is already verified
         const isVerified = await User.isEmailVerified(pool, userId);
         if (isVerified) {
             return res.status(400).json({
@@ -349,26 +354,34 @@ const verifyEmail = async (req, res) => {
             });
         }
 
-        // Mark email as verified
         await User.markEmailAsVerified(pool, userId);
 
-        // Generate initial access token
+        const ipAddress =
+            req.ip ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.headers['x-forwarded-for']?.split(',')[0];
+
+        const deviceFingerprint = generateDeviceFingerprint(req);
+
         const accessToken = jwt.sign(
-            { userId: user.id, email: user.email },
+            {
+                userId: user.id,
+                email: user.email,
+                ip: ipAddress,
+                dfp: deviceFingerprint.substring(0, 16),
+            },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        // Generate refresh token
-        const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-            expiresIn: JWT_REFRESH_EXPIRES_IN,
-        });
-
         await User.saveRefreshToken(
             pool,
             user.id,
-            refreshToken,
-            JWT_REFRESH_EXPIRES_IN
+            accessToken,
+            JWT_REFRESH_EXPIRES_IN,
+            ipAddress,
+            deviceFingerprint
         );
 
         // Set cookies
@@ -381,11 +394,10 @@ const verifyEmail = async (req, res) => {
                 config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
         });
 
-        res.cookie('refreshToken', refreshToken, {
+        res.cookie('refreshToken', accessToken, {
             httpOnly: config.NODE_ENV === 'production',
             secure: config.NODE_ENV === 'production',
             sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
-            path: '/api/refresh-token',
             maxAge: 7 * 24 * 60 * 60 * 1000,
             domain:
                 config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
