@@ -86,8 +86,11 @@ export const getSubstationTotalWidgets = async (req, res) => {
     }
 
     try {
-        const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcs);
-        const substationCounts = await EDCs.getSubstationCountByEDC(pool, edcs);
+        const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcsID);
+        const substationCounts = await EDCs.getSubstationCountByEDC(
+            pool,
+            edcsID
+        );
         // const totalsubstations = await EDCs.getTotalSubstations(pool);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
         const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
