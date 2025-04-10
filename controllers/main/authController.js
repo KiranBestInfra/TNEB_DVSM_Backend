@@ -10,9 +10,8 @@ import pool from '../../config/db.js';
 const JWT_SECRET = config.SECRET_KEY;
 const JWT_REFRESH_SECRET = config.SECRET_KEY;
 const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || '1h';
-const JWT_REFRESH_EXPIRES_IN = config.JWT_REFRESH_EXPIRES_IN || '7';
+const JWT_REFRESH_EXPIRES_IN = config.JWT_REFRESH_EXPIRES_IN || '7d';
 
-// Generate random 6-digit code
 const generateVerificationCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -130,7 +129,7 @@ const login = async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        
+
         if (!isMatch) {
             await User.updateLoginAttempts(pool, user.id);
             return res
@@ -159,32 +158,31 @@ const login = async (req, res) => {
         const roledata = await User.getRoleByID(pool, user.role_id);
 
         if (rememberMe) {
-            //     if (user.role_id == 3) {
             const accessToken = jwt.sign(
                 {
-                    userId: user.user_id,
-                    email: user.email ? user.email : 'test@gmail.com',
+                    userId: user.slno,
+                    user_hierarchy_id: user.hierarchy_id,
+                    email: user.email ? user.email : '',
+                    user_name: user.user_id,
                     role: roledata.role_title,
                     user_role_id: roledata.role_id,
-                    uid: user.name,
-                    locationHierarchy: user.location_hierarchy,
                 },
                 JWT_SECRET,
                 { expiresIn: JWT_EXPIRES_IN }
             );
 
             const refreshToken = jwt.sign(
-                { userId: user.user_id },
+                { userId: user.slno },
                 JWT_REFRESH_SECRET,
                 {
-                    expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
+                    expiresIn: JWT_REFRESH_EXPIRES_IN,
                 }
             );
 
             await User.saveRefreshToken(
                 pool,
-                user.id,
-                refreshToken,
+                user.slno,
+                accessToken,
                 JWT_REFRESH_EXPIRES_IN
             );
 
@@ -226,11 +224,6 @@ const login = async (req, res) => {
         return res.status(200).json({
             status: 'success',
             message: 'Login successful',
-            user: {
-                id: user.user_id,
-                email: user.email,
-                name: user.name,
-            },
         });
     } catch (err) {
         console.error('Login error:', err);
@@ -368,7 +361,7 @@ const verifyEmail = async (req, res) => {
 
         // Generate refresh token
         const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-            expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
+            expiresIn: JWT_REFRESH_EXPIRES_IN,
         });
 
         await User.saveRefreshToken(

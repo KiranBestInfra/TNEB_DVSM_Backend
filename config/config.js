@@ -13,8 +13,12 @@ const config = {
     DB_NAME2: process.env.DB_NAME2,
     // DB_PORT: process.env.DB_PORT, //new modified
     SECRET_KEY: process.env.SECRET_KEY,
+    JWT_SECRET: process.env.JWT_SECRET || process.env.SECRET_KEY,
+    JWT_REFRESH_SECRET:
+        process.env.JWT_REFRESH_SECRET || process.env.SECRET_KEY + '_refresh',
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+    JWT_EXPIRATION: parseInt(process.env.JWT_EXPIRATION || '3600'), // Default 1 hour in seconds
     API_VERSION: process.env.API_VERSION,
 
     // SMTP Configuration
