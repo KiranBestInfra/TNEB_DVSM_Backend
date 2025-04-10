@@ -415,19 +415,19 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
 export const getFeedersDataBySubstation = async (req, res) => {
     try {
         // Extract and clean substation name
-        const substation = req.params.substationId || '';
-        const deviceDate = '2025-03-09';
+        const substationId = req.params.substationId || '';
+        const date = '2025-03-09';
 
         const commMeters = await Substations.getSubstationCommMeterCounts(
             pool,
-            substation,
-            deviceDate
+            substationId,
+            date
         );
 
         const nonCommMeters = await Substations.getSubstationNonCommMeterCounts(
             pool,
-            substation,
-            deviceDate
+            substationId,
+            date
         );
 
         res.status(200).json({
