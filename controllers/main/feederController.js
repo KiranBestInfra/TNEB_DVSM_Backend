@@ -1,6 +1,7 @@
 import pool from '../../config/db.js';
 import Feeders from '../../models/main/feeders.model.js';
 import Regions from '../../models/main/regions.model.js';
+import Substations from '../../models/main/substations.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -217,7 +218,7 @@ export const getFeedersWidgets = async (req, res) => {
 export const getFeedersBySubstationName = async (req, res) => {
     try {
         const substationId = req.params.substationId;
-
+        const date = '2025-03-09';
         // // Step 1: Get substation ID
         // const substation = await Feeders.getSubstationIdByName(
         //     pool,
@@ -236,10 +237,22 @@ export const getFeedersBySubstationName = async (req, res) => {
             pool,
             substationId
         );
+        const commMeters = await Substations.getFeedersCommMeterCounts(
+            pool,
+            substationId,
+            date
+        );
+        const nonCommMeters = await Substations.getFeedersNonCommMeterCounts(
+            pool,
+            substationId,
+            date
+        );
         res.status(200).json({
             status: 'success',
             data: {
                 substation_id: substationId,
+                commMeters,
+                nonCommMeters,
                 feeders,
             },
         });
