@@ -348,7 +348,7 @@ class Regions {
         try {
             const [rows] = await connection.query({
                 sql: `
-                SELECT 
+                    SELECT 
                     COUNT(DISTINCT ic.meter_no) AS comm_meters
                 FROM hierarchy region
                 JOIN hierarchy edc 
@@ -365,10 +365,9 @@ class Regions {
                     ON ic.meter_no = m.meter_serial_no
                 WHERE region.hierarchy_type_id = 10
                   AND region.hierarchy_name = ?
-                  OR region.hierarchy_id = ?
                   AND DATE(ic.device_date) = ?
             `,
-                values: [region, region, date],
+                values: [region, date],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -400,14 +399,13 @@ class Regions {
                     ON feeder.hierarchy_id = m.location_id
                 WHERE region.hierarchy_type_id = 10
                   AND region.hierarchy_name = ?
-                  OR region.hierarchy_id = ?
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
                       WHERE DATE(ic.device_date) = ?
                   )
             `,
-                values: [region, region, date],
+                values: [region, date],
                 timeout: QUERY_TIMEOUT,
             });
 
