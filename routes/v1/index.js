@@ -8,6 +8,7 @@ import profileRoutes from '../profile.js';
 import ticketRoutes from '../tickets.js';
 import feederRoutes from '../feeder.js';
 import substationRoutes from '../substation.js';
+import errorRoutes from '../log.js';
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.use('/substations', substationRoutes);
 router.use('/profile', profileRoutes);
 router.use('/feeders', feederRoutes);
 router.use('/tickets', ticketRoutes);
+router.use('/log', errorRoutes);
 
 // router.use('/demo', demoRoutes);
 
