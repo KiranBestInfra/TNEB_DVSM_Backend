@@ -91,7 +91,6 @@ export const getSubstationTotalWidgets = async (req, res) => {
             pool,
             edcsID
         );
-        // const totalsubstations = await EDCs.getTotalSubstations(pool);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
         const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
         const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
