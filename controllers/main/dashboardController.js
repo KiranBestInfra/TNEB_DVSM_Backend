@@ -85,9 +85,6 @@ export const getConsumersTable = (
                 errorId: error.code || 'INTERNAL_SERVER_ERROR',
             });
         }
-        // finally {
-        //     if (connection) connection.release();
-        // }
     };
 };
 
@@ -234,9 +231,6 @@ export const getMainGraphAnalytics = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    // }
 };
 
 function formatDate1(date) {
@@ -421,16 +415,6 @@ export const getMainWidgets = async (req, res) => {
             firstDayPreviousMonth,
             lastDayPreviousMonth
         );
-        // const {
-        //     total_overdue_revenue: current_month_overdue_amount,
-        //     total_overdue_revenue_count: current_month_overdue_count,
-        // } = await Dashboard.getTotalOverDueRevenueCurrentMonth(
-        //     pool,
-        //     accessCondition,
-        //     accessValues,
-        //     firstDayCurrentMonth,
-        //     lastDayCurrentMonth
-        // );
         const totalOutstandingPercentage = calculatePercentage(
             total_overdue_bill ?? 0,
             total_revenue ?? 0
@@ -492,23 +476,17 @@ export const getMainWidgets = async (req, res) => {
                 postpaidDisconnected: postpaid,
                 totalOutstandingPercentage,
 
-                // Monthly Widgets Data
                 currentMonthtotalRevenue: total_revenue,
                 lastMonthTotalRevenue: total_bill_last_month,
                 paymentReceiptsCurrentMonth: total_revenue_count,
                 paymentReceiptsLastMonth: total_bill_last_month_count,
 
-                // Daily Widgets Data
                 yesterdayConsumption,
                 dayBeforeYesterdayConsumption,
                 yesterdayTotalRevenue,
                 dayBeforeYesterdayTotalRevenue,
                 yesterdayPaymentReceipts: 0,
                 dayBeforeYesterdayPaymentReceipts: 0,
-
-                // Todat Widgets Data
-                // todayConsumption,
-                // todayTotalRevenue,
                 todayPaymentReceipts: 0,
             },
         });
@@ -525,9 +503,6 @@ export const getMainWidgets = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    // }
 };
 
 export const getBillingWidgets = async (req, res) => {
@@ -631,9 +606,6 @@ export const getBillingData = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    // }
 };
 
 export const getInvoiceByInvoiceNo = async (req, res) => {
@@ -917,9 +889,9 @@ function formatNumericDate(dateInput) {
 
 function formatCreatedAt(dateInput) {
     const date = new Date(dateInput);
-    if (isNaN(date)) return dateInput; // Fallback for invalid date
+    if (isNaN(date)) return dateInput;
     return date.toLocaleDateString('en-US', {
-        timeZone: 'Asia/Kolkata', // Set to Indian Standard Time
+        timeZone: 'Asia/Kolkata',
         month: 'long',
         year: 'numeric',
     });
@@ -1283,8 +1255,6 @@ export const getConsumerByID = async (req, res) => {
         }
 
         const xAxisData = generateMatchingDaysArray();
-
-        // Only predict future values if we have current month data
         let yAxis = [];
         if (
             modifiedCurrentMonthCons &&
@@ -1338,9 +1308,6 @@ export const getConsumerByID = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    // }
 };
 
 export const getOverdueConsumers = async (req, res) => {
@@ -1474,9 +1441,7 @@ export const getHierarchy = async (req, res) => {
 };
 
 export const bulkUpdate = async (req, res) => {
-    // let connection;
     try {
-        // connection = connection ? connection : await pool.getConnection();
         let ids = [];
         const data = req.body;
         if (data.updateType == 'bulk') {
@@ -1567,9 +1532,6 @@ export const bulkUpdate = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    // }
 };
 
 export const getTicketAnalytics = async (req, res) => {
@@ -1617,9 +1579,7 @@ const consumerSchema = Joi.object({
 }).unknown(true);
 
 export const editConsumerDetails = async (req, res) => {
-    // let connection;
     try {
-        // connection = connection ? connection : await pool.getConnection();
         const { error, value } = consumerSchema.validate(req.body, {
             abortEarly: false,
         });
@@ -1741,16 +1701,11 @@ export const editConsumerDetails = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    // }
 };
 
 export const cosumerBulkUpload = async (req, res) => {
-    // let connection;
     const filePath = path.resolve(req.file.destination, req.file.filename);
     try {
-        // connection = connection ? connection : await pool.getConnection();
         const workbook = XLSX.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
@@ -1821,10 +1776,6 @@ export const cosumerBulkUpload = async (req, res) => {
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
         });
     }
-    // finally {
-    //     if (connection) connection.release();
-    //     fs.unlinkSync(filePath);
-    // }
 };
 
 export const getReportsGraphAnalytics = async (req, res) => {
@@ -2064,47 +2015,9 @@ export const bulkRemainder = async (req, res) => {
         const bills = await Dashboard.sendBulkRemainders(pool, reminder);
 
         const BATCH_SIZE = 50;
-        // for (let i = 0; i < bills.length; i += BATCH_SIZE) {
-        //     const batch = bills.slice(i, i + BATCH_SIZE);
-        //     await Promise.all(
-        //         batch.map(async (bill) => {
-        //             const emailData = {
-        //                 to: bill.consumer_email,
-        //                 subject: `Electricity Bill Reminder - ${bill.invoice_id}`,
-        //                 template: 'electricity-bill-reminder',
-        //                 data: {
-        //                     consumerName: bill.consumer_name,
-        //                     consumerNo: bill.consumer_id,
-        //                     billNo: bill.invoice_id,
-        //                     billMonth: new Date(
-        //                         bill.billing_period_start
-        //                     ).toLocaleString('default', { month: 'long' }),
-        //                     billFromDate: bill.billing_period_start,
-        //                     billToDate: bill.billing_period_end,
-        //                     presentBillAmount: bill.amount,
-        //                     previousBalance: bill.due_amount - bill.amount,
-        //                     balance: bill.due_amount,
-        //                     dueDate: bill.due_date,
-        //                 },
-        //             };
-
-        //             try {
-        //                 await sendEmail(emailData);
-        //             } catch (error) {
-        //                 logger.error('Error sending reminder email', {
-        //                     error: error.message,
-        //                     invoiceId: bill.invoice_id,
-        //                     timestamp: new Date().toISOString(),
-        //                 });
-        //             }
-        //         })
-        //     );
-        // }
 
         res.status(200).json({
             status: 'success',
-            // data: tickets,
-            // pagination: tickets.pagination,
         });
     } catch (error) {
         logger.error('Error fetching hierarchy', {
