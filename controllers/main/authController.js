@@ -166,7 +166,6 @@ const login = async (req, res) => {
                 req.socket.remoteAddress ||
                 req.headers['x-forwarded-for']?.split(',')[0];
 
-            // Generate device fingerprint
             const deviceFingerprint = generateDeviceFingerprint(req);
 
             const accessToken = jwt.sign(
@@ -178,7 +177,7 @@ const login = async (req, res) => {
                     role: roledata.role_title,
                     user_role_id: roledata.role_id,
                     ip: ipAddress,
-                    dfp: deviceFingerprint.substring(0, 16), // Include abbreviated fingerprint
+                    dfp: deviceFingerprint.substring(0, 16), 
                 },
                 JWT_SECRET,
                 { expiresIn: JWT_REFRESH_EXPIRES_IN }

@@ -203,24 +203,11 @@ class User {
                 expiresInSeconds = days * 24 * 60 * 60;
             }
 
-            await Promise.race([
+            const [existingRecords] = await Promise.race([
                 connection.query(
-                    `INSERT INTO refresh_tokens 
-                    (user_id, token, expires_at, ip_address, device_fingerprint, created_at) 
-                    VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), ?, ?, CURRENT_TIMESTAMP)
-                    ON DUPLICATE KEY UPDATE
-                        token = VALUES(token),
-                        expires_at = VALUES(expires_at),
-                        ip_address = VALUES(ip_address),
-                        device_fingerprint = VALUES(device_fingerprint),
-                        created_at = VALUES(created_at)`,
-                    [
-                        userId,
-                        refreshToken,
-                        expiresInSeconds,
-                        ipAddress,
-                        deviceFingerprint,
-                    ]
+                    `SELECT id FROM refresh_tokens 
+                    WHERE user_id = ? AND (ip_address = ? AND device_fingerprint = ?)`,
+                    [userId, ipAddress, deviceFingerprint]
                 ),
                 new Promise((_, reject) =>
                     setTimeout(
@@ -229,6 +216,52 @@ class User {
                     )
                 ),
             ]);
+
+            if (existingRecords.length > 0) {
+                await Promise.race([
+                    connection.query(
+                        `UPDATE refresh_tokens 
+                        SET token = ?,
+                            expires_at = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND),
+                            created_at = CURRENT_TIMESTAMP
+                        WHERE user_id = ? AND (ip_address = ? OR device_fingerprint = ?)`,
+                        [
+                            refreshToken,
+                            expiresInSeconds,
+                            userId,
+                            ipAddress,
+                            deviceFingerprint,
+                        ]
+                    ),
+                    new Promise((_, reject) =>
+                        setTimeout(
+                            () => reject(new Error('Query timeout')),
+                            QUERY_TIMEOUT
+                        )
+                    ),
+                ]);
+            } else {
+                await Promise.race([
+                    connection.query(
+                        `INSERT INTO refresh_tokens 
+                        (user_id, token, expires_at, ip_address, device_fingerprint, created_at) 
+                        VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), ?, ?, CURRENT_TIMESTAMP)`,
+                        [
+                            userId,
+                            refreshToken,
+                            expiresInSeconds,
+                            ipAddress,
+                            deviceFingerprint,
+                        ]
+                    ),
+                    new Promise((_, reject) =>
+                        setTimeout(
+                            () => reject(new Error('Query timeout')),
+                            QUERY_TIMEOUT
+                        )
+                    ),
+                ]);
+            }
         } catch (error) {
             if (error.message === 'Query timeout') {
                 throw new Error(
@@ -239,11 +272,6 @@ class User {
             }
             throw error;
         }
-        // finally {
-        //     if (connection) {
-        //         connection.release();
-        //     }
-        // }
     }
 
     // Get login security information
