@@ -22,10 +22,6 @@ import {
     validateDeviceFingerprint,
 } from './utils/deviceFingerprint.js';
 
-// import bcrypt from 'bcrypt';
-// import dashboardModel from './models/dashboard.model.js';
-
-// API Key Authentication Middleware
 const apiKeyAuth = (req, res, next) => {
     if (req.path.includes('/auth') || req.path === '/health') {
         return next();
