@@ -224,7 +224,7 @@ class User {
                         SET token = ?,
                             expires_at = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND),
                             created_at = CURRENT_TIMESTAMP
-                        WHERE user_id = ? AND (ip_address = ? OR device_fingerprint = ?)`,
+                        WHERE user_id = ? AND (ip_address = ? AND device_fingerprint = ?)`,
                         [
                             refreshToken,
                             expiresInSeconds,
@@ -309,7 +309,6 @@ class User {
         // }
     }
 
-    // Get refresh token
     async getRefreshToken(connection, userId, ipAddress, deviceFingerprint) {
         try {
             const [rows] = await Promise.race([
@@ -317,7 +316,7 @@ class User {
                     `SELECT token 
                     FROM refresh_tokens 
                     WHERE user_id = ? 
-                    AND (ip_address = ? OR device_fingerprint = ?)
+                    AND (ip_address = ? AND device_fingerprint = ?)
                     AND expires_at > CURRENT_TIMESTAMP 
                     ORDER BY created_at DESC LIMIT 1`,
                     [userId, ipAddress, deviceFingerprint]
@@ -329,6 +328,7 @@ class User {
                     )
                 ),
             ]);
+
             return rows[0]?.token || null;
         } catch (error) {
             if (error.message === 'Query timeout') {
@@ -351,13 +351,16 @@ class User {
         deviceFingerprint
     ) {
         try {
+            // console.log('userId', userId);
+            // console.log('token\n', token);
+            console.log('deviceFingerprint\n', deviceFingerprint);
             const storedToken = await this.getRefreshToken(
                 connection,
                 userId,
                 ipAddress,
                 deviceFingerprint
             );
-
+            console.log('storedToken\n', storedToken);
             if (!storedToken) {
                 return false;
             }
