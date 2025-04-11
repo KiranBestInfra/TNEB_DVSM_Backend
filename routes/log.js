@@ -4,19 +4,33 @@ import logger from '../utils/logger.js';
 const errorRoutes = express.Router();
 
 errorRoutes.post('/error', (req, res) => {
-    const { message, stack, time } = req.body;
+    const { message, stack, time, level = 'error', url, userAgent } = req.body;
 
     if (!message || !time) {
-        return res
-            .status(400)
-            .json({ success: false, message: 'Invalid error payload' });
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid error payload',
+        });
     }
 
-    logger.error({ message, stack });
+    const logData = {
+        message,
+        stack,
+        time,
+        url: url || req.headers.referer || 'Unknown',
+        userAgent: userAgent || req.headers['user-agent'],
+        ip: req.ip,
+    };
+
+    if (level === 'warn') {
+        logger.warn(logData);
+    } else {
+        logger.error(logData);
+    }
 
     res.status(200).json({
         success: true,
-        message: 'Error logged successfully',
+        message: 'Log received successfully',
     });
 });
 
