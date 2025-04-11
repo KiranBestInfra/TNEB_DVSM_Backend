@@ -20,6 +20,7 @@ const config = {
     JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
     JWT_EXPIRATION: parseInt(process.env.JWT_EXPIRATION || '3600'), // Default 1 hour in seconds
     API_VERSION: process.env.API_VERSION,
+    API_KEY: process.env.API_KEY,
 
     // SMTP Configuration
     SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',

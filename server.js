@@ -7,6 +7,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
 import { createServer } from 'node:http';
+import fs from 'node:fs';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
@@ -23,6 +24,37 @@ import {
 
 // import bcrypt from 'bcrypt';
 // import dashboardModel from './models/dashboard.model.js';
+
+// API Key Authentication Middleware
+const apiKeyAuth = (req, res, next) => {
+    if (req.path.includes('/auth') || req.path === '/health') {
+        return next();
+    }
+
+    const apiKey = req.headers['x-api-key'];
+
+    if (!apiKey) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'API key is missing',
+        });
+    }
+
+    if (apiKey !== config.API_KEY) {
+        logger.warn('Invalid API key attempt', {
+            ip: req.ip,
+            apiKey: apiKey,
+            timestamp: new Date().toISOString(),
+        });
+
+        return res.status(401).json({
+            status: 'error',
+            message: 'Invalid API key',
+        });
+    }
+
+    next();
+};
 
 import {
     calculateTotalAmount,
@@ -87,6 +119,8 @@ app.use(cookieParser());
 app.use(xss());
 app.use(hpp());
 app.use(compression());
+
+app.use(apiKeyAuth);
 
 const extractTokenData = async (req, res, next) => {
     if (req.path.includes('/auth')) {
