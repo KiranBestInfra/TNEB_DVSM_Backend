@@ -13,6 +13,7 @@ export const getEDCWidgets = async (req, res) => {
     try {
         const user = req.user || null;
         const region = user ? user.user_hierarchy_id : req.params.region;
+        console.log(region, 'region');
 
         const deviceDate = '2025-03-09';
         if (!region) {

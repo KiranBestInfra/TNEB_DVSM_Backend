@@ -23,21 +23,21 @@ class Regions {
                 {
                     sql: `
                  SELECT
-    COUNT(district.hierarchy_id) AS DistrictsByRegion
-FROM hierarchy region
-JOIN hierarchy edc 
-    ON region.hierarchy_id = edc.parent_id 
-    AND edc.hierarchy_type_id = 11
-JOIN hierarchy district 
-    ON edc.hierarchy_id = district.parent_id 
-    AND district.hierarchy_type_id = 34
-WHERE region.hierarchy_type_id = 10
-  AND region.hierarchy_name = ?
-GROUP BY region.hierarchy_name;
+                    COUNT(district.hierarchy_id) AS DistrictsByRegion
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                    AND edc.hierarchy_type_id = 11
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id 
+                    AND district.hierarchy_type_id = 34
+                WHERE region.hierarchy_type_id = 10
+                AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
+                GROUP BY region.hierarchy_name;
                 `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [region]
+                [region, region]
             );
             return DistrictsByRegion;
         } catch (error) {
@@ -389,10 +389,10 @@ GROUP BY region.hierarchy_name;
                 JOIN instant_comm ic 
                     ON ic.meter_no = m.meter_serial_no
                 WHERE region.hierarchy_type_id = 10
-                  AND region.hierarchy_name = ?
+                  AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
                   AND DATE(ic.device_date) = ?
             `,
-                values: [region, date],
+                values: [region, region, date],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -423,14 +423,14 @@ GROUP BY region.hierarchy_name;
                 JOIN meter m 
                     ON feeder.hierarchy_id = m.location_id
                 WHERE region.hierarchy_type_id = 10
-                  AND region.hierarchy_name = ?
+                  AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
                       WHERE DATE(ic.device_date) = ?
                   )
             `,
-                values: [region, date],
+                values: [region, region, date],
                 timeout: QUERY_TIMEOUT,
             });
 
