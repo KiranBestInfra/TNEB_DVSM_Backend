@@ -13,12 +13,14 @@ import errorRoutes from '../log.js';
 const router = express.Router();
 
 router.use('/auth', authRoutes);
-router.use('/regions', regionRoutes);
 router.use('/consumer', consumerRoutes);
+
+router.use('/regions', regionRoutes);
 router.use('/edcs', edcRoutes);
 router.use('/substations', substationRoutes);
-router.use('/profile', profileRoutes);
 router.use('/feeders', feederRoutes);
+
+router.use('/profile', profileRoutes);
 router.use('/tickets', ticketRoutes);
 router.use('/log', errorRoutes);
 

@@ -52,7 +52,6 @@ export const getSubstationWidgets = async (req, res) => {
               }, {})
             : feederCounts;
 
-
         res.status(200).json({
             status: 'success',
             data: {
@@ -240,7 +239,6 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
         const substationID = (req.params.substationID || '')
             .toUpperCase()
             .replace(/-/g, ' ');
-
 
         if (substationID) {
             const substationHierarchy =

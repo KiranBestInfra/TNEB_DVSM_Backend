@@ -1,5 +1,10 @@
 import logger from '../../../utils/logger.js';
-import { fetchEdcGraphs } from '../../../controllers/main/edcsController.js';
+import {
+    fetchEdcGraphs,
+    getEDCWidgets,
+    getSubstationTotalWidgets,
+    getEdcDemandGraphDetails,
+} from '../../../controllers/main/edcsController.js';
 import socketService from '../socketService.js';
 import pool from '../../../config/db.js';
 
@@ -9,6 +14,7 @@ class EdcSocketHandler {
     }
 
     initialize(socket) {
+        // Subscribe to EDC graphs
         socket.on('subscribeEdc', async (data) => {
             if (!data || !data.edcs || !Array.isArray(data.edcs)) {
                 logger.error('Invalid EDC subscription data received');
@@ -30,7 +36,6 @@ class EdcSocketHandler {
             }
 
             logger.info(`Client subscribed to EDCs: ${edcs.join(', ')}`);
-
             socket.subscribedEdcs = edcs;
 
             try {
@@ -50,19 +55,104 @@ class EdcSocketHandler {
                 });
             }
         });
+
+        // Get EDC widgets data
+        socket.on('getEdcWidgets', async (data) => {
+            try {
+                const mockReq = {
+                    user: data.user || null,
+                    params: { region: data.region || null },
+                };
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit('edcWidgetsData', responseData);
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await getEDCWidgets(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error fetching EDC widgets:', error);
+                socket.emit('error', {
+                    message: 'Error fetching EDC widgets data',
+                });
+            }
+        });
+
+        // Get substation total widgets for an EDC
+        socket.on('getSubstationTotalWidgets', async (data) => {
+            try {
+                const mockReq = {
+                    user: data.user || null,
+                    params: { edcs: data.edcID || null },
+                };
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit(
+                                    'substationTotalWidgetsData',
+                                    responseData
+                                );
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await getSubstationTotalWidgets(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error fetching substation total widgets:', error);
+                socket.emit('error', {
+                    message: 'Error fetching substation total widgets data',
+                });
+            }
+        });
+
+        // Get EDC demand graph details
+        socket.on('getEdcDemandGraphDetails', async (data) => {
+            try {
+                const mockReq = {
+                    locationAccess: data.locationAccess || { values: [] },
+                    params: { edcID: data.edcID || null },
+                };
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit(
+                                    'edcDemandGraphDetails',
+                                    responseData
+                                );
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await getEdcDemandGraphDetails(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error fetching EDC demand graph details:', error);
+                socket.emit('error', {
+                    message: 'Error fetching EDC demand graph details',
+                });
+            }
+        });
     }
 
     async sendEdcData(socket, edcs) {
         try {
-            const edcDemandData = await fetchEdcGraphs(socket, edcs);
-            // edcs.forEach((edc) => {
-            //     if (edcDemandData[edc]) {
-            //         socket.emit('edcUpdate', {
-            //             edc,
-            //             graphData: edcDemandData[edc],
-            //         });
-            //     }
-            // });
+            await fetchEdcGraphs(socket, edcs);
         } catch (error) {
             logger.error('Error sending EDC data:', error);
             socket.emit('error', { message: 'Error fetching EDC data' });
