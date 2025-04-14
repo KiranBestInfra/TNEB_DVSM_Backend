@@ -188,21 +188,26 @@ class User {
         // }
     }
 
-    // Save refresh token
-    async saveRefreshToken(connection, userId, refreshToken, expiresIn) {
-        // let connection;
+    async saveRefreshToken(
+        connection,
+        userId,
+        refreshToken,
+        expiresIn,
+        ipAddress,
+        deviceFingerprint
+    ) {
         try {
-            // connection = await pool.getConnection();
-            await Promise.race([
+            let expiresInSeconds = expiresIn;
+            if (typeof expiresIn === 'string' && expiresIn.endsWith('d')) {
+                const days = parseInt(expiresIn.slice(0, -1), 10);
+                expiresInSeconds = days * 24 * 60 * 60;
+            }
+
+            const [existingRecords] = await Promise.race([
                 connection.query(
-                    `INSERT INTO refresh_tokens 
-                    (user_id, token, expires_at) 
-                    VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND))
-                    ON DUPLICATE KEY UPDATE
-                        token = VALUES(token),
-                        expires_at = VALUES(expires_at),
-                        created_at = CURRENT_TIMESTAMP`,
-                    [userId, refreshToken, expiresIn]
+                    `SELECT id FROM refresh_tokens 
+                    WHERE user_id = ? AND (ip_address = ? AND device_fingerprint = ?)`,
+                    [userId, ipAddress, deviceFingerprint]
                 ),
                 new Promise((_, reject) =>
                     setTimeout(
@@ -211,6 +216,52 @@ class User {
                     )
                 ),
             ]);
+
+            if (existingRecords.length > 0) {
+                await Promise.race([
+                    connection.query(
+                        `UPDATE refresh_tokens 
+                        SET token = ?,
+                            expires_at = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND),
+                            created_at = CURRENT_TIMESTAMP
+                        WHERE user_id = ? AND (ip_address = ? AND device_fingerprint = ?)`,
+                        [
+                            refreshToken,
+                            expiresInSeconds,
+                            userId,
+                            ipAddress,
+                            deviceFingerprint,
+                        ]
+                    ),
+                    new Promise((_, reject) =>
+                        setTimeout(
+                            () => reject(new Error('Query timeout')),
+                            QUERY_TIMEOUT
+                        )
+                    ),
+                ]);
+            } else {
+                await Promise.race([
+                    connection.query(
+                        `INSERT INTO refresh_tokens 
+                        (user_id, token, expires_at, ip_address, device_fingerprint, created_at) 
+                        VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? SECOND), ?, ?, CURRENT_TIMESTAMP)`,
+                        [
+                            userId,
+                            refreshToken,
+                            expiresInSeconds,
+                            ipAddress,
+                            deviceFingerprint,
+                        ]
+                    ),
+                    new Promise((_, reject) =>
+                        setTimeout(
+                            () => reject(new Error('Query timeout')),
+                            QUERY_TIMEOUT
+                        )
+                    ),
+                ]);
+            }
         } catch (error) {
             if (error.message === 'Query timeout') {
                 throw new Error(
@@ -221,11 +272,6 @@ class User {
             }
             throw error;
         }
-        // finally {
-        //     if (connection) {
-        //         connection.release();
-        //     }
-        // }
     }
 
     // Get login security information
@@ -263,15 +309,17 @@ class User {
         // }
     }
 
-    // Get refresh token
-    async getRefreshToken(connection, userId) {
-        // let connection;
+    async getRefreshToken(connection, userId, ipAddress, deviceFingerprint) {
         try {
-            // connection = await pool.getConnection();
             const [rows] = await Promise.race([
                 connection.query(
-                    'SELECT token FROM refresh_tokens WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC LIMIT 1',
-                    [userId]
+                    `SELECT token 
+                    FROM refresh_tokens 
+                    WHERE user_id = ? 
+                    AND (ip_address = ? AND device_fingerprint = ?)
+                    AND expires_at > CURRENT_TIMESTAMP 
+                    ORDER BY created_at DESC LIMIT 1`,
+                    [userId, ipAddress, deviceFingerprint]
                 ),
                 new Promise((_, reject) =>
                     setTimeout(
@@ -280,6 +328,7 @@ class User {
                     )
                 ),
             ]);
+
             return rows[0]?.token || null;
         } catch (error) {
             if (error.message === 'Query timeout') {
@@ -291,11 +340,36 @@ class User {
             }
             throw error;
         }
-        // finally {
-        //     if (connection) {
-        //         connection.release();
-        //     }
-        // }
+    }
+
+    // Verify if refresh token matches the most recent one
+    async verifyRefreshToken(
+        connection,
+        userId,
+        token,
+        ipAddress,
+        deviceFingerprint
+    ) {
+        try {
+            // console.log('userId', userId);
+            // console.log('token\n', token);
+            console.log('deviceFingerprint\n', deviceFingerprint);
+            const storedToken = await this.getRefreshToken(
+                connection,
+                userId,
+                ipAddress,
+                deviceFingerprint
+            );
+            console.log('storedToken\n', storedToken);
+            if (!storedToken) {
+                return false;
+            }
+
+            return token === storedToken;
+        } catch (error) {
+            console.error('Refresh token verification error:', error);
+            return false;
+        }
     }
 
     // Save verification code
@@ -605,10 +679,9 @@ class User {
     async getRoleByID(connection, id) {
         try {
             const [[results]] = await Promise.race([
-                connection.query(
-                    `SELECT * FROM user_role WHERE role_id = ?`,
-                    [id]
-                ),
+                connection.query(`SELECT * FROM user_role WHERE role_id = ?`, [
+                    id,
+                ]),
                 new Promise((_, reject) =>
                     setTimeout(
                         () => reject(new Error('Query timeout')),

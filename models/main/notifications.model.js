@@ -20,7 +20,6 @@ class Notification {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -43,7 +42,6 @@ class Notification {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }
@@ -59,7 +57,6 @@ class Notification {
                 },
                 [id]
             );
-            console.log('Hola');
             this.getNotificationCount(connection, socket);
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
@@ -69,7 +66,6 @@ class Notification {
                         ' seconds'
                 );
             }
-            console.log('getDTRData', error);
             throw error;
         }
     }

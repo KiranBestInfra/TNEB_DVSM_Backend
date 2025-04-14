@@ -1,5 +1,7 @@
 import pool from '../../config/db.js';
 import EDCs from '../../models/main/edcs.model.js';
+import Regions from '../../models/main/regions.model.js';
+import Feeders from '../../models/main/feeders.model.js';
 import logger from '../../utils/logger.js';
 import moment from 'moment-timezone';
 import {
@@ -9,8 +11,11 @@ import {
 
 export const getEDCWidgets = async (req, res) => {
     try {
-        const region = req.params.region;
+        const user = req.user || null;
+        const region = user ? user.user_hierarchy_id : req.params.region;
+        console.log(region, 'region');
 
+        const deviceDate = '2025-03-09';
         if (!region) {
             return res.status(400).json({
                 status: 'error',
@@ -18,19 +23,40 @@ export const getEDCWidgets = async (req, res) => {
             });
         }
 
+        const regionDistricts = await Regions.getDistrictsByRegion(
+            pool,
+            region
+        );
+
         const edcNames = await EDCs.getEdcNamesByRegion(pool, region);
+
         const substationCounts = await EDCs.getSubstationCountByRegion(
             pool,
             region
         );
         const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
+
+        const commMeters = await Regions.getRegionCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
+        const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
+            pool,
+            region,
+            deviceDate
+        );
+
         res.status(200).json({
             status: 'success',
             data: {
                 region,
                 edcNames,
+                regionDistricts,
                 substationCounts,
                 feederCounts,
+                commMeters,
+                nonCommMeters,
             },
         });
     } catch (error) {
@@ -38,9 +64,67 @@ export const getEDCWidgets = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'Server Error' });
     }
 };
-export const fetchEdcGraphs = async (edcNames) => {
-    console.log(edcNames);
+export const getSubstationTotalWidgets = async (req, res) => {
+    const user = req.user || null;
+    const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
 
+    const date = '2025-03-09';
+
+    if (user) {
+        const edcs = await EDCs.getEdcNamesByRegion(
+            pool,
+            user.user_hierarchy_id
+        );
+
+        const edcIds = edcs.map((edc) => edc.hierarchy_id);
+
+        if (!edcIds.map((id) => Number(id)).includes(Number(edcsID))) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Unauthorized access to substation data',
+            });
+        }
+    }
+
+    try {
+        const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcsID);
+        const substationCounts = await EDCs.getSubstationCountByEDC(
+            pool,
+            edcsID
+        );
+        const totalFeeders = await EDCs.getTotalFeeders(pool);
+        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
+        const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
+            pool,
+            edcsID,
+            date
+        );
+        const regionFeederNames = await Feeders.getFeederNamesByEdcId(
+            pool,
+            edcsID
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                districtCounts,
+                substationCounts,
+                totalFeeders,
+                commMeters,
+                nonCommMeters,
+                regionFeederNames: regionFeederNames,
+            },
+        });
+    } catch (error) {
+        logger.error('Error fetching feeders widgets:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+        res.status(500).json({ status: 'error', message: 'Server Error' });
+    }
+};
+export const fetchEdcGraphs = async (socket, edcNames) => {
     try {
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
@@ -60,7 +144,6 @@ export const fetchEdcGraphs = async (edcNames) => {
             const hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
             );
-            //console.log(hierarchyMeters);
 
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
@@ -69,7 +152,6 @@ export const fetchEdcGraphs = async (edcNames) => {
                 '2025-03-27 23:59:59',
                 hierarchyMeters
             );
-            //console.log('edctodayDemandData', todayDemandData);
             const yesterdayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 null,
@@ -133,12 +215,200 @@ export const fetchEdcGraphs = async (edcNames) => {
             };
 
             edcDemandData[edc] = detailedGraphData;
+            if (edcDemandData[edc]) {
+                socket.emit('edcUpdate', {
+                    edc,
+                    graphData: edcDemandData[edc],
+                });
+            }
         }
 
         return edcDemandData;
     } catch (error) {
         console.error('Error fetching EDC graphs:', error);
         throw error;
+    }
+};
+export const getEdcDemandGraphDetails = async (req, res) => {
+    try {
+        const accessValues = req.locationAccess?.values || [];
+        const edcID = (req.params.edcID || '').toUpperCase().replace(/-/g, ' ');
+
+        if (edcID) {
+            const edcHierarchy = await EDCs.getHierarchyByEdc(pool, edcID);
+            const meters = await EDCs.getEdcMeters(
+                pool,
+                null,
+                edcHierarchy.hierarchy_type_id,
+                edcHierarchy.hierarchy_id
+            );
+
+            const hierarchyMeters = meters.map((meter) =>
+                meter.meter_serial_no.replace(/^0+/, '')
+            );
+
+            const { startOfDay, endOfDay } = getTodayStartAndEnd();
+            const { startOfYesterday, endOfYesterday } =
+                getYesterdayStartAndEnd();
+
+            const todayDemandData = await EDCs.getDemandTrendsData(
+                pool,
+                accessValues,
+                '2025-03-27 00:00:00',
+                '2025-03-27 23:59:59',
+                hierarchyMeters
+            );
+
+            const yesterdayDemandData = await EDCs.getDemandTrendsData(
+                pool,
+                accessValues,
+                '2025-03-26 00:00:00',
+                '2025-03-26 23:59:59',
+                hierarchyMeters
+            );
+
+            const xAxis = [];
+            const currentDayData = [];
+            const previousDayData = [];
+
+            const allTimestamps = new Set([
+                ...todayDemandData.map((d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ),
+                ...yesterdayDemandData.map((d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ),
+            ]);
+
+            const sortedTimestamps = Array.from(allTimestamps).sort(
+                (a, b) =>
+                    moment(a, 'HH:mm:ss').valueOf() -
+                    moment(b, 'HH:mm:ss').valueOf()
+            );
+            sortedTimestamps.forEach((timestamp) => {
+                xAxis.push(timestamp);
+
+                const todayData = todayDemandData.find(
+                    (d) =>
+                        moment(d.datetime)
+                            .tz('Asia/Kolkata')
+                            .format('HH:mm:ss') === timestamp
+                );
+                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+
+                const yesterdayData = yesterdayDemandData.find(
+                    (d) =>
+                        moment(d.datetime)
+                            .tz('Asia/Kolkata')
+                            .format('HH:mm:ss') === timestamp
+                );
+                previousDayData.push(
+                    yesterdayData ? yesterdayData.actual_demand_mw : 0
+                );
+            });
+
+            const detailedGraphData = {
+                xAxis,
+                series: [
+                    {
+                        name: 'Current Day',
+                        data: currentDayData,
+                    },
+                    {
+                        name: 'Previous Day',
+                        data: previousDayData,
+                    },
+                ],
+            };
+
+            return res.status(200).json({
+                status: 'success',
+                data: detailedGraphData,
+            });
+        }
+
+        const todayDemandData = await EDCs.getDemandTrendsData(
+            pool,
+            accessValues,
+            '2025-03-27 00:00:00',
+            '2025-03-27 23:59:59'
+        );
+
+        const yesterdayDemandData = await EDCs.getDemandTrendsData(
+            pool,
+            accessValues,
+            '2025-03-26 00:00:00',
+            '2025-03-26 23:59:59'
+        );
+
+        const xAxis = [];
+        const currentDayData = [];
+        const previousDayData = [];
+
+        const allTimestamps = new Set([
+            ...todayDemandData.map((d) =>
+                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ),
+            ...yesterdayDemandData.map((d) =>
+                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ),
+        ]);
+
+        const sortedTimestamps = Array.from(allTimestamps).sort(
+            (a, b) =>
+                moment(a, 'HH:mm:ss').valueOf() -
+                moment(b, 'HH:mm:ss').valueOf()
+        );
+        sortedTimestamps.forEach((timestamp) => {
+            xAxis.push(timestamp);
+
+            const todayData = todayDemandData.find(
+                (d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    timestamp
+            );
+            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+
+            const yesterdayData = yesterdayDemandData.find(
+                (d) =>
+                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    timestamp
+            );
+            previousDayData.push(
+                yesterdayData ? yesterdayData.actual_demand_mw : 0
+            );
+        });
+
+        const detailedGraphData = {
+            xAxis,
+            series: [
+                {
+                    name: 'Current Day',
+                    data: currentDayData,
+                },
+                {
+                    name: 'Previous Day',
+                    data: previousDayData,
+                },
+            ],
+        };
+
+        return res.status(200).json({
+            status: 'success',
+            data: detailedGraphData,
+        });
+    } catch (error) {
+        logger.error('Error fetching demand graph data:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+        });
+
+        return res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error',
+            errorId: error.code || 'INTERNAL_SERVER_ERROR',
+        });
     }
 };
 

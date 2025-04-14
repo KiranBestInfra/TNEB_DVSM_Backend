@@ -7,6 +7,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { jwtDecode } from 'jwt-decode';
 import { createServer } from 'node:http';
+import fs from 'node:fs';
 
 import config from './config/config.js';
 import logger from './utils/logger.js';
@@ -15,10 +16,42 @@ import v1Routes from './routes/v1/index.js';
 import pool from './config/db.js';
 import dashboardModel from './models/main/regions.model.js';
 import socketService from './services/socket/socketService.js';
+import crypto from 'crypto';
+import {
+    generateDeviceFingerprint,
+    validateDeviceFingerprint,
+} from './utils/deviceFingerprint.js';
 
-// import bcrypt from 'bcrypt';
+const apiKeyAuth = (req, res, next) => {
+    if (req.path.includes('/auth') || req.path === '/health') {
+        return next();
+    }
 
-// import dashboardModel from './models/dashboard.model.js';
+    const apiKey = req.headers['x-api-key'];
+
+    if (!apiKey) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'API key is missing',
+        });
+    }
+
+    if (apiKey !== config.API_KEY) {
+        logger.warn('Invalid API key attempt', {
+            ip: req.ip,
+            apiKey: apiKey,
+            timestamp: new Date().toISOString(),
+        });
+
+        return res.status(401).json({
+            status: 'error',
+            message: 'Invalid API key',
+        });
+    }
+
+    next();
+};
+
 import {
     calculateTotalAmount,
     generateInvoiceNumber,
@@ -32,6 +65,7 @@ import {
 import { getPowerDetails } from './controllers/consumer/dashboardController.js';
 import { sendZeroValueAlert } from './utils/emailService.js';
 import notificationsModel from './models/main/notifications.model.js';
+import User from './models/main/user.model.js';
 
 const QUERY_TIMEOUT = 30000;
 const app = express();
@@ -81,30 +115,76 @@ app.use(cookieParser());
 app.use(xss());
 app.use(hpp());
 app.use(compression());
-// app.use(rateLimiterMiddleware);
+
+app.use(apiKeyAuth);
 
 const extractTokenData = async (req, res, next) => {
-    const accessToken = req.cookies.accessToken;
-    console.log('accessToken', req.cookies);
-
-    if (!accessToken) {
+    if (req.path.includes('/auth')) {
         return next();
     }
 
     try {
-        const decoded = jwtDecode(accessToken);
-        req.user = decoded;
-        if (decoded.locationHierarchy) {
-            const access = await dashboardModel.getLocationAccessCondition(
-                pool,
-                decoded
+        const accessToken = req.cookies.refreshToken;
+        if (!accessToken) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const decoded = jwtDecode(accessToken, config.JWT_SECRET);
+        const userId = decoded.userId;
+
+        const clientIP =
+            req.ip ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.headers['x-forwarded-for']?.split(',')[0];
+
+        const deviceFingerprint = generateDeviceFingerprint(req);
+
+        if (decoded.dfp && deviceFingerprint.substring(0, 16) !== decoded.dfp) {
+            console.log(
+                'Device fingerprint mismatch',
+                decoded.dfp,
+                deviceFingerprint.substring(0, 16)
             );
-            req.locationAccess = access;
-        } else if (!decoded.locationHierarchy && decoded.user == 'User') {
+            return res.status(401).json({
+                message:
+                    'Session invalid. Access from different device detected.',
+            });
+        }
+
+        if (
+            decoded.ip &&
+            decoded.ip !== clientIP &&
+            (!decoded.dfp || decoded.dfp !== deviceFingerprint.substring(0, 16))
+        ) {
+            return res.status(401).json({
+                message:
+                    'Session invalid. Access from different location detected.',
+            });
+        }
+
+        const isValidToken = await User.verifyRefreshToken(
+            pool,
+            userId,
+            accessToken,
+            clientIP,
+            deviceFingerprint
+        );
+
+        if (!isValidToken) {
+            return res
+                .status(401)
+                .json({ message: 'Invalid session. Please login again.' });
+        }
+
+        if (decoded.role && decoded.role.toLowerCase().includes('admin')) {
+            return next();
+        } else {
             req.user = decoded;
         }
     } catch (error) {
         logger.error('Token/Location access error:', error);
+        return res.status(401).json({ message: 'Unauthorized' });
     }
 
     next();
@@ -131,12 +211,10 @@ app.get('/health', (req, res) => {
 
 app.use(`/api/${config.API_VERSION}`, v1Routes);
 
-// File access route
 app.get('/static/uploads/:filename', (req, res) => {
     const { filename } = req.params;
     const filePath = `${process.cwd()}/static/uploads/${filename}`;
 
-    // Log the request details
     logger.info('File access request:', {
         filename,
         filePath,
@@ -144,8 +222,6 @@ app.get('/static/uploads/:filename', (req, res) => {
         fullPath: `${process.cwd()}/${filePath}`,
     });
 
-    // Check if file exists before trying to send it
-    // const fs = require('fs');
     if (!fs.existsSync(filePath)) {
         logger.error('File not found:', {
             filePath,
@@ -189,14 +265,16 @@ app.use((req, res) => {
     });
 });
 
-// Start the server
 server.listen(config.SOCKET_PORT, () => {
-    console.log('Server running on port:', config.PORT);
+    logger.info(`Socket server is running on port ${config.SOCKET_PORT}`);
+    console.log(`Socket server is running on port ${config.SOCKET_PORT}`);
 });
 
 app.listen(config.PORT, () => {
-    console.log('Running on port: ', config.SOCKET_PORT);
+    logger.info(`Server is running on port ${config.PORT}`);
+    console.log(`Server is running on port ${config.PORT}`);
 });
+
 // const passworGenerator = async () => {
 //     const excludeIDs = [2, 3, 304, 305, 306];
 //      try {

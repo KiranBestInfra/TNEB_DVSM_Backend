@@ -16,7 +16,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getTariffRates', error);
             throw error;
         }
     }
@@ -43,7 +42,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getConsumerDetails', error);
             throw error;
         }
     }
@@ -73,7 +71,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getMeterLastCommunication', error);
             throw error;
         }
     }
@@ -103,7 +100,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getMeterLastCommunication', error);
             throw error;
         }
     }
@@ -141,7 +137,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getD2Data', error);
             throw error;
         }
     }
@@ -168,7 +163,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getOverdueAmount', error);
             throw error;
         }
     }
@@ -204,7 +198,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getHierarchyUsingLocationName', error);
             throw error;
         }
     }
@@ -235,7 +228,6 @@ class Consumer {
                         ' seconds'
                 );
             }
-            console.log('getOverdueAmount', error);
             throw error;
         }
     }

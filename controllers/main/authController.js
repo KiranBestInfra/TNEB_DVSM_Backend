@@ -6,13 +6,13 @@ import { authSchemas } from '../../schemas/auth.schema.js';
 import { sendVerificationEmail } from '../../utils/emailService.js';
 import crypto from 'crypto';
 import pool from '../../config/db.js';
+import { generateDeviceFingerprint } from '../../utils/deviceFingerprint.js';
 
 const JWT_SECRET = config.SECRET_KEY;
 const JWT_REFRESH_SECRET = config.SECRET_KEY;
 const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || '1h';
-const JWT_REFRESH_EXPIRES_IN = config.JWT_REFRESH_EXPIRES_IN || '7';
+const JWT_REFRESH_EXPIRES_IN = config.JWT_REFRESH_EXPIRES_IN || '7d';
 
-// Generate random 6-digit code
 const generateVerificationCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -83,12 +83,14 @@ const login = async (req, res) => {
             error,
             value: { email, password, rememberMe },
         } = authSchemas.login.validate(req.body);
+
         if (error) {
             return res
                 .status(400)
                 .json({ status: 'error', message: error.details[0].message });
         }
         const user = await User.findByEmailOrName(pool, email);
+
         if (!user) {
             return res
                 .status(401)
@@ -128,6 +130,7 @@ const login = async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
             await User.updateLoginAttempts(pool, user.id);
             return res
@@ -156,81 +159,76 @@ const login = async (req, res) => {
         const roledata = await User.getRoleByID(pool, user.role_id);
 
         if (rememberMe) {
-       //     if (user.role_id == 3) {
-                const accessToken = jwt.sign(
-                    {
-                        userId: user.user_id,
-                        email: user.email ? user.email : 'test@gmail.com',
-                        role: roledata.role_title,
-                        user_role_id: roledata.role_id,
-                        uid: user.name,
-                        locationHierarchy: user.location_hierarchy,
-                    },
-                    JWT_SECRET,
-                    { expiresIn: JWT_EXPIRES_IN }
-                );
+            // Get client IP address
+            const ipAddress =
+                req.ip ||
+                req.connection.remoteAddress ||
+                req.socket.remoteAddress ||
+                req.headers['x-forwarded-for']?.split(',')[0];
 
-                const refreshToken = jwt.sign(
-                    { userId: user.user_id },
-                    JWT_REFRESH_SECRET,
-                    {
-                        expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
-                    }
-                );
+            const deviceFingerprint = generateDeviceFingerprint(req);
 
-                await User.saveRefreshToken(
-                    pool,
-                    user.id,
-                    refreshToken,
-                    JWT_REFRESH_EXPIRES_IN
-                );
+            const accessToken = jwt.sign(
+                {
+                    userId: user.slno,
+                    user_hierarchy_id: user.hierarchy_id,
+                    email: user.email ? user.email : '',
+                    user_name: user.user_id,
+                    role: roledata.role_title,
+                    user_role_id: roledata.role_id,
+                    ip: ipAddress,
+                    dfp: deviceFingerprint.substring(0, 16), 
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_REFRESH_EXPIRES_IN }
+            );
 
-                res.cookie('accessToken', accessToken, {
-                    httpOnly: config.NODE_ENV === 'production',
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
+            await User.saveRefreshToken(
+                pool,
+                user.slno,
+                accessToken,
+                JWT_REFRESH_EXPIRES_IN,
+                ipAddress,
+                deviceFingerprint
+            );
 
-                res.cookie('accessTokenDuplicate', accessToken, {
-                    httpOnly: false,
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
+            res.cookie('accessToken', accessToken, {
+                httpOnly: config.NODE_ENV === 'production',
+                secure: config.NODE_ENV === 'production',
+                sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                domain:
+                    config.NODE_ENV === 'production'
+                        ? '.lk-ea.co.in'
+                        : 'localhost',
+            });
 
-                res.cookie('refreshToken', refreshToken, {
-                    httpOnly: config.NODE_ENV === 'production',
-                    secure: config.NODE_ENV === 'production',
-                    sameSite:
-                        config.NODE_ENV === 'production' ? 'none' : 'strict',
-                    path: '/api/refresh-token',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                    domain:
-                        config.NODE_ENV === 'production'
-                            ? '.lk-ea.co.in'
-                            : 'localhost',
-                });
+            res.cookie('accessTokenDuplicate', accessToken, {
+                httpOnly: false,
+                secure: config.NODE_ENV === 'production',
+                sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                domain:
+                    config.NODE_ENV === 'production'
+                        ? '.lk-ea.co.in'
+                        : 'localhost',
+            });
+
+            res.cookie('refreshToken', accessToken, {
+                httpOnly: config.NODE_ENV === 'production',
+                secure: config.NODE_ENV === 'production',
+                sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                domain:
+                    config.NODE_ENV === 'production'
+                        ? '.lk-ea.co.in'
+                        : 'localhost',
+            });
         }
 
         return res.status(200).json({
             status: 'success',
             message: 'Login successful',
-            user: {
-                id: user.user_id,
-                email: user.email,
-                name: user.name,
-            },
         });
     } catch (err) {
         console.error('Login error:', err);
@@ -240,85 +238,6 @@ const login = async (req, res) => {
         });
     }
 };
-
-// const verify2FA = async (req, res) => {
-//     try {
-//         const { userId, code } = req.body;
-
-//         if (!userId || !code) {
-//             return res.status(400).json({
-//                 status: 'error',
-//                 message: 'User ID and verification code are required',
-//             });
-//         }
-
-//         const user = await User.findById(pool, userId);
-//         if (!user) {
-//             return res.status(404).json({
-//                 status: 'error',
-//                 message: 'User not found',
-//             });
-//         }
-
-//         const isValid = await User.verifyCode(pool, userId, code);
-//         if (!isValid) {
-//             return res.status(401).json({
-//                 status: 'error',
-//                 message: 'Invalid or expired verification code',
-//             });
-//         }
-
-//         const accessToken = jwt.sign(
-//             { userId: user.id, email: user.email },
-//             JWT_SECRET,
-//             { expiresIn: JWT_EXPIRES_IN }
-//         );
-
-//         const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-//             expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
-//         });
-
-//         await User.saveRefreshToken(
-//             pool,
-//             user.id,
-//             refreshToken,
-//             JWT_REFRESH_EXPIRES_IN
-//         );
-
-//         res.cookie('accessToken', accessToken, {
-//             httpOnly: config.NODE_ENV === 'production',
-//             secure: config.NODE_ENV === 'production',
-//             sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
-//             maxAge: 24 * 60 * 60 * 1000,
-//             domain: config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
-//         });
-
-//         res.cookie('refreshToken', refreshToken, {
-//             httpOnly: config.NODE_ENV === 'production',
-//             secure: config.NODE_ENV === 'production',
-//             sameSite: 'strict',
-//             path: '/api/refresh-token',
-//             maxAge: 7 * 24 * 60 * 60 * 1000,
-//             domain: config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
-//         });
-
-//         return res.status(200).json({
-//             status: 'success',
-//             message: 'Login successful',
-//             user: {
-//                 id: user.id,
-//                 email: user.email,
-//                 name: user.name,
-//             },
-//         });
-//     } catch (err) {
-//         console.error('Verification error:', err);
-//         return res.status(500).json({
-//             status: 'error',
-//             message: 'An unexpected error occurred',
-//         });
-//     }
-// };
 
 const verifyEmail = async (req, res) => {
     try {
@@ -339,7 +258,6 @@ const verifyEmail = async (req, res) => {
             });
         }
 
-        // Check if email is already verified
         const isVerified = await User.isEmailVerified(pool, userId);
         if (isVerified) {
             return res.status(400).json({
@@ -356,26 +274,34 @@ const verifyEmail = async (req, res) => {
             });
         }
 
-        // Mark email as verified
         await User.markEmailAsVerified(pool, userId);
 
-        // Generate initial access token
+        const ipAddress =
+            req.ip ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.headers['x-forwarded-for']?.split(',')[0];
+
+        const deviceFingerprint = generateDeviceFingerprint(req);
+
         const accessToken = jwt.sign(
-            { userId: user.id, email: user.email },
+            {
+                userId: user.id,
+                email: user.email,
+                ip: ipAddress,
+                dfp: deviceFingerprint.substring(0, 16),
+            },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        // Generate refresh token
-        const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-            expiresIn: JWT_REFRESH_EXPIRES_IN + 'd',
-        });
-
         await User.saveRefreshToken(
             pool,
             user.id,
-            refreshToken,
-            JWT_REFRESH_EXPIRES_IN
+            accessToken,
+            JWT_REFRESH_EXPIRES_IN,
+            ipAddress,
+            deviceFingerprint
         );
 
         // Set cookies
@@ -388,11 +314,10 @@ const verifyEmail = async (req, res) => {
                 config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
         });
 
-        res.cookie('refreshToken', refreshToken, {
+        res.cookie('refreshToken', accessToken, {
             httpOnly: config.NODE_ENV === 'production',
             secure: config.NODE_ENV === 'production',
             sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
-            path: '/api/refresh-token',
             maxAge: 7 * 24 * 60 * 60 * 1000,
             domain:
                 config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',

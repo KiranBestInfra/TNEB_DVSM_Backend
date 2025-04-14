@@ -1,5 +1,11 @@
 import logger from '../../../utils/logger.js';
-import { fetchRegionGraphs } from '../../../controllers/main/regionsController.js';
+import {
+    fetchRegionGraphs,
+    getDashboardWidgets,
+    getRegionStats,
+    searchConsumers,
+    demandGraph,
+} from '../../../controllers/main/regionsController.js';
 import socketService from '../socketService.js';
 import pool from '../../../config/db.js';
 
@@ -9,6 +15,7 @@ class RegionSocketHandler {
     }
 
     initialize(socket) {
+        // Subscribe to region graphs
         socket.on('subscribe', async (data) => {
             if (!data || !data.regions || !Array.isArray(data.regions)) {
                 logger.error('Invalid subscription data received');
@@ -49,19 +56,131 @@ class RegionSocketHandler {
                 });
             }
         });
+
+        // Get dashboard widgets
+        socket.on('getDashboardWidgets', async () => {
+            try {
+                const mockReq = {};
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit(
+                                    'dashboardWidgetsData',
+                                    responseData
+                                );
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await getDashboardWidgets(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error fetching dashboard widgets:', error);
+                socket.emit('error', {
+                    message: 'Error fetching dashboard widgets data',
+                });
+            }
+        });
+
+        // Get region stats
+        socket.on('getRegionStats', async () => {
+            try {
+                const mockReq = {};
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit('regionStatsData', responseData);
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await getRegionStats(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error fetching region stats:', error);
+                socket.emit('error', {
+                    message: 'Error fetching region stats data',
+                });
+            }
+        });
+
+        // Search consumers
+        socket.on('searchConsumers', async (data) => {
+            try {
+                const mockReq = {
+                    locationAccess: data.locationAccess || { values: [] },
+                    query: { term: data.term || '' },
+                };
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit(
+                                    'searchConsumersResults',
+                                    responseData
+                                );
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await searchConsumers(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error searching consumers:', error);
+                socket.emit('error', {
+                    message: 'Error searching consumers',
+                });
+            }
+        });
+
+        // Get demand graph
+        socket.on('getRegionDemandGraph', async (data) => {
+            try {
+                const mockReq = {
+                    user: data.user || null,
+                    locationAccess: data.locationAccess || { values: [] },
+                    params: { regionID: data.regionID || null },
+                };
+
+                const mockRes = {
+                    status: (code) => ({
+                        json: (responseData) => {
+                            if (code === 200) {
+                                socket.emit(
+                                    'regionDemandGraphData',
+                                    responseData
+                                );
+                            } else {
+                                socket.emit('error', responseData);
+                            }
+                        },
+                    }),
+                };
+
+                await demandGraph(mockReq, mockRes);
+            } catch (error) {
+                logger.error('Error fetching region demand graph:', error);
+                socket.emit('error', {
+                    message: 'Error fetching region demand graph data',
+                });
+            }
+        });
     }
 
     async sendRegionData(socket, regions) {
         try {
-            const regionDemandData = await fetchRegionGraphs(regions);
-            regions.forEach((region) => {
-                if (regionDemandData[region]) {
-                    socket.emit('regionUpdate', {
-                        region,
-                        graphData: regionDemandData[region],
-                    });
-                }
-            });
+            await fetchRegionGraphs(socket, regions);
         } catch (error) {
             logger.error('Error sending region data:', error);
             socket.emit('error', { message: 'Error fetching region data' });

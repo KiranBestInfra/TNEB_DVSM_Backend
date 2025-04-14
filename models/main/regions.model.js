@@ -1,6 +1,50 @@
 const QUERY_TIMEOUT = 30000;
 
 class Regions {
+    async getTotalDistricts(connection) {
+        try {
+            const [[{ totalDistricts }]] = await connection.query({
+                sql: `
+                  SELECT COUNT(hierarchy_name) AS totalDistricts 
+                        FROM hierarchy h, hierarchy_master hm 
+                        WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
+                        AND hm.hierarchy_title = "DISTRICT"
+                `,
+                timeout: QUERY_TIMEOUT,
+            });
+            return totalDistricts;
+        } catch (error) {
+            throw error;
+        }
+    }
+    async getDistrictsByRegion(connection, region) {
+        try {
+            const [[{ DistrictsByRegion }]] = await connection.query(
+                {
+                    sql: `
+                 SELECT
+                    COUNT(district.hierarchy_id) AS DistrictsByRegion
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                    AND edc.hierarchy_type_id = 11
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id 
+                    AND district.hierarchy_type_id = 34
+                WHERE region.hierarchy_type_id = 10
+                AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
+                GROUP BY region.hierarchy_name;
+                `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                [region, region]
+            );
+            return DistrictsByRegion;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async getTotalRegions(connection) {
         try {
             const [[{ totalRegions }]] = await connection.query({
@@ -14,7 +58,6 @@ class Regions {
             });
             return totalRegions;
         } catch (error) {
-            console.log('getTotalRegions', error);
             throw error;
         }
     }
@@ -150,7 +193,6 @@ class Regions {
             });
             return commMeters;
         } catch (error) {
-            console.log('getCommMeters', error);
             throw error;
         }
     }
@@ -171,7 +213,6 @@ class Regions {
             });
             return nonCommMeters;
         } catch (error) {
-            console.log('getNonCommMeters', error);
             throw error;
         }
     }
@@ -209,7 +250,6 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('search', error);
             throw error;
         }
     }
@@ -247,9 +287,7 @@ class Regions {
                 },
                 queryParams
             );
-            console.log('Query results:', results);
             return results;
-            //console.log(results);
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
                 throw new Error(
@@ -258,7 +296,6 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -270,7 +307,6 @@ class Regions {
         hierarchy_id
     ) {
         try {
-            //console.log(hierarchy_type_id, hierarchy_id);
             const [results] = await connection.query(
                 {
                     sql: `
@@ -307,7 +343,6 @@ class Regions {
                         ' seconds'
                 );
             }
-            console.log('getDemandTrendsData', error);
             throw error;
         }
     }
@@ -323,14 +358,88 @@ class Regions {
                             ON h.hierarchy_type_id = hm.hierarchy_type_id 
                         WHERE hm.hierarchy_title = "REGION"
                         AND h.hierarchy_name = ?
+                        OR h.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [regionID]
+                [regionID, regionID]
             );
             return results;
         } catch (error) {
-            console.log('getHierarchyByRegion', error);
+            throw error;
+        }
+    }
+    async getRegionCommMeterCounts(connection, region, date) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                    SELECT 
+                    COUNT(DISTINCT ic.meter_no) AS comm_meters
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                JOIN instant_comm ic 
+                    ON ic.meter_no = m.meter_serial_no
+                WHERE region.hierarchy_type_id = 10
+                  AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
+                  AND DATE(ic.device_date) = ?
+            `,
+                values: [region, region, date],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.length > 0 ? rows[0].comm_meters : 0;
+        } catch (error) {
+            console.error(
+                '❌ Error fetching communication meter counts by Region:',
+                error
+            );
+            throw error;
+        }
+    }
+    async getRegionNonCommMeterCounts(connection, region, date) {
+        try {
+            const [rows] = await connection.query({
+                sql: `
+                SELECT 
+                    COUNT(DISTINCT m.meter_serial_no) AS non_comm_meters
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                WHERE region.hierarchy_type_id = 10
+                  AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
+                  AND m.meter_serial_no NOT IN (
+                      SELECT DISTINCT ic.meter_no 
+                      FROM instant_comm ic 
+                      WHERE DATE(ic.device_date) = ?
+                  )
+            `,
+                values: [region, region, date],
+                timeout: QUERY_TIMEOUT,
+            });
+
+            return rows.length > 0 ? rows[0].non_comm_meters : 0;
+        } catch (error) {
+            console.error(
+                '❌ Error fetching non-communication meter counts by Region:',
+                error
+            );
             throw error;
         }
     }

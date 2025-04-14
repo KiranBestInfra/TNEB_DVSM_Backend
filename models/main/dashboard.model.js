@@ -248,7 +248,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerByID', error);
             throw error;
         }
     }
@@ -271,7 +270,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerByID', error);
             throw error;
         }
     }
@@ -298,7 +296,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerUsingMeterNo', error);
             throw error;
         }
     }
@@ -969,7 +966,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getTotalPaidRevenueCurrentMonth', error);
             throw error;
         }
     }
@@ -1203,7 +1199,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getTariffRates', error);
             throw error;
         }
     }
@@ -1283,7 +1278,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getBillingData', error);
             throw error;
         }
     }
@@ -1781,7 +1775,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerBillingTable', error);
             throw error;
         }
     }
@@ -1827,7 +1820,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('search', error);
             throw error;
         }
     }
@@ -1857,7 +1849,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getHierarchy', error);
             throw error;
         }
     }
@@ -1933,7 +1924,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('geConsumerSpecificConsumptionGraphData', error);
             throw error;
         }
     }
@@ -1975,7 +1965,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('geConsumerSpecificConsumptionGraphData', error);
             throw error;
         }
     }
@@ -2029,7 +2018,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getInvoicesByConsumerUID', error);
             throw error;
         }
     }
@@ -2053,7 +2041,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getInvoiceByInvoiceNo', error);
             throw error;
         }
     }
@@ -2086,7 +2073,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateAllPendingBills', error);
             throw error;
         }
     }
@@ -2112,7 +2098,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumersByType', error);
             throw error;
         }
     }
@@ -2120,7 +2105,6 @@ class Dashboard {
     async updateAllBillStatusUsingConsumerType(connection, ids, action) {
         try {
             if (!ids || ids.length === 0) {
-                console.log('No consumer IDs provided; skipping update.');
                 return;
             }
 
@@ -2157,7 +2141,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateAllBillStatusUsingConsumerType', error);
             throw error;
         }
     }
@@ -2204,7 +2187,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateAllBillStatusUsingDateRange', error);
             throw error;
         }
     }
@@ -2249,7 +2231,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateAllBillStatusUsingAmountRange', error);
             throw error;
         }
     }
@@ -2293,7 +2274,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateBillStatusOfSingleUser', error);
             throw error;
         }
     }
@@ -2332,7 +2312,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getTicketAnalytics', error);
             throw error;
         }
     }
@@ -2370,7 +2349,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerActiveStatus', error);
             throw error;
         }
     }
@@ -2404,7 +2382,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getNewUID', error);
             throw error;
         }
     }
@@ -2451,7 +2428,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateConsumer', error);
             throw error;
         }
     }
@@ -2497,7 +2473,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('updateConsumerLkea', error);
             throw error;
         }
     }
@@ -2530,7 +2505,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('insertNewConsumerUID', error);
             throw error;
         }
     }
@@ -2564,7 +2538,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('insertConsumer', error);
             throw error;
         }
     }
@@ -2615,7 +2588,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('insertConsumerLkea', error);
             throw error;
         }
     }
@@ -2718,7 +2690,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getTotalBillAmountForAllMonths', error);
             throw error;
         }
     }
@@ -2836,7 +2807,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerLastBillDetails', error);
             throw error;
         }
     }
@@ -2954,7 +2924,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getLastTwelveMonthsTrends', error);
             throw error;
         }
     }
@@ -3033,7 +3002,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getTicketsWithConsumerDetails', error);
             throw error;
         }
     }
@@ -3073,7 +3041,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('insertNewHierarchy', error);
             throw error;
         }
     }
@@ -3271,7 +3238,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getConsumerOverdueByUID', error);
             throw error;
         }
     }
@@ -3318,7 +3284,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('disconnectConsumer', error);
             throw error;
         }
     }
@@ -3402,7 +3367,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('deleteMeterByUid error:', error);
             throw error;
         }
     }
@@ -3517,7 +3481,6 @@ class Dashboard {
                     'Query timed out after ' + QUERY_TIMEOUT / 1000 + ' seconds'
                 );
             }
-            console.log('newConsumer error:', error);
             throw error;
         }
     }
@@ -3546,7 +3509,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getMeterLastCommunication', error);
             throw error;
         }
     }
@@ -3589,7 +3551,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getD2Data', error);
             throw error;
         }
     }
@@ -3619,7 +3580,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getD2Data', error);
             throw error;
         }
     }
@@ -3650,7 +3610,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getD2Data', error);
             throw error;
         }
     }
@@ -3671,8 +3630,6 @@ class Dashboard {
             const presDate = formatDate(pastDate) + ' 00:00:00';
 
             const nextDate = formatDate(today) + ' 23:59:59';
-
-            console.log('Query date range:', presDate, 'to', nextDate);
 
             const [results] = await connection.query({
                 sql: `
@@ -3772,8 +3729,6 @@ class Dashboard {
             const presDate = formatDatetime(pastDate);
             const nextDate = formatDatetime(today, true);
 
-            console.log('Query date range:', presDate, 'to', nextDate);
-
             const [results] = await connection.query({
                 sql: `
                 SELECT 
@@ -3839,7 +3794,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getMeterLastCommunication', error);
             throw error;
         }
     }
@@ -3868,7 +3822,6 @@ class Dashboard {
                         ' seconds'
                 );
             }
-            console.log('getMeterLastCommunication', error);
             throw error;
         }
     }

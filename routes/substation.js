@@ -1,8 +1,16 @@
 import express from 'express';
-import { getSubstationWidgets } from '../controllers/main/substationController.js';
+import {
+    getEdcSubstationWidgets,
+    getSubstationDemandGraphDetails,
+    getFeedersDataBySubstation,
+} from '../controllers/main/substationController.js';
+import { getFeedersBySubstationName } from '../controllers/main/feederController.js';
 
 const router = express.Router();
 
-router.get('/widgets/:region/substations', getSubstationWidgets);
+router.get('/widgets/:edcs/substations', getEdcSubstationWidgets);
+router.get('/:substationId/feeders', getFeedersBySubstationName);
+router.get('/graph/:substationID/demand', getSubstationDemandGraphDetails);
+router.get('/:substationId/widgets', getFeedersDataBySubstation);
 
 export default router;
