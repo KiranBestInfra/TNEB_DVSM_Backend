@@ -32,12 +32,12 @@ JOIN hierarchy district
     ON edc.hierarchy_id = district.parent_id 
     AND district.hierarchy_type_id = 34
 WHERE region.hierarchy_type_id = 10
-  AND region.hierarchy_name = ?
+  AND region.hierarchy_name = ? OR region.hierarchy_id=?
 GROUP BY region.hierarchy_name;
                 `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [region]
+                [region, region]
             );
             return DistrictsByRegion;
         } catch (error) {
