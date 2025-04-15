@@ -4,6 +4,9 @@ import { regionSocketHandler } from './handlers/regionSocketHandler.js';
 import { edcSocketHandler } from './handlers/edcSocketHandler.js';
 import { substationSocketHandler } from './handlers/substationSocketHandler.js';
 import { feederSocketHandler } from './handlers/feederSocketHandler.js';
+import { profileSocketHandler } from './handlers/profileSocketHandler.js';
+import { ticketSocketHandler } from './handlers/ticketSocketHandler.js';
+import { logSocketHandler } from './handlers/logSocketHandler.js';
 
 class SocketService {
     constructor() {
@@ -37,6 +40,9 @@ class SocketService {
             edcSocketHandler.initialize(socket);
             substationSocketHandler.initialize(socket);
             feederSocketHandler.initialize(socket);
+            profileSocketHandler.initialize(socket);
+            ticketSocketHandler.initialize(socket);
+            logSocketHandler.initialize(socket);
 
             socket.on('disconnect', () => {
                 logger.info('Client disconnected from WebSocket');
