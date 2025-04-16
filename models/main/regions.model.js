@@ -22,10 +22,21 @@ class Regions {
             const [[{ DistrictsByRegion }]] = await connection.query(
                 {
                     sql: `
-                 SELECT COUNT(district.hierarchy_id) AS DistrictsByRegion FROM hierarchy region JOIN hierarchy edc ON region.hierarchy_id = edc.parent_id AND edc.hierarchy_type_id = 11 JOIN hierarchy district ON edc.hierarchy_id = district.parent_id AND district.hierarchy_type_id = 34 WHERE region.hierarchy_type_id = 10 AND region.hierarchy_name = ? OR region.hierarchy_id=? GROUP BY region.hierarchy_name; `,
+                 SELECT
+                    COUNT(district.hierarchy_id) AS DistrictsByRegion
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                    AND edc.hierarchy_type_id = 11
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id 
+                    AND district.hierarchy_type_id = 34
+                WHERE region.hierarchy_type_id = 10
+                AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
+                GROUP BY region.hierarchy_name;
+                `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [region, region]
                 [region, region]
             );
             return DistrictsByRegion;
