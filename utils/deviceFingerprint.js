@@ -1,26 +1,22 @@
 import crypto from 'crypto';
 
-export const generateDeviceFingerprint = (req) => {
+export const generateDeviceFingerprint = (req, res) => {
+    if (req.cookies && req.cookies.deviceFingerprint) {
+        return req.cookies.deviceFingerprint;
+    }
+
     const userAgent = req.headers['user-agent'] || '';
-    const ipAddress =
-        req.ip ||
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress ||
-        req.headers['x-forwarded-for']?.split(',')[0] ||
-        '';
     const acceptLanguage = req.headers['accept-language'] || '';
-    const xForwardedFor = req.headers['x-forwarded-for'] || '';
 
-    const fingerprintData = `${userAgent}|${ipAddress}|${acceptLanguage}|${xForwardedFor}`;
+    const fingerprintData = `${userAgent}|${acceptLanguage}`;
 
-    const hash = crypto
+    const fingerprint = crypto
         .createHash('sha256')
         .update(fingerprintData)
         .digest('hex');
 
-    return hash;
+    return fingerprint;
 };
-
 
 export const validateDeviceFingerprint = (storedFingerprint, req) => {
     const currentFingerprint = generateDeviceFingerprint(req);
