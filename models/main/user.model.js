@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 30000;
+const QUERY_TIMEOUT = 60000;
 
 class User {
     // Find user by email
@@ -351,16 +351,13 @@ class User {
         deviceFingerprint
     ) {
         try {
-            // console.log('userId', userId);
-            // console.log('token\n', token);
-            console.log('deviceFingerprint\n', deviceFingerprint);
+
             const storedToken = await this.getRefreshToken(
                 connection,
                 userId,
                 ipAddress,
                 deviceFingerprint
             );
-            console.log('storedToken\n', storedToken);
             if (!storedToken) {
                 return false;
             }
