@@ -31,7 +31,7 @@ export const getDashboardWidgets = async (req, res) => {
         );
         const regionFeederCounts = await REGIONS.getRegionFeederCounts(pool);
 
-        res.status(200).json({
+        const responseData = {
             status: 'success',
             data: {
                 totalRegions,
@@ -46,21 +46,24 @@ export const getDashboardWidgets = async (req, res) => {
                 regionSubstationCounts,
                 regionFeederCounts,
             },
-        });
+        };
+
+        return res.status(200).json(responseData);
     } catch (error) {
         logger.error('Error fetching dashboard widgets:', {
             error: error.message,
             stack: error.stack,
             timestamp: new Date().toISOString(),
         });
-        res.status(500).json({ status: 'error', message: 'Server Error' });
+
+        return res
+            .status(500)
+            .json({ status: 'error', message: 'Server Error' });
     }
 };
 
 export const fetchRegionGraphs = async (socket, regionNames) => {
     try {
-        // const regionNames = await REGIONS.getRegionNames(pool);
-
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
@@ -154,7 +157,8 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             };
 
             regionDemandData[region] = detailedGraphData;
-            if (regionDemandData[region]) {
+
+            if (socket) {
                 socket.emit('regionUpdate', {
                     region,
                     graphData: regionDemandData[region],
@@ -165,6 +169,14 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
         return regionDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
+
+        // Still keep this error emit since this function directly receives a socket
+        if (socket) {
+            socket.emit('error', {
+                status: 'error',
+                message: 'Error fetching region graphs data',
+            });
+        }
     }
 };
 
@@ -198,13 +210,17 @@ export const getRegionStats = async (req, res) => {
             };
         }
 
-        res.status(200).json({
+        const responseData = {
             status: 'success',
             data: { regionStats },
-        });
+        };
+
+        return res.status(200).json(responseData);
     } catch (error) {
         console.error('Error fetching region statistics:', error);
-        res.status(500).json({ status: 'error', message: 'Server Error' });
+        return res
+            .status(500)
+            .json({ status: 'error', message: 'Server Error' });
     }
 };
 
@@ -219,10 +235,12 @@ export const searchConsumers = async (req, res) => {
             searchTerm
         );
 
-        res.status(200).json({
+        const responseData = {
             status: 'success',
             data: searchResults,
-        });
+        };
+
+        return res.status(200).json(responseData);
     } catch (error) {
         logger.error('Error searching consumers', {
             error: error.message,
@@ -230,7 +248,7 @@ export const searchConsumers = async (req, res) => {
             timestamp: new Date().toISOString(),
         });
 
-        res.status(500).json({
+        return res.status(500).json({
             status: 'error',
             message: 'Internal Server Error',
             errorId: error.code || 'INTERNAL_SERVER_ERROR',
@@ -336,10 +354,12 @@ export const demandGraph = async (req, res) => {
             ],
         };
 
-        return res.status(200).json({
+        const responseData = {
             status: 'success',
             data: detailedGraphData,
-        });
+        };
+
+        return res.status(200).json(responseData);
     } catch (error) {
         logger.error('Error fetching demand graph data:', {
             error: error.message,
