@@ -266,12 +266,10 @@ app.use((req, res) => {
 
 server.listen(config.SOCKET_PORT, () => {
     logger.info(`Socket server is running on port ${config.SOCKET_PORT}`);
-    console.log(`Socket server is running on port ${config.SOCKET_PORT}`);
 });
 
 app.listen(config.PORT, () => {
     logger.info(`Server is running on port ${config.PORT}`);
-    console.log(`Server is running on port ${config.PORT}`);
 });
 
 // const passworGenerator = async () => {
