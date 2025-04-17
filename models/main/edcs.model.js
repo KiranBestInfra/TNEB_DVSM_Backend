@@ -39,6 +39,7 @@ class EDCs {
         }
     }
     async getEdcNamesByRegion(connection, region) {
+        console.log(region);
         try {
             const sql = `
             SELECT hierarchy_name , h.hierarchy_id
@@ -48,6 +49,7 @@ class EDCs {
                     WHERE hm.hierarchy_title = "EDC" 
                     AND h.parent_id in (select hierarchy_id from hierarchy where hierarchy_name = ? OR hierarchy_id = ?)
         `;
+            //console.log(sql);
 
             const [rows] = await connection.query(sql, [region, region]);
 

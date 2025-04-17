@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 30000;
+const QUERY_TIMEOUT = 60000;
 
 class User {
     // Find user by email
