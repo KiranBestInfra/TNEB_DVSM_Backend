@@ -52,6 +52,8 @@ const corsOptions = {
         'http://localhost:5173',
         'https://lk-ea.co.in',
         'http://lk-ea.co.in',
+        'https://htbimdas.tneb.in',
+        'http://htbimdas.tneb.in',
     ],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true,
@@ -69,7 +71,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     console.log(req.path);
-    if (req.path.includes('/auth')) {
+    if (req.path.includes('/auth') || req.path.includes('/socket')) {
         return next();
     }
 
@@ -80,48 +82,47 @@ const extractTokenData = async (req, res, next) => {
         }
 
         const decoded = jwtDecode(accessToken, config.JWT_SECRET);
-        const userId = decoded.userId;
+        // const userId = decoded.userId;
 
-        const clientIP =
-            req.ip ||
-            req.connection.remoteAddress ||
-            req.socket.remoteAddress ||
-            req.headers['x-forwarded-for']?.split(',')[0];
+        // const clientIP =
+        //     req.ip ||
+        //     req.connection.remoteAddress ||
+        //     req.socket.remoteAddress ||
+        //     req.headers['x-forwarded-for']?.split(',')[0];
 
-        const deviceFingerprint = generateDeviceFingerprint(req);
+        // const deviceFingerprint = generateDeviceFingerprint(req);
 
-        if (decoded.dfp && deviceFingerprint.substring(0, 16) !== decoded.dfp) {
+        // if (decoded.dfp && deviceFingerprint.substring(0, 16) !== decoded.dfp) {
+        //     return res.status(401).json({
+        //         message:
+        //             'Session invalid. Access from different device detected.',
+        //     });
+        // }
 
-            return res.status(401).json({
-                message:
-                    'Session invalid. Access from different device detected.',
-            });
-        }
+        // if (
+        //     decoded.ip &&
+        //     decoded.ip !== clientIP &&
+        //     (!decoded.dfp || decoded.dfp !== deviceFingerprint.substring(0, 16))
+        // ) {
+        //     return res.status(401).json({
+        //         message:
+        //             'Session invalid. Access from different location detected.',
+        //     });
+        // }
 
-        if (
-            decoded.ip &&
-            decoded.ip !== clientIP &&
-            (!decoded.dfp || decoded.dfp !== deviceFingerprint.substring(0, 16))
-        ) {
-            return res.status(401).json({
-                message:
-                    'Session invalid. Access from different location detected.',
-            });
-        }
+        // const isValidToken = await User.verifyRefreshToken(
+        //     pool,
+        //     userId,
+        //     accessToken,
+        //     clientIP,
+        //     deviceFingerprint
+        // );
 
-        const isValidToken = await User.verifyRefreshToken(
-            pool,
-            userId,
-            accessToken,
-            clientIP,
-            deviceFingerprint
-        );
-
-        if (!isValidToken) {
-            return res
-                .status(401)
-                .json({ message: 'Invalid session. Please login again.' });
-        }
+        // if (!isValidToken) {
+        //     return res
+        //         .status(401)
+        //         .json({ message: 'Invalid session. Please login again.' });
+        // }
 
         if (decoded.role && decoded.role.toLowerCase().includes('admin')) {
             return next();
