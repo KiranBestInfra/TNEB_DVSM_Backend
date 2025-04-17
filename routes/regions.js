@@ -6,7 +6,6 @@ import {
 } from '../controllers/main/regionsController.js';
 import { getFeedersDataByRegion } from '../controllers/main/feederController.js';
 
-
 const router = express.Router();
 
 router.get('/widgets', getDashboardWidgets);

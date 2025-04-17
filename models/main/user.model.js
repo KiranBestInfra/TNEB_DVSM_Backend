@@ -351,18 +351,49 @@ class User {
         deviceFingerprint
     ) {
         try {
+            // Implement retries for database connection issues
+            let retryCount = 0;
+            const maxRetries = 3;
 
-            const storedToken = await this.getRefreshToken(
-                connection,
-                userId,
-                ipAddress,
-                deviceFingerprint
-            );
-            if (!storedToken) {
-                return false;
+            while (retryCount < maxRetries) {
+                try {
+                    const storedToken = await this.getRefreshToken(
+                        connection,
+                        userId,
+                        ipAddress,
+                        deviceFingerprint
+                    );
+
+                    if (!storedToken) {
+                        return false;
+                    }
+
+                    return token === storedToken;
+                } catch (err) {
+                    // Only retry on connection errors
+                    if (
+                        err.code === 'ECONNRESET' ||
+                        err.code === 'PROTOCOL_CONNECTION_LOST'
+                    ) {
+                        retryCount++;
+                        // Wait a bit before retrying (exponential backoff)
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, 500 * Math.pow(2, retryCount))
+                        );
+                        console.log(
+                            `Retrying token verification (attempt ${retryCount}/${maxRetries})...`
+                        );
+                    } else {
+                        // For other errors, throw immediately
+                        throw err;
+                    }
+                }
             }
 
-            return token === storedToken;
+            // If we've exhausted retries, throw the last error
+            throw new Error(
+                'Maximum retry attempts reached for token verification'
+            );
         } catch (error) {
             console.error('Refresh token verification error:', error);
             return false;
