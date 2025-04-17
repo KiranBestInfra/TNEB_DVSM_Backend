@@ -14,6 +14,6 @@ router.get('/widgets/:region', getEDCWidgets);
 router.get('/widgets/:region/substations', getSubstationWidgets);
 router.get('/:edcs/widgets', getSubstationTotalWidgets);
 router.get('/:edc/feeders', getFeedersNamesByEdcNameHandler);
-router.get('/graph/:edcID/demand', getEdcDemandGraphDetails);
+router.get('/graph/:edcID/demand/:date', getEdcDemandGraphDetails);
 
 export default router;
