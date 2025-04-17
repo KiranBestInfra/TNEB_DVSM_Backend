@@ -56,7 +56,6 @@ class RegionSocketHandler {
         });
 
         socket.on('subscribeDemand', async (data) => {
-            console.log('subscribeDemand', data);
             if (!data || !data.regionId) {
                 logger.error('Invalid demand subscription data received');
                 socket.emit('error', {

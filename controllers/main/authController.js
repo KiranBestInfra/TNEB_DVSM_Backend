@@ -177,7 +177,7 @@ const login = async (req, res) => {
                     role: roledata.role_title,
                     user_role_id: roledata.role_id,
                     ip: ipAddress,
-                    dfp: deviceFingerprint.substring(0, 16), 
+                    dfp: deviceFingerprint.substring(0, 16),
                 },
                 JWT_SECRET,
                 { expiresIn: JWT_REFRESH_EXPIRES_IN }
@@ -199,7 +199,7 @@ const login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 domain:
                     config.NODE_ENV === 'production'
-                        ? '.lk-ea.co.in'
+                        ? '.htbimdas.tneb.in'
                         : 'localhost',
             });
 
@@ -210,7 +210,7 @@ const login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 domain:
                     config.NODE_ENV === 'production'
-                        ? '.lk-ea.co.in'
+                        ? '.htbimdas.tneb.in'
                         : 'localhost',
             });
 
@@ -221,7 +221,7 @@ const login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 domain:
                     config.NODE_ENV === 'production'
-                        ? '.lk-ea.co.in'
+                        ? '.htbimdas.tneb.in'
                         : 'localhost',
             });
         }
@@ -311,7 +311,9 @@ const verifyEmail = async (req, res) => {
             sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
             maxAge: 24 * 60 * 60 * 1000,
             domain:
-                config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
+                config.NODE_ENV === 'production'
+                    ? '.htbimdas.tneb.in'
+                    : 'localhost',
         });
 
         res.cookie('refreshToken', accessToken, {
@@ -320,7 +322,9 @@ const verifyEmail = async (req, res) => {
             sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
             domain:
-                config.NODE_ENV === 'production' ? '.lk-ea.co.in' : 'localhost',
+                config.NODE_ENV === 'production'
+                    ? '.htbimdas.tneb.in'
+                    : 'localhost',
         });
 
         return res.status(200).json({

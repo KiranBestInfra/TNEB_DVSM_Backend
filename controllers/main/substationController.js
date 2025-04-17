@@ -70,11 +70,8 @@ export const getSubstationWidgets = async (req, res) => {
 export const getEdcSubstationWidgets = async (req, res) => {
     try {
         const user = req.user || null;
-        //console.log(user);
         const edcID = req.params.edcs || null;
-        //console.log(edcID);
         // const regionId = req.params.region || null;
-        // console.log('regionId', regionId);
 
         if (!edcID) {
             return res.status(400).json({
@@ -88,7 +85,6 @@ export const getEdcSubstationWidgets = async (req, res) => {
                 pool,
                 user.user_hierarchy_id
             );
-            // console.log(edcs);
 
             const edcIds = edcs.map((edc) => edc.hierarchy_id);
 

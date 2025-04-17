@@ -48,7 +48,6 @@ class EDCs {
                     WHERE hm.hierarchy_title = "EDC" 
                     AND h.parent_id in (select hierarchy_id from hierarchy where hierarchy_name = ? OR hierarchy_id = ?)
         `;
-            //console.log(sql);
 
             const [rows] = await connection.query(sql, [region, region]);
 
