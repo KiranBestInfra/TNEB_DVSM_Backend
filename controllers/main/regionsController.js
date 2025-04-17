@@ -254,7 +254,7 @@ export const getRegionStats = async (req, res) => {
         for (const region of regions) {
             const regionId = region.hierarchy_id;
 
-            const edcCount = await EDCS.getEdcCount(pool, regionId);
+         //   const edcCount = await EDCS.getEdcCount(pool, regionId);
             const districtCount = await REGIONS.getDistrictCount(
                 pool,
                 regionId
