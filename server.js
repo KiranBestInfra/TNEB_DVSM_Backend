@@ -22,36 +22,6 @@ import {
     validateDeviceFingerprint,
 } from './utils/deviceFingerprint.js';
 
-const apiKeyAuth = (req, res, next) => {
-    if (req.path.includes('/auth') || req.path === '/health') {
-        return next();
-    }
-
-    const apiKey = req.headers['x-api-key'];
-
-    if (!apiKey) {
-        return res.status(401).json({
-            status: 'error',
-            message: 'API key is missing',
-        });
-    }
-
-    if (apiKey !== config.API_KEY) {
-        logger.warn('Invalid API key attempt', {
-            ip: req.ip,
-            apiKey: apiKey,
-            timestamp: new Date().toISOString(),
-        });
-
-        return res.status(401).json({
-            status: 'error',
-            message: 'Invalid API key',
-        });
-    }
-
-    next();
-};
-
 import {
     calculateTotalAmount,
     generateInvoiceNumber,
@@ -115,8 +85,6 @@ app.use(cookieParser());
 app.use(xss());
 app.use(hpp());
 app.use(compression());
-
-app.use(apiKeyAuth);
 
 const extractTokenData = async (req, res, next) => {
     if (req.path.includes('/auth')) {
@@ -190,7 +158,38 @@ const extractTokenData = async (req, res, next) => {
     next();
 };
 
+const apiKeyAuth = (req, res, next) => {
+    if (req.path.includes('/auth') || req.path === '/health') {
+        return next();
+    }
+
+    const apiKey = req.headers['x-api-key'];
+
+    if (!apiKey) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'API key is missing',
+        });
+    }
+
+    if (apiKey !== config.API_KEY) {
+        logger.warn('Invalid API key attempt', {
+            ip: req.ip,
+            apiKey: apiKey,
+            timestamp: new Date().toISOString(),
+        });
+
+        return res.status(401).json({
+            status: 'error',
+            message: 'Invalid API key',
+        });
+    }
+
+    next();
+};
+
 app.use(extractTokenData);
+app.use(apiKeyAuth);
 
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`, {
@@ -267,12 +266,10 @@ app.use((req, res) => {
 
 server.listen(config.SOCKET_PORT, () => {
     logger.info(`Socket server is running on port ${config.SOCKET_PORT}`);
-    console.log(`Socket server is running on port ${config.SOCKET_PORT}`);
 });
 
 app.listen(config.PORT, () => {
     logger.info(`Server is running on port ${config.PORT}`);
-    console.log(`Server is running on port ${config.PORT}`);
 });
 
 // const passworGenerator = async () => {
