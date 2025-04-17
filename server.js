@@ -71,7 +71,7 @@ app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
     console.log(req.path);
-    if (req.path.includes('/auth') || req.path.includes('/socket')) {
+    if (req.path.includes('/auth')) {
         return next();
     }
 
@@ -153,7 +153,7 @@ const extractTokenData = async (req, res, next) => {
 };
 
 const apiKeyAuth = (req, res, next) => {
-    if (req.path.includes('/auth') || req.path === '/health') {
+    if (req.path.includes('/auth') || req.path.includes('/socket')) {
         return next();
     }
 

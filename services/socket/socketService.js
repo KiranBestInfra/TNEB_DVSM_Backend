@@ -29,10 +29,6 @@ class SocketService {
                 credentials: true,
                 allowedHeaders: ['*'],
             },
-            transports: ['websocket', 'polling'],
-            pingTimeout: 60000,
-            pingInterval: 25000,
-            allowEIO3: true,
         });
 
         this.setupConnectionHandler();
