@@ -54,6 +54,46 @@ class RegionSocketHandler {
                 });
             }
         });
+
+        socket.on('subscribeDemand', async (data) => {
+            console.log('subscribeDemand', data);
+            if (!data || !data.regionId) {
+                logger.error('Invalid demand subscription data received');
+                socket.emit('error', {
+                    message:
+                        'Invalid demand subscription data. Expected { regionId: string }',
+                });
+                return;
+            }
+
+            const { regionId } = data;
+
+            if (socket.demandIntervalId) {
+                clearInterval(socket.demandIntervalId);
+            }
+
+            logger.info(
+                `Client subscribed to demand updates for region: ${regionId}`
+            );
+            socket.subscribedDemandRegion = regionId;
+
+            try {
+                await this.sendDemandData(socket, regionId);
+
+                const intervalId = setInterval(async () => {
+                    if (socket.connected) {
+                        await this.sendDemandData(socket, regionId);
+                    }
+                }, 30000);
+
+                socket.demandIntervalId = intervalId;
+            } catch (error) {
+                logger.error('Error in demand subscription:', error);
+                socket.emit('error', {
+                    message: 'Error processing demand subscription',
+                });
+            }
+        });
     }
 
     async sendRegionData(socket, regions) {
@@ -62,6 +102,31 @@ class RegionSocketHandler {
         } catch (error) {
             logger.error('Error sending region data:', error);
             socket.emit('error', { message: 'Error fetching region data' });
+        }
+    }
+
+    async sendDemandData(socket, regionId) {
+        try {
+            const mockReq = {
+                params: {},
+                user: null,
+                locationAccess: { values: [] },
+            };
+            const mockRes = {
+                status: () => mockRes,
+                json: (data) => {
+                    if (data.status === 'success') {
+                        socket.emit('demandUpdate', data.data);
+                    } else {
+                        socket.emit('error', { message: data.message });
+                    }
+                },
+            };
+
+            await demandGraph(mockReq, mockRes);
+        } catch (error) {
+            logger.error('Error sending demand data:', error);
+            socket.emit('error', { message: 'Error fetching demand data' });
         }
     }
 }

@@ -232,6 +232,7 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             }
         }
 
+        console.log('regionDemandData', regionDemandData);
         return regionDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
@@ -254,7 +255,7 @@ export const getRegionStats = async (req, res) => {
         for (const region of regions) {
             const regionId = region.hierarchy_id;
 
-         //   const edcCount = await EDCS.getEdcCount(pool, regionId);
+            //   const edcCount = await EDCS.getEdcCount(pool, regionId);
             const districtCount = await REGIONS.getDistrictCount(
                 pool,
                 regionId
@@ -334,7 +335,6 @@ export const demandGraph = async (req, res) => {
 
         let hierarchyMeters = null;
 
-        console.log('regionID', regionID);
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(
                 pool,
@@ -348,7 +348,6 @@ export const demandGraph = async (req, res) => {
                 regionHierarchy.hierarchy_type_id,
                 regionHierarchy.hierarchy_id
             );
-            console.log('meters', meters);
 
             hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
