@@ -41,6 +41,7 @@ export const updateTicketStatus = async (req, res) => {
     try {
         const { TicketId } = req.params;
         const { Status } = req.body;
+
         const updatedTicket = await Tickets.updateTicketStatus(
             pool,
             TicketId,
