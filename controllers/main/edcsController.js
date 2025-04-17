@@ -13,7 +13,6 @@ export const getEDCWidgets = async (req, res) => {
     try {
         const user = req.user || null;
         const region = user ? user.user_hierarchy_id : req.params.region;
-        console.log(region, 'region');
 
         const deviceDate = '2025-03-09';
         if (!region) {
@@ -66,9 +65,7 @@ export const getEDCWidgets = async (req, res) => {
 };
 export const getSubstationTotalWidgets = async (req, res) => {
     const user = req.user || null;
-    console.log(user);
     const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
-    console.log(edcsID);
 
     const date = '2025-03-09';
 
@@ -90,12 +87,10 @@ export const getSubstationTotalWidgets = async (req, res) => {
 
     try {
         const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcsID);
-        console.log(districtCounts);
         const substationCounts = await EDCs.getSubstationCountByEDC(
             pool,
             edcsID
         );
-        console.log(substationCounts);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
         const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
         const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(

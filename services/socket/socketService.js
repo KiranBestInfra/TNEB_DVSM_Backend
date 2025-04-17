@@ -29,9 +29,7 @@ class SocketService {
     }
 
     setupConnectionHandler() {
-        console.log('----------connection handler----------');
         this.io.on('connection', (socket) => {
-            console.log('New WebSocket connection established');
 
             regionSocketHandler.initialize(socket);
             edcSocketHandler.initialize(socket);
