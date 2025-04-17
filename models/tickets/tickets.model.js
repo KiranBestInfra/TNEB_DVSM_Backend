@@ -39,7 +39,7 @@ class Tickets {
             );
             return result;
         } catch (error) {
-            console.error('❌ Error creating ticket:', error);
+            console.error('Error creating ticket:', error);
             throw error;
         }
     }
@@ -67,7 +67,7 @@ class Tickets {
             );
             return rows[0];
         } catch (error) {
-            console.error('❌ Error fetching ticket by ID:', error);
+            console.error('Error fetching ticket by ID:', error);
             throw error;
         }
     }
@@ -80,8 +80,8 @@ class Tickets {
             );
             return result;
         } catch (error) {
-            console.error('❌ Error updating ticket status in model:', error);
-            throw error; // ✅ CORRECT — throw the actual error, NOT result
+            console.error('Error updating ticket status in model:', error);
+            throw error; // CORRECT — throw the actual error, NOT result
         }
     }
 
@@ -94,7 +94,7 @@ class Tickets {
             );
             return result;
         } catch (error) {
-            console.error('❌ Error deleting ticket:', error);
+            console.error('Error deleting ticket:', error);
             throw error;
         }
     }

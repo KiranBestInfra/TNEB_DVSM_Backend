@@ -44,9 +44,9 @@ export const updateTicketStatus = async (req, res) => {
 
         await Tickets.updateTicketStatus(pool, TicketId, Status);
         const latest = await Tickets.getTicketById(pool, TicketId); // fetch full updated ticket
-        res.status(200).json(latest); // ✅ return updated ticket data
+        res.status(200).json(latest); // return updated ticket data
     } catch (error) {
-        console.error('❌ Error updating ticket status:', error);
+        console.error('Error updating ticket status:', error);
         res.status(500).json({ error: 'Server Error' });
     }
 };
