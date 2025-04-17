@@ -220,7 +220,7 @@ export const getFeedersBySubstationName = async (req, res) => {
         const substationId = req.params.substationId;
         const date = '2025-03-09';
 
-        if (user) {
+        if (user && !substationId) {
             const substations = await Substations.getSubstationNamesByRegion(
                 pool,
                 user.user_hierarchy_id
