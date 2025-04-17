@@ -91,11 +91,7 @@ const extractTokenData = async (req, res, next) => {
         const deviceFingerprint = generateDeviceFingerprint(req);
 
         if (decoded.dfp && deviceFingerprint.substring(0, 16) !== decoded.dfp) {
-            console.log(
-                'Device fingerprint mismatch',
-                decoded.dfp,
-                deviceFingerprint.substring(0, 16)
-            );
+
             return res.status(401).json({
                 message:
                     'Session invalid. Access from different device detected.',
