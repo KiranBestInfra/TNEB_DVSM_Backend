@@ -39,7 +39,6 @@ class EDCs {
         }
     }
     async getEdcNamesByRegion(connection, region) {
-        console.log(region);
         try {
             const sql = `
             SELECT hierarchy_name , h.hierarchy_id
