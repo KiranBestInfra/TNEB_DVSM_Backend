@@ -17,11 +17,7 @@ class SocketService {
     initialize(server) {
         this.io = new Server(server, {
             cors: {
-                origin: [
-                    'http://localhost:5173',
-                    'https://lk-ea.co.in',
-                    'http://lk-ea.co.in',
-                ],
+                origin: '*',
                 methods: ['GET', 'POST'],
                 credentials: true,
                 allowedHeaders: ['*'],
@@ -33,8 +29,9 @@ class SocketService {
     }
 
     setupConnectionHandler() {
+        console.log('----------connection handler----------');
         this.io.on('connection', (socket) => {
-            logger.info('New WebSocket connection established');
+            console.log('New WebSocket connection established');
 
             regionSocketHandler.initialize(socket);
             edcSocketHandler.initialize(socket);

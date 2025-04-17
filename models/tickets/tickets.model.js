@@ -71,7 +71,6 @@ class Tickets {
             throw error;
         }
     }
-
     async updateTicketStatus(connection, TicketId, Status) {
         try {
             const sql = `UPDATE tickets SET Status = ?, LastUpdated = NOW() WHERE TicketId = ?;`;
@@ -81,8 +80,8 @@ class Tickets {
             );
             return result;
         } catch (error) {
-            console.error('❌ Error updating ticket status:', error);
-            throw error;
+            console.error('❌ Error updating ticket status in model:', error);
+            throw error; // ✅ CORRECT — throw the actual error, NOT result
         }
     }
 

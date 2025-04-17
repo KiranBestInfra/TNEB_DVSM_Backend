@@ -14,30 +14,11 @@ import logger from './utils/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import v1Routes from './routes/v1/index.js';
 import pool from './config/db.js';
-import dashboardModel from './models/main/regions.model.js';
 import socketService from './services/socket/socketService.js';
-import crypto from 'crypto';
-import {
-    generateDeviceFingerprint,
-    validateDeviceFingerprint,
-} from './utils/deviceFingerprint.js';
+import { generateDeviceFingerprint } from './utils/deviceFingerprint.js';
 
-import {
-    calculateTotalAmount,
-    generateInvoiceNumber,
-    getDateInMDYFormat,
-    isLoadImbalance,
-    isLowPowerFactor,
-    isLowVoltage,
-    isNegative,
-    isZero,
-} from './utils/dashboardUtils.js';
-import { getPowerDetails } from './controllers/consumer/dashboardController.js';
-import { sendZeroValueAlert } from './utils/emailService.js';
-import notificationsModel from './models/main/notifications.model.js';
 import User from './models/main/user.model.js';
 
-const QUERY_TIMEOUT = 30000;
 const app = express();
 const server = createServer(app);
 socketService.initialize(server);
@@ -87,6 +68,7 @@ app.use(hpp());
 app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
+    console.log(req.path);
     if (req.path.includes('/auth')) {
         return next();
     }
@@ -151,6 +133,21 @@ const extractTokenData = async (req, res, next) => {
             req.user = decoded;
         }
     } catch (error) {
+        if (
+            error.code === 'ECONNRESET' ||
+            error.code === 'PROTOCOL_CONNECTION_LOST'
+        ) {
+            logger.error(
+                'Database connection error during token verification:',
+                error
+            );
+            return res.status(503).json({
+                message:
+                    'Service temporarily unavailable. Please try again later.',
+                error: 'DB_CONNECTION_ERROR',
+            });
+        }
+
         logger.error('Token/Location access error:', error);
         return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -266,12 +263,10 @@ app.use((req, res) => {
 
 server.listen(config.SOCKET_PORT, () => {
     logger.info(`Socket server is running on port ${config.SOCKET_PORT}`);
-    console.log(`Socket server is running on port ${config.SOCKET_PORT}`);
 });
 
 app.listen(config.PORT, () => {
     logger.info(`Server is running on port ${config.PORT}`);
-    console.log(`Server is running on port ${config.PORT}`);
 });
 
 // const passworGenerator = async () => {
