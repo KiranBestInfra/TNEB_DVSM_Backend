@@ -144,31 +144,99 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                 meter.meter_serial_no.replace(/^0+/, '')
             );
 
+            const meterMap = {};
+            const meterCal = await EDCs.getMeterCalculation(
+                pool,
+                null,
+                hierarchyMeters
+            );
+
+            meterCal.forEach((meter) => {
+                const id = meter.meter_serial_no.replace(/^0+/, '');
+                meterMap[id] = meter.scaling_factor;
+            });
+
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 null,
-                '2025-03-27 00:00:00',
-                '2025-03-27 23:59:59',
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-27 00:00:00'
+                    : startOfDay,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-27 23:59:59'
+                    : endOfDay,
                 hierarchyMeters
             );
+
             const yesterdayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 null,
-                '2025-03-26 00:00:00',
-                '2025-03-26 23:59:59',
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-26 00:00:00'
+                    : startOfYesterday,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-26 23:59:59'
+                    : endOfYesterday,
                 hierarchyMeters
             );
+
+            const todayGroupedDemand = {};
+            const yesterdayGroupedDemand = {};
+
+            todayDemandData.forEach((record) => {
+                const meterNo = record.meter_no.replace(/^0+/, '');
+                const scalingFactor = meterMap[meterNo];
+                if (scalingFactor === undefined) return;
+
+                const demandMW = record.kwh * scalingFactor;
+                const timeKey = record.datetime;
+                if (!todayGroupedDemand[timeKey]) {
+                    todayGroupedDemand[timeKey] = 0;
+                }
+                todayGroupedDemand[timeKey] += demandMW;
+            });
+
+            yesterdayDemandData.forEach((record) => {
+                const meterNo = record.meter_no.replace(/^0+/, '');
+                const scalingFactor = meterMap[meterNo];
+                if (scalingFactor === undefined) return;
+
+                const demandMW = record.kwh * scalingFactor;
+                const timeKey = record.datetime;
+                if (!yesterdayGroupedDemand[timeKey]) {
+                    yesterdayGroupedDemand[timeKey] = 0;
+                }
+                yesterdayGroupedDemand[timeKey] += demandMW;
+            });
+
+            const todayFinalResults = Object.keys(todayGroupedDemand)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map((time) => ({
+                    datetime: time,
+                    actual_demand_mw: Number(
+                        todayGroupedDemand[time].toFixed(4)
+                    ),
+                }));
+
+            const yesterdayFinalResults = Object.keys(yesterdayGroupedDemand)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map((time) => ({
+                    datetime: time,
+                    actual_demand_mw: Number(
+                        yesterdayGroupedDemand[time].toFixed(4)
+                    ),
+                }));
 
             const xAxis = [];
             const currentDayData = [];
             const previousDayData = [];
 
             const allTimestamps = new Set([
-                ...todayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ...todayFinalResults.map((d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
-                ...yesterdayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ...yesterdayFinalResults.map((d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
             ]);
 
@@ -177,22 +245,21 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     moment(a, 'HH:mm:ss').valueOf() -
                     moment(b, 'HH:mm:ss').valueOf()
             );
+
             sortedTimestamps.forEach((timestamp) => {
                 xAxis.push(timestamp);
 
-                const todayData = todayDemandData.find(
+                const todayData = todayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
-                const yesterdayData = yesterdayDemandData.find(
+                const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 previousDayData.push(
                     yesterdayData ? yesterdayData.actual_demand_mw : 0
@@ -247,6 +314,18 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 meter.meter_serial_no.replace(/^0+/, '')
             );
 
+            const meterMap = {};
+            const meterCal = await EDCs.getMeterCalculation(
+                pool,
+                null,
+                hierarchyMeters
+            );
+
+            meterCal.forEach((meter) => {
+                const id = meter.meter_serial_no.replace(/^0+/, '');
+                meterMap[id] = meter.scaling_factor;
+            });
+
             // Get today's start and end times
             // Use selected date for today's range
             const startOfDay = moment(selectedDate)
@@ -273,6 +352,12 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 accessValues,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-27 00:00:00'
+                    : startOfDay,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-27 23:59:59'
+                    : endOfDay,
                 startOfDay,
                 endOfDay,
                 hierarchyMeters
@@ -281,21 +366,74 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             const yesterdayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 accessValues,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-26 00:00:00'
+                    : startOfYesterday,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-26 23:59:59'
+                    : endOfYesterday,
                 startOfYesterday,
                 endOfYesterday,
                 hierarchyMeters
             );
+
+            const todayGroupedDemand = {};
+            const yesterdayGroupedDemand = {};
+
+            todayDemandData.forEach((record) => {
+                const meterNo = record.meter_no.replace(/^0+/, '');
+                const scalingFactor = meterMap[meterNo];
+                if (scalingFactor === undefined) return;
+
+                const demandMW = record.kwh * scalingFactor;
+                const timeKey = record.datetime;
+                if (!todayGroupedDemand[timeKey]) {
+                    todayGroupedDemand[timeKey] = 0;
+                }
+                todayGroupedDemand[timeKey] += demandMW;
+            });
+
+            yesterdayDemandData.forEach((record) => {
+                const meterNo = record.meter_no.replace(/^0+/, '');
+                const scalingFactor = meterMap[meterNo];
+                if (scalingFactor === undefined) return;
+
+                const demandMW = record.kwh * scalingFactor;
+                const timeKey = record.datetime;
+                if (!yesterdayGroupedDemand[timeKey]) {
+                    yesterdayGroupedDemand[timeKey] = 0;
+                }
+                yesterdayGroupedDemand[timeKey] += demandMW;
+            });
+
+            const todayFinalResults = Object.keys(todayGroupedDemand)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map((time) => ({
+                    datetime: time,
+                    actual_demand_mw: Number(
+                        todayGroupedDemand[time].toFixed(4)
+                    ),
+                }));
+
+            const yesterdayFinalResults = Object.keys(yesterdayGroupedDemand)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map((time) => ({
+                    datetime: time,
+                    actual_demand_mw: Number(
+                        yesterdayGroupedDemand[time].toFixed(4)
+                    ),
+                }));
 
             const xAxis = [];
             const currentDayData = [];
             const previousDayData = [];
 
             const allTimestamps = new Set([
-                ...todayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ...todayFinalResults.map((d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
-                ...yesterdayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                ...yesterdayFinalResults.map((d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
             ]);
 
@@ -304,22 +442,21 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     moment(a, 'HH:mm:ss').valueOf() -
                     moment(b, 'HH:mm:ss').valueOf()
             );
+
             sortedTimestamps.forEach((timestamp) => {
                 xAxis.push(timestamp);
 
-                const todayData = todayDemandData.find(
+                const todayData = todayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
-                const yesterdayData = yesterdayDemandData.find(
+                const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 previousDayData.push(
                     yesterdayData ? yesterdayData.actual_demand_mw : 0
@@ -346,30 +483,98 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             });
         }
 
+        const meterMap = {};
+        const meterCal = await EDCs.getMeterCalculation(
+            pool,
+            null,
+            hierarchyMeters
+        );
+
+        const { startOfDay, endOfDay } = getTodayStartAndEnd();
+        const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
+
+        meterCal.forEach((meter) => {
+            const id = meter.meter_serial_no.replace(/^0+/, '');
+            meterMap[id] = meter.scaling_factor;
+        });
+
         const todayDemandData = await EDCs.getDemandTrendsData(
             pool,
             accessValues,
-            '2025-03-27 00:00:00',
-            '2025-03-27 23:59:59'
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-27 00:00:00'
+                : startOfDay,
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-27 23:59:59'
+                : endOfDay
         );
 
         const yesterdayDemandData = await EDCs.getDemandTrendsData(
             pool,
             accessValues,
-            '2025-03-26 00:00:00',
-            '2025-03-26 23:59:59'
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-26 00:00:00'
+                : startOfYesterday,
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-26 23:59:59'
+                : endOfYesterday
         );
+
+        const todayGroupedDemand = {};
+        const yesterdayGroupedDemand = {};
+
+        todayDemandData.forEach((record) => {
+            const meterNo = record.meter_no.replace(/^0+/, '');
+            const scalingFactor = meterMap[meterNo];
+            if (scalingFactor === undefined) return;
+
+            const demandMW = record.kwh * scalingFactor;
+            const timeKey = record.datetime;
+            if (!todayGroupedDemand[timeKey]) {
+                todayGroupedDemand[timeKey] = 0;
+            }
+            todayGroupedDemand[timeKey] += demandMW;
+        });
+
+        yesterdayDemandData.forEach((record) => {
+            const meterNo = record.meter_no.replace(/^0+/, '');
+            const scalingFactor = meterMap[meterNo];
+            if (scalingFactor === undefined) return;
+
+            const demandMW = record.kwh * scalingFactor;
+            const timeKey = record.datetime;
+            if (!yesterdayGroupedDemand[timeKey]) {
+                yesterdayGroupedDemand[timeKey] = 0;
+            }
+            yesterdayGroupedDemand[timeKey] += demandMW;
+        });
+
+        const todayFinalResults = Object.keys(todayGroupedDemand)
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map((time) => ({
+                datetime: time,
+                actual_demand_mw: Number(todayGroupedDemand[time].toFixed(4)),
+            }));
+
+        const yesterdayFinalResults = Object.keys(yesterdayGroupedDemand)
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map((time) => ({
+                datetime: time,
+                actual_demand_mw: Number(
+                    yesterdayGroupedDemand[time].toFixed(4)
+                ),
+            }));
 
         const xAxis = [];
         const currentDayData = [];
         const previousDayData = [];
 
         const allTimestamps = new Set([
-            ...todayDemandData.map((d) =>
-                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ...todayFinalResults.map((d) =>
+                moment(new Date(d.datetime)).format('HH:mm:ss')
             ),
-            ...yesterdayDemandData.map((d) =>
-                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ...yesterdayFinalResults.map((d) =>
+                moment(new Date(d.datetime)).format('HH:mm:ss')
             ),
         ]);
 
@@ -381,16 +586,16 @@ export const getEdcDemandGraphDetails = async (req, res) => {
         sortedTimestamps.forEach((timestamp) => {
             xAxis.push(timestamp);
 
-            const todayData = todayDemandData.find(
+            const todayData = todayFinalResults.find(
                 (d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
             currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
-            const yesterdayData = yesterdayDemandData.find(
+            const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
             previousDayData.push(
