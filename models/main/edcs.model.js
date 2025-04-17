@@ -225,6 +225,7 @@ class EDCs {
     ) {
         try {
             const queryParams = [start, end];
+            console.log(queryParams);
             let meterCondition = '';
 
             if (meters && meters.length > 0) {
