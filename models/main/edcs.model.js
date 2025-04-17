@@ -188,6 +188,36 @@ class EDCs {
         }
     }
 
+    async getMeterCalculation(connection, accessValues = [], meters = null) {
+        try {
+            const queryParams = [];
+            let meterCondition = '';
+
+            if (meters && meters.length > 0) {
+                meterCondition = 'WHERE meter_serial_no IN (?)';
+                queryParams.push(meters);
+            }
+
+            const [results] = await connection.query(
+                {
+                    sql: `
+                SELECT 
+                    meter_serial_no, 
+                    (ad_pt / me_pt) * (ad_ct / me_ct) / 0.25 / 1000 AS scaling_factor
+                FROM meter
+                ${meterCondition}
+            `,
+                    timeout: QUERY_TIMEOUT,
+                },
+                queryParams
+            );
+
+            return results;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async getDemandTrendsData(
         connection,
         accessValues = [],
@@ -208,20 +238,17 @@ class EDCs {
                 {
                     sql: `
                         SELECT 
-                            ad.datetime, 
-                            ROUND(SUM(ad.kwh * (mt.ad_pt / mt.me_pt) * (mt.ad_ct / mt.me_ct) / 0.25 / 1000), 4) AS actual_demand_mw 
-                        FROM actualdemand ad 
-                        JOIN meter mt ON ad.meter_no = mt.meter_serial_no 
-                        WHERE ad.datetime BETWEEN ? AND ?
-                        ${meterCondition}
-                        GROUP BY ad.datetime 
-                        ORDER BY ad.datetime ASC;
+                            datetime, 
+                            kwh, 
+                            meter_no
+                        FROM actualdemand
+                        WHERE datetime BETWEEN ? AND ?
+                        ORDER BY datetime ASC;
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
                 queryParams
             );
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {

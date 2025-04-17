@@ -7,7 +7,6 @@ import {
     demandGraph,
 } from '../../../controllers/main/regionsController.js';
 import socketService from '../socketService.js';
-import pool from '../../../config/db.js';
 
 class RegionSocketHandler {
     constructor() {
@@ -25,13 +24,7 @@ class RegionSocketHandler {
                 return;
             }
 
-            const {
-                regions,
-                searchTerm,
-                regionID,
-                user,
-                locationAccess = { values: [] },
-            } = data;
+            const { regions } = data;
 
             if (socket.subscribedRegions) {
                 const existingIntervalId = socketService.getInterval(socket.id);
@@ -45,40 +38,11 @@ class RegionSocketHandler {
             socket.subscribedRegions = regions;
 
             try {
-                if (regions) {
-                    await this.sendRegionData(socket, regions);
-                }
-                await this.sendDashboardWidgets(socket);
-                await this.sendRegionStats(socket);
-
-                if (searchTerm) {
-                    await this.sendConsumerSearch(socket, {
-                        term: searchTerm,
-                        locationAccess,
-                    });
-                }
-
-                if (regionID) {
-                    await this.sendRegionDemandGraph(socket, {
-                        regionID,
-                        user,
-                        locationAccess,
-                    });
-                }
+                await this.sendRegionData(socket, regions);
 
                 const intervalId = setInterval(async () => {
                     if (socket.connected) {
                         await this.sendRegionData(socket, regions);
-                        await this.sendDashboardWidgets(socket);
-                        await this.sendRegionStats(socket);
-
-                        if (regionID) {
-                            await this.sendRegionDemandGraph(socket, {
-                                regionID,
-                                user,
-                                locationAccess,
-                            });
-                        }
                     }
                 }, this.updateInterval);
 
@@ -91,49 +55,45 @@ class RegionSocketHandler {
             }
         });
 
-        // socket.on('getDashboardWidgets', async () => {
-        //     try {
-        //         await this.sendDashboardWidgets(socket);
-        //     } catch (error) {
-        //         logger.error('Error fetching dashboard widgets:', error);
-        //         socket.emit('error', {
-        //             message: 'Error fetching dashboard widgets data',
-        //         });
-        //     }
-        // });
+        socket.on('subscribeDemand', async (data) => {
+            console.log('subscribeDemand', data);
+            if (!data || !data.regionId) {
+                logger.error('Invalid demand subscription data received');
+                socket.emit('error', {
+                    message:
+                        'Invalid demand subscription data. Expected { regionId: string }',
+                });
+                return;
+            }
 
-        // socket.on('getRegionStats', async () => {
-        //     try {
-        //         await this.sendRegionStats(socket);
-        //     } catch (error) {
-        //         logger.error('Error fetching region stats:', error);
-        //         socket.emit('error', {
-        //             message: 'Error fetching region stats data',
-        //         });
-        //     }
-        // });
+            const { regionId } = data;
 
-        // socket.on('searchConsumers', async (data) => {
-        //     try {
-        //         await this.sendConsumerSearch(socket, data);
-        //     } catch (error) {
-        //         logger.error('Error searching consumers:', error);
-        //         socket.emit('error', {
-        //             message: 'Error searching consumers',
-        //         });
-        //     }
-        // });
+            if (socket.demandIntervalId) {
+                clearInterval(socket.demandIntervalId);
+            }
 
-        // socket.on('getRegionDemandGraph', async (data) => {
-        //     try {
-        //         await this.sendRegionDemandGraph(socket, data);
-        //     } catch (error) {
-        //         logger.error('Error fetching region demand graph:', error);
-        //         socket.emit('error', {
-        //             message: 'Error fetching region demand graph data',
-        //         });
-        //     }
-        // });
+            logger.info(
+                `Client subscribed to demand updates for region: ${regionId}`
+            );
+            socket.subscribedDemandRegion = regionId;
+
+            try {
+                await this.sendDemandData(socket, regionId);
+
+                const intervalId = setInterval(async () => {
+                    if (socket.connected) {
+                        await this.sendDemandData(socket, regionId);
+                    }
+                }, 30000);
+
+                socket.demandIntervalId = intervalId;
+            } catch (error) {
+                logger.error('Error in demand subscription:', error);
+                socket.emit('error', {
+                    message: 'Error processing demand subscription',
+                });
+            }
+        });
     }
 
     async sendRegionData(socket, regions) {
@@ -145,102 +105,28 @@ class RegionSocketHandler {
         }
     }
 
-    async sendDashboardWidgets(socket) {
-        try {
-            const mockReq = { socket };
-            const mockRes = {
-                status: (code) => ({
-                    json: (responseData) => {
-                        if (code === 200) {
-                            socket.emit('dashboardWidgetsData', responseData);
-                        } else {
-                            socket.emit('error', responseData);
-                        }
-                    },
-                }),
-            };
-            await getDashboardWidgets(mockReq, mockRes);
-        } catch (error) {
-            logger.error('Error sending dashboard widgets:', error);
-            socket.emit('error', {
-                message: 'Error fetching dashboard widgets data',
-            });
-        }
-    }
-
-    async sendRegionStats(socket) {
-        try {
-            const mockReq = { socket };
-            const mockRes = {
-                status: (code) => ({
-                    json: (responseData) => {
-                        if (code === 200) {
-                            socket.emit('regionStatsData', responseData);
-                        } else {
-                            socket.emit('error', responseData);
-                        }
-                    },
-                }),
-            };
-            await getRegionStats(mockReq, mockRes);
-        } catch (error) {
-            logger.error('Error sending region stats:', error);
-            socket.emit('error', {
-                message: 'Error fetching region stats data',
-            });
-        }
-    }
-
-    async sendConsumerSearch(socket, data) {
+    async sendDemandData(socket, regionId) {
         try {
             const mockReq = {
-                socket,
-                locationAccess: data.locationAccess || { values: [] },
-                query: { term: data.term || '' },
+                params: {},
+                user: null,
+                locationAccess: { values: [] },
             };
             const mockRes = {
-                status: (code) => ({
-                    json: (responseData) => {
-                        if (code === 200) {
-                            socket.emit('searchConsumersResults', responseData);
-                        } else {
-                            socket.emit('error', responseData);
-                        }
-                    },
-                }),
+                status: () => mockRes,
+                json: (data) => {
+                    if (data.status === 'success') {
+                        socket.emit('demandUpdate', data.data);
+                    } else {
+                        socket.emit('error', { message: data.message });
+                    }
+                },
             };
-            await searchConsumers(mockReq, mockRes);
-        } catch (error) {
-            logger.error('Error sending consumer search results:', error);
-            socket.emit('error', { message: 'Error searching consumers' });
-        }
-    }
 
-    async sendRegionDemandGraph(socket, data) {
-        try {
-            const mockReq = {
-                socket,
-                user: data.user || null,
-                locationAccess: data.locationAccess || { values: [] },
-                params: { regionID: data.regionID || null },
-            };
-            const mockRes = {
-                status: (code) => ({
-                    json: (responseData) => {
-                        if (code === 200) {
-                            socket.emit('regionDemandGraphData', responseData);
-                        } else {
-                            socket.emit('error', responseData);
-                        }
-                    },
-                }),
-            };
             await demandGraph(mockReq, mockRes);
         } catch (error) {
-            logger.error('Error sending region demand graph:', error);
-            socket.emit('error', {
-                message: 'Error fetching region demand graph data',
-            });
+            logger.error('Error sending demand data:', error);
+            socket.emit('error', { message: 'Error fetching demand data' });
         }
     }
 }
