@@ -244,10 +244,10 @@ export const fetchSubstationGraphs = async (socket, substations) => {
 
             const allTimestamps = new Set([
                 ...todayFinalResults.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
                 ...yesterdayFinalResults.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
             ]);
 
@@ -256,22 +256,21 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                     moment(a, 'HH:mm:ss').valueOf() -
                     moment(b, 'HH:mm:ss').valueOf()
             );
+
             sortedTimestamps.forEach((timestamp) => {
                 xAxis.push(timestamp);
 
                 const todayData = todayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 previousDayData.push(
                     yesterdayData ? yesterdayData.actual_demand_mw : 0
@@ -419,10 +418,10 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
 
             const allTimestamps = new Set([
                 ...todayFinalResults.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
                 ...yesterdayFinalResults.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
                 ),
             ]);
 
@@ -431,22 +430,21 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     moment(a, 'HH:mm:ss').valueOf() -
                     moment(b, 'HH:mm:ss').valueOf()
             );
+
             sortedTimestamps.forEach((timestamp) => {
                 xAxis.push(timestamp);
 
                 const todayData = todayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 previousDayData.push(
                     yesterdayData ? yesterdayData.actual_demand_mw : 0
@@ -558,10 +556,10 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
 
         const allTimestamps = new Set([
             ...todayFinalResults.map((d) =>
-                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                moment(new Date(d.datetime)).format('HH:mm:ss')
             ),
             ...yesterdayFinalResults.map((d) =>
-                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+                moment(new Date(d.datetime)).format('HH:mm:ss')
             ),
         ]);
 
@@ -570,19 +568,20 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
         sortedTimestamps.forEach((timestamp) => {
             xAxis.push(timestamp);
 
             const todayData = todayFinalResults.find(
                 (d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
             currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
+                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
             previousDayData.push(

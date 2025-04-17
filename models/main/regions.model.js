@@ -300,6 +300,7 @@ class Regions {
 
     async getMeterCalculation(connection, accessValues = [], meters = null) {
         try {
+            console.log('meters', meters);
             const queryParams = [];
             let meterCondition = '';
 
@@ -341,6 +342,8 @@ class Regions {
         hierarchy_type_id,
         hierarchy_id
     ) {
+        console.log('hierarchy_type_id', hierarchy_type_id);
+        console.log('hierarchy_id', hierarchy_id);
         try {
             const [results] = await connection.query(
                 {

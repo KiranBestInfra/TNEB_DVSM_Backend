@@ -174,23 +174,34 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             const previousDayData = [];
 
             const allTimestamps = new Set([
-                ...todayFinalResults.map((d) => d.datetime),
-                ...yesterdayFinalResults.map((d) => d.datetime),
+                ...todayFinalResults.map((d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
+                ),
+                ...yesterdayFinalResults.map((d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss')
+                ),
             ]);
 
             const sortedTimestamps = Array.from(allTimestamps).sort(
-                (a, b) => new Date(a).valueOf() - new Date(b).valueOf()
+                (a, b) =>
+                    moment(a, 'HH:mm:ss').valueOf() -
+                    moment(b, 'HH:mm:ss').valueOf()
             );
+
             sortedTimestamps.forEach((timestamp) => {
                 xAxis.push(timestamp);
 
                 const todayData = todayFinalResults.find(
-                    (d) => d.datetime === timestamp
+                    (d) =>
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
                 const yesterdayData = yesterdayFinalResults.find(
-                    (d) => d.datetime === timestamp
+                    (d) =>
+                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                        timestamp
                 );
                 previousDayData.push(
                     yesterdayData ? yesterdayData.actual_demand_mw : 0
@@ -323,17 +334,21 @@ export const demandGraph = async (req, res) => {
 
         let hierarchyMeters = null;
 
+        console.log('regionID', regionID);
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(
                 pool,
                 regionID
             );
+
+            console.log('regionHierarchy', regionHierarchy);
             const meters = await REGIONS.getRegionMeters(
                 pool,
                 null,
                 regionHierarchy.hierarchy_type_id,
                 regionHierarchy.hierarchy_id
             );
+            console.log('meters', meters);
 
             hierarchyMeters = meters.map((meter) =>
                 meter.meter_serial_no.replace(/^0+/, '')
@@ -343,7 +358,7 @@ export const demandGraph = async (req, res) => {
         const meterMap = {};
         const meterCal = await REGIONS.getMeterCalculation(
             pool,
-            accessValues,
+            null,
             hierarchyMeters
         );
 
@@ -435,10 +450,10 @@ export const demandGraph = async (req, res) => {
 
         const allTimestamps = new Set([
             ...todayFinalResults.map((d) =>
-                moment(d.datetime).format('HH:mm:ss')
+                moment(new Date(d.datetime)).format('HH:mm:ss')
             ),
             ...yesterdayFinalResults.map((d) =>
-                moment(d.datetime).format('HH:mm:ss')
+                moment(new Date(d.datetime)).format('HH:mm:ss')
             ),
         ]);
 
@@ -447,16 +462,21 @@ export const demandGraph = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
         sortedTimestamps.forEach((timestamp) => {
             xAxis.push(timestamp);
 
             const todayData = todayFinalResults.find(
-                (d) => moment(d.datetime).format('HH:mm:ss') === timestamp
+                (d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                    timestamp
             );
             currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
             const yesterdayData = yesterdayFinalResults.find(
-                (d) => moment(d.datetime).format('HH:mm:ss') === timestamp
+                (d) =>
+                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
+                    timestamp
             );
             previousDayData.push(
                 yesterdayData ? yesterdayData.actual_demand_mw : 0
