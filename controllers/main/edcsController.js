@@ -13,7 +13,6 @@ export const getEDCWidgets = async (req, res) => {
     try {
         const user = req.user || null;
         const region = user ? user.user_hierarchy_id : req.params.region;
-        console.log(region, 'region');
 
         const deviceDate = '2025-03-09';
         if (!region) {
@@ -66,9 +65,7 @@ export const getEDCWidgets = async (req, res) => {
 };
 export const getSubstationTotalWidgets = async (req, res) => {
     const user = req.user || null;
-    console.log(user);
     const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
-    console.log(edcsID);
 
     const date = '2025-03-09';
 
@@ -90,12 +87,10 @@ export const getSubstationTotalWidgets = async (req, res) => {
 
     try {
         const districtCounts = await EDCs.getDistrictCountByEDC(pool, edcsID);
-        console.log(districtCounts);
         const substationCounts = await EDCs.getSubstationCountByEDC(
             pool,
             edcsID
         );
-        console.log(substationCounts);
         const totalFeeders = await EDCs.getTotalFeeders(pool);
         const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
         const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
@@ -237,6 +232,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
     try {
         const accessValues = req.locationAccess?.values || [];
         const edcID = (req.params.edcID || '').toUpperCase().replace(/-/g, ' ');
+        const selectedDate = req.params.date;
 
         if (edcID) {
             const edcHierarchy = await EDCs.getHierarchyByEdc(pool, edcID);
@@ -251,23 +247,42 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 meter.meter_serial_no.replace(/^0+/, '')
             );
 
-            const { startOfDay, endOfDay } = getTodayStartAndEnd();
-            const { startOfYesterday, endOfYesterday } =
-                getYesterdayStartAndEnd();
+            // Get today's start and end times
+            // Use selected date for today's range
+            const startOfDay = moment(selectedDate)
+                .tz('Asia/Kolkata')
+                .startOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+            const endOfDay = moment(selectedDate)
+                .tz('Asia/Kolkata')
+                .endOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+
+            // Get yesterday's start and end times (one day before selected date)
+            const startOfYesterday = moment(selectedDate)
+                .tz('Asia/Kolkata')
+                .subtract(1, 'days')
+                .startOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+            const endOfYesterday = moment(selectedDate)
+                .tz('Asia/Kolkata')
+                .subtract(1, 'days')
+                .endOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
 
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 accessValues,
-                '2025-03-27 00:00:00',
-                '2025-03-27 23:59:59',
+                startOfDay,
+                endOfDay,
                 hierarchyMeters
             );
 
             const yesterdayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 accessValues,
-                '2025-03-26 00:00:00',
-                '2025-03-26 23:59:59',
+                startOfYesterday,
+                endOfYesterday,
                 hierarchyMeters
             );
 
