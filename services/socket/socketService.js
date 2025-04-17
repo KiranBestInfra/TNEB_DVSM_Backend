@@ -16,12 +16,23 @@ class SocketService {
 
     initialize(server) {
         this.io = new Server(server, {
+            path: '/socket',
             cors: {
-                origin: '*',
+                origin: [
+                    'http://localhost:5173',
+                    'https://lk-ea.co.in',
+                    'http://lk-ea.co.in',
+                    'https://htbimdas.tneb.in',
+                    'http://htbimdas.tneb.in',
+                ],
                 methods: ['GET', 'POST'],
                 credentials: true,
                 allowedHeaders: ['*'],
             },
+            transports: ['websocket', 'polling'],
+            pingTimeout: 60000,
+            pingInterval: 25000,
+            allowEIO3: true,
         });
 
         this.setupConnectionHandler();
@@ -29,10 +40,7 @@ class SocketService {
     }
 
     setupConnectionHandler() {
-        console.log('----------connection handler----------');
         this.io.on('connection', (socket) => {
-            console.log('New WebSocket connection established');
-
             regionSocketHandler.initialize(socket);
             edcSocketHandler.initialize(socket);
             substationSocketHandler.initialize(socket);
