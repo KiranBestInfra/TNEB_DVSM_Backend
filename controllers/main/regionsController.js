@@ -86,56 +86,111 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                 meter.meter_serial_no.replace(/^0+/, '')
             );
 
+            const meterMap = {};
+            const meterCal = await REGIONS.getMeterCalculation(
+                pool,
+                null,
+                hierarchyMeters
+            );
+
+            meterCal.forEach((meter) => {
+                const id = meter.meter_serial_no.replace(/^0+/, '');
+                meterMap[id] = meter.scaling_factor;
+            });
+
             const todayDemandData = await REGIONS.getDemandTrendsData(
                 pool,
                 null,
-                '2025-03-27 00:00:00',
-                '2025-03-27 23:59:59',
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-27 00:00:00'
+                    : startOfDay,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-27 23:59:59'
+                    : endOfDay,
                 hierarchyMeters
             );
 
             const yesterdayDemandData = await REGIONS.getDemandTrendsData(
                 pool,
                 null,
-                '2025-03-26 00:00:00',
-                '2025-03-26 23:59:59',
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-26 00:00:00'
+                    : startOfYesterday,
+                process.env.NODE_ENV === 'development'
+                    ? '2025-03-26 23:59:59'
+                    : endOfYesterday,
                 hierarchyMeters
             );
+
+            const todayGroupedDemand = {};
+            const yesterdayGroupedDemand = {};
+
+            todayDemandData.forEach((record) => {
+                const meterNo = record.meter_no.replace(/^0+/, '');
+                const scalingFactor = meterMap[meterNo];
+                if (scalingFactor === undefined) return;
+
+                const demandMW = record.kwh * scalingFactor;
+                const timeKey = record.datetime;
+                if (!todayGroupedDemand[timeKey]) {
+                    todayGroupedDemand[timeKey] = 0;
+                }
+                todayGroupedDemand[timeKey] += demandMW;
+            });
+
+            yesterdayDemandData.forEach((record) => {
+                const meterNo = record.meter_no.replace(/^0+/, '');
+                const scalingFactor = meterMap[meterNo];
+                if (scalingFactor === undefined) return;
+
+                const demandMW = record.kwh * scalingFactor;
+                const timeKey = record.datetime;
+                if (!yesterdayGroupedDemand[timeKey]) {
+                    yesterdayGroupedDemand[timeKey] = 0;
+                }
+                yesterdayGroupedDemand[timeKey] += demandMW;
+            });
+
+            const todayFinalResults = Object.keys(todayGroupedDemand)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map((time) => ({
+                    datetime: time,
+                    actual_demand_mw: Number(
+                        todayGroupedDemand[time].toFixed(4)
+                    ),
+                }));
+
+            const yesterdayFinalResults = Object.keys(yesterdayGroupedDemand)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map((time) => ({
+                    datetime: time,
+                    actual_demand_mw: Number(
+                        yesterdayGroupedDemand[time].toFixed(4)
+                    ),
+                }));
 
             const xAxis = [];
             const currentDayData = [];
             const previousDayData = [];
 
             const allTimestamps = new Set([
-                ...todayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
-                ),
-                ...yesterdayDemandData.map((d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
-                ),
+                ...todayFinalResults.map((d) => d.datetime),
+                ...yesterdayFinalResults.map((d) => d.datetime),
             ]);
 
             const sortedTimestamps = Array.from(allTimestamps).sort(
-                (a, b) =>
-                    moment(a, 'HH:mm:ss').valueOf() -
-                    moment(b, 'HH:mm:ss').valueOf()
+                (a, b) => new Date(a).valueOf() - new Date(b).valueOf()
             );
             sortedTimestamps.forEach((timestamp) => {
                 xAxis.push(timestamp);
 
-                const todayData = todayDemandData.find(
-                    (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                const todayData = todayFinalResults.find(
+                    (d) => d.datetime === timestamp
                 );
                 currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
-                const yesterdayData = yesterdayDemandData.find(
-                    (d) =>
-                        moment(d.datetime)
-                            .tz('Asia/Kolkata')
-                            .format('HH:mm:ss') === timestamp
+                const yesterdayData = yesterdayFinalResults.find(
+                    (d) => d.datetime === timestamp
                 );
                 previousDayData.push(
                     yesterdayData ? yesterdayData.actual_demand_mw : 0
@@ -170,7 +225,6 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
     } catch (error) {
         console.error('Error fetching region graphs:', error);
 
-        // Still keep this error emit since this function directly receives a socket
         if (socket) {
             socket.emit('error', {
                 status: 'error',
@@ -286,32 +340,105 @@ export const demandGraph = async (req, res) => {
             );
         }
 
+        const meterMap = {};
+        const meterCal = await REGIONS.getMeterCalculation(
+            pool,
+            accessValues,
+            hierarchyMeters
+        );
+
+        meterCal.forEach((meter) => {
+            const id = meter.meter_serial_no.replace(/^0+/, '');
+            meterMap[id] = meter.scaling_factor;
+        });
+
         const todayDemandData = await REGIONS.getDemandTrendsData(
             pool,
             accessValues,
-            '2025-03-27 00:00:00',
-            '2025-03-27 23:59:59',
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-27 00:00:00'
+                : startOfDay,
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-27 23:59:59'
+                : endOfDay,
             hierarchyMeters
         );
+
+        const todayGroupedDemand = {};
+        const yesterdayGroupedDemand = {};
+
+        todayDemandData.forEach((record) => {
+            const meterNo = record.meter_no.replace(/^0+/, '');
+
+            const scalingFactor = meterMap[meterNo];
+
+            if (scalingFactor === undefined) return;
+
+            const demandMW = record.kwh * scalingFactor;
+
+            const timeKey = record.datetime;
+            if (!todayGroupedDemand[timeKey]) {
+                todayGroupedDemand[timeKey] = 0;
+            }
+
+            todayGroupedDemand[timeKey] += demandMW;
+        });
+
+        const todayFinalResults = Object.keys(todayGroupedDemand)
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map((time) => ({
+                datetime: time,
+                actual_demand_mw: Number(todayGroupedDemand[time].toFixed(4)),
+            }));
 
         const yesterdayDemandData = await REGIONS.getDemandTrendsData(
             pool,
             accessValues,
-            '2025-03-26 00:00:00',
-            '2025-03-26 23:59:59',
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-26 00:00:00'
+                : startOfYesterday,
+            process.env.NODE_ENV === 'development'
+                ? '2025-03-26 23:59:59'
+                : endOfYesterday,
             hierarchyMeters
         );
+
+        yesterdayDemandData.forEach((record) => {
+            const meterNo = record.meter_no.replace(/^0+/, '');
+
+            const scalingFactor = meterMap[meterNo];
+
+            if (scalingFactor === undefined) return;
+
+            const demandMW = record.kwh * scalingFactor;
+
+            const timeKey = record.datetime;
+            if (!yesterdayGroupedDemand[timeKey]) {
+                yesterdayGroupedDemand[timeKey] = 0;
+            }
+
+            yesterdayGroupedDemand[timeKey] += demandMW;
+        });
+
+        const yesterdayFinalResults = Object.keys(yesterdayGroupedDemand)
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map((time) => ({
+                datetime: time,
+                actual_demand_mw: Number(
+                    yesterdayGroupedDemand[time].toFixed(4)
+                ),
+            }));
 
         const xAxis = [];
         const currentDayData = [];
         const previousDayData = [];
 
         const allTimestamps = new Set([
-            ...todayDemandData.map((d) =>
-                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ...todayFinalResults.map((d) =>
+                moment(d.datetime).format('HH:mm:ss')
             ),
-            ...yesterdayDemandData.map((d) =>
-                moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss')
+            ...yesterdayFinalResults.map((d) =>
+                moment(d.datetime).format('HH:mm:ss')
             ),
         ]);
 
@@ -323,17 +450,13 @@ export const demandGraph = async (req, res) => {
         sortedTimestamps.forEach((timestamp) => {
             xAxis.push(timestamp);
 
-            const todayData = todayDemandData.find(
-                (d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
-                    timestamp
+            const todayData = todayFinalResults.find(
+                (d) => moment(d.datetime).format('HH:mm:ss') === timestamp
             );
             currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
 
-            const yesterdayData = yesterdayDemandData.find(
-                (d) =>
-                    moment(d.datetime).tz('Asia/Kolkata').format('HH:mm:ss') ===
-                    timestamp
+            const yesterdayData = yesterdayFinalResults.find(
+                (d) => moment(d.datetime).format('HH:mm:ss') === timestamp
             );
             previousDayData.push(
                 yesterdayData ? yesterdayData.actual_demand_mw : 0

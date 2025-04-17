@@ -33,6 +33,12 @@ class SocketService {
     }
 
     setupConnectionHandler() {
+        if (!this.io) {
+            logger.error('Socket.io instance not initialized properly');
+            throw new Error('Socket.io not initialized!');
+        } else {
+            logger.info('Socket.io instance is ready for connections');
+        }
         this.io.on('connection', (socket) => {
             logger.info('New WebSocket connection established');
 
