@@ -300,7 +300,6 @@ export const getEdcDemandGraphDetails = async (req, res) => {
         const accessValues = req.locationAccess?.values || [];
         const edcID = (req.params.edcID || '').toUpperCase().replace(/-/g, ' ');
         const selectedDate = req.params.date;
-        console.log('Selected date:', selectedDate);
 
         if (edcID) {
             const edcHierarchy = await EDCs.getHierarchyByEdc(pool, edcID);
@@ -327,7 +326,6 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 meterMap[id] = meter.scaling_factor;
             });
 
-            // Use selected date for today's range
             const startOfDay = moment(selectedDate)
                 .startOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
@@ -335,7 +333,6 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 .endOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
 
-            // Calculate yesterday's range based on selected date using same logic as globalUtils
             const startOfYesterday = moment(selectedDate)
                 .subtract(1, 'days')
                 .startOf('day')
@@ -344,13 +341,6 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 .subtract(1, 'days')
                 .endOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
-
-            console.log('Date ranges:', {
-                startOfDay,
-                endOfDay,
-                startOfYesterday,
-                endOfYesterday,
-            });
 
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
