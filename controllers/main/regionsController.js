@@ -232,7 +232,6 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             }
         }
 
-        console.log('regionDemandData', regionDemandData);
         return regionDemandData;
     } catch (error) {
         console.error('Error fetching region graphs:', error);
@@ -341,7 +340,6 @@ export const demandGraph = async (req, res) => {
                 regionID
             );
 
-            console.log('regionHierarchy', regionHierarchy);
             const meters = await REGIONS.getRegionMeters(
                 pool,
                 null,
