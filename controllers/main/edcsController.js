@@ -258,13 +258,21 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                         timestamp
                 );
 
-                if (
-                    todayData?.actual_demand_mw !== undefined ||
-                    yesterdayData?.actual_demand_mw !== undefined
-                ) {
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
                     xAxis.push(timestamp);
-                    currentDayData.push(todayData?.actual_demand_mw);
-                    previousDayData.push(yesterdayData?.actual_demand_mw);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
                 }
             });
 
@@ -343,9 +351,6 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 .subtract(1, 'days')
                 .endOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
-
-            console.log(startOfDay, endOfDay);
-            console.log(startOfYesterday, endOfYesterday);
 
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
@@ -457,13 +462,21 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                         timestamp
                 );
 
-                if (
-                    todayData?.actual_demand_mw !== undefined ||
-                    yesterdayData?.actual_demand_mw !== undefined
-                ) {
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
                     xAxis.push(timestamp);
-                    currentDayData.push(todayData?.actual_demand_mw);
-                    previousDayData.push(yesterdayData?.actual_demand_mw);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
                 }
             });
 
@@ -599,13 +612,21 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     timestamp
             );
 
-            if (
-                todayData?.actual_demand_mw !== undefined ||
-                yesterdayData?.actual_demand_mw !== undefined
-            ) {
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (todayValue !== undefined || yesterdayValue !== undefined) {
                 xAxis.push(timestamp);
-                currentDayData.push(todayData?.actual_demand_mw);
-                previousDayData.push(yesterdayData?.actual_demand_mw);
+                if (todayValue !== undefined) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined) {
+                    previousDayData.push(yesterdayValue);
+                }
             }
         });
 
