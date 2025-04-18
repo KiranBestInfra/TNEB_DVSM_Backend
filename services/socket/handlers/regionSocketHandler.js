@@ -56,32 +56,33 @@ class RegionSocketHandler {
         });
 
         socket.on('subscribeDemand', async (data) => {
-            if (!data || !data.regionId) {
+            if (!data || !data.regionId || !data.date) {
                 logger.error('Invalid demand subscription data received');
                 socket.emit('error', {
                     message:
-                        'Invalid demand subscription data. Expected { regionId: string }',
+                        'Invalid demand subscription data. Expected { regionId: string, date: string }',
                 });
                 return;
             }
 
-            const { regionId } = data;
+            const { regionId, date } = data;
 
             if (socket.demandIntervalId) {
                 clearInterval(socket.demandIntervalId);
             }
 
             logger.info(
-                `Client subscribed to demand updates for region: ${regionId}`
+                `Client subscribed to demand updates for region: ${regionId} and date: ${date}`
             );
             socket.subscribedDemandRegion = regionId;
+            socket.subscribedDemandDate = date;
 
             try {
-                await this.sendDemandData(socket, regionId);
+                await this.sendDemandData(socket, regionId, date);
 
                 const intervalId = setInterval(async () => {
                     if (socket.connected) {
-                        await this.sendDemandData(socket, regionId);
+                        await this.sendDemandData(socket, regionId, date);
                     }
                 }, this.updateInterval);
 
@@ -104,10 +105,11 @@ class RegionSocketHandler {
         }
     }
 
-    async sendDemandData(socket, regionId) {
+    async sendDemandData(socket, regionId, date) {
         try {
             const mockReq = {
                 params: {},
+                query: { regionId, date },
                 user: null,
                 locationAccess: { values: [] },
             };
