@@ -53,7 +53,7 @@ class Tickets {
             });
             return rows;
         } catch (error) {
-            console.error('❌ Error fetching tickets:', error);
+            console.error(' Error fetching tickets:', error);
             throw error;
         }
     }
