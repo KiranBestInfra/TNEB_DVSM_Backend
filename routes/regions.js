@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/widgets', getDashboardWidgets);
 router.get('/graph/demand', demandGraph);
 router.get('/search', searchConsumers);
-router.get('/graph/:regionID/demand', demandGraph);
+router.get('/graph/:regionID/demand/:date', demandGraph);
 router.get('/:region/feeders', getFeedersDataByRegion);
 
 export default router;

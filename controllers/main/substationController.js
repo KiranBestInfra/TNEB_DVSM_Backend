@@ -253,24 +253,43 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+                const yesterdayData = yesterdayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
 
-                const yesterdayData = yesterdayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined && todayValue != 0) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -449,24 +468,43 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+                const yesterdayData = yesterdayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
 
-                const yesterdayData = yesterdayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined && todayValue != 0) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -587,24 +625,43 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
 
+        const now = moment();
+
         sortedTimestamps.forEach((timestamp) => {
-            xAxis.push(timestamp);
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
+            const yesterdayData = yesterdayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
 
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
-            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
 
-            const yesterdayData = yesterdayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
-            previousDayData.push(
-                yesterdayData ? yesterdayData.actual_demand_mw : 0
-            );
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
+                xAxis.push(timestamp);
+                if (todayValue !== undefined && todayValue != 0) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                    previousDayData.push(yesterdayValue);
+                }
+            }
         });
 
         const detailedGraphData = {

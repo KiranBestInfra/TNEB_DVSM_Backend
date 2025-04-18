@@ -188,24 +188,41 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
-
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined && todayValue != 0) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -329,8 +346,7 @@ export const demandGraph = async (req, res) => {
             ? user.user_hierarchy_id
             : req.params.regionID || null;
 
-        const { startOfDay, endOfDay } = getTodayStartAndEnd();
-        const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
+        const selectedDate = req.params.date;
 
         let hierarchyMeters = null;
 
@@ -363,15 +379,38 @@ export const demandGraph = async (req, res) => {
             const id = meter.meter_serial_no.replace(/^0+/, '');
             meterMap[id] = meter.scaling_factor;
         });
+        const startOfDay = moment(selectedDate)
+            .tz('Asia/Kolkata')
+            .startOf('day')
+            .format('YYYY-MM-DD HH:mm:ss');
+        const endOfDay = moment(selectedDate)
+            .tz('Asia/Kolkata')
+            .endOf('day')
+            .format('YYYY-MM-DD HH:mm:ss');
+
+        const startOfYesterday = moment(selectedDate)
+            .tz('Asia/Kolkata')
+            .subtract(1, 'days')
+            .startOf('day')
+            .format('YYYY-MM-DD HH:mm:ss');
+        const endOfYesterday = moment(selectedDate)
+            .tz('Asia/Kolkata')
+            .subtract(1, 'days')
+            .endOf('day')
+            .format('YYYY-MM-DD HH:mm:ss');
 
         const todayDemandData = await REGIONS.getDemandTrendsData(
             pool,
             accessValues,
             process.env.NODE_ENV === 'development'
-                ? '2025-03-27 00:00:00'
+                ? startOfDay
+                    ? startOfDay
+                    : '2025-03-27 00:00:00'
                 : startOfDay,
             process.env.NODE_ENV === 'development'
-                ? '2025-03-27 23:59:59'
+                ? endOfDay
+                    ? endOfDay
+                    : '2025-03-27 23:59:59'
                 : endOfDay,
             hierarchyMeters
         );
@@ -381,18 +420,16 @@ export const demandGraph = async (req, res) => {
 
         todayDemandData.forEach((record) => {
             const meterNo = record.meter_no.replace(/^0+/, '');
-
             const scalingFactor = meterMap[meterNo];
 
             if (scalingFactor === undefined) return;
 
             const demandMW = record.kwh * scalingFactor;
-
             const timeKey = record.datetime;
             if (!todayGroupedDemand[timeKey]) {
                 todayGroupedDemand[timeKey] = 0;
+                todayGroupedDemand[timeKey] = 0;
             }
-
             todayGroupedDemand[timeKey] += demandMW;
         });
 
@@ -407,10 +444,14 @@ export const demandGraph = async (req, res) => {
             pool,
             accessValues,
             process.env.NODE_ENV === 'development'
-                ? '2025-03-26 00:00:00'
+                ? startOfYesterday
+                    ? startOfYesterday
+                    : '2025-03-26 00:00:00'
                 : startOfYesterday,
             process.env.NODE_ENV === 'development'
-                ? '2025-03-26 23:59:59'
+                ? startOfYesterday
+                    ? endOfYesterday
+                    : '2025-03-26 23:59:59'
                 : endOfYesterday,
             hierarchyMeters
         );
@@ -460,24 +501,42 @@ export const demandGraph = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
 
-        sortedTimestamps.forEach((timestamp) => {
-            xAxis.push(timestamp);
+        const now = moment();
 
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
-            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+        sortedTimestamps.forEach((timestamp) => {
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
 
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            previousDayData.push(
-                yesterdayData ? yesterdayData.actual_demand_mw : 0
-            );
+
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
+                xAxis.push(timestamp);
+                if (todayValue !== undefined && todayValue != 0) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                    previousDayData.push(yesterdayValue);
+                }
+            }
         });
 
         const detailedGraphData = {
