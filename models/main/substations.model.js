@@ -316,9 +316,9 @@ class Substations {
             throw error;
         }
     }
-    async getDemandTrendsData(
+    async getDemandTrendsData(  
         connection,
-        accessValues = [],
+        accessValues = [],      
         start,
         end,
         meters = null

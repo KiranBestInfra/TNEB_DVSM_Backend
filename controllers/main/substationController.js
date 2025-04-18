@@ -253,17 +253,23 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                const yesterdayData = yesterdayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+                const yesterdayData = yesterdayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
                 const todayValue = todayData
                     ? todayData.actual_demand_mw
@@ -315,10 +321,11 @@ export const fetchSubstationGraphs = async (socket, substations) => {
 };
 export const getSubstationDemandGraphDetails = async (req, res) => {
     try {
-        // const accessValues = req.locationAccess?.values || [];
+        const accessValues = req.locationAccess?.values || [];
         const substationID = (req.params.substationID || '')
             .toUpperCase()
             .replace(/-/g, ' ');
+        const selectedDate = req.params.date;
 
         if (substationID) {
             const substationHierarchy =
@@ -334,10 +341,6 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 meter.meter_serial_no.replace(/^0+/, '')
             );
 
-            const { startOfDay, endOfDay } = getTodayStartAndEnd();
-            const { startOfYesterday, endOfYesterday } =
-                getYesterdayStartAndEnd();
-
             const meterMap = {};
             const meterCal = await Substations.getMeterCalculation(
                 pool,
@@ -350,27 +353,52 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 meterMap[id] = meter.scaling_factor;
             });
 
+            const startOfDay = moment(selectedDate)
+                .startOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+            const endOfDay = moment(selectedDate)
+                .endOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+
+            const startOfYesterday = moment(selectedDate)
+                .subtract(1, 'days')
+                .startOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+            const endOfYesterday = moment(selectedDate)
+                .subtract(1, 'days')
+                .endOf('day')
+                .format('YYYY-MM-DD HH:mm:ss');
+            console.log(startOfDay, endOfDay, startOfYesterday, endOfYesterday);
+
             const todayDemandData = await Substations.getDemandTrendsData(
                 pool,
-                null,
+                accessValues,
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-27 00:00:00'
-                    : startOfDay,
+                    ? startOfDay
+                        ? startOfDay
+                        : '2025-03-27 00:00:00'
+                    : '2025-03-27 00:00:00',
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-27 23:59:59'
-                    : endOfDay,
+                    ? endOfDay
+                        ? endOfDay
+                        : '2025-03-27 23:59:59'
+                    : '2025-03-27 23:59:59',
                 hierarchyMeters
             );
 
             const yesterdayDemandData = await Substations.getDemandTrendsData(
                 pool,
-                null,
+                accessValues,
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-26 00:00:00'
-                    : startOfYesterday,
+                    ? startOfYesterday
+                        ? startOfYesterday
+                        : '2025-03-26 00:00:00'
+                    : '2025-03-26 00:00:00',
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-26 23:59:59'
-                    : endOfYesterday,
+                    ? endOfYesterday
+                        ? endOfYesterday
+                        : '2025-03-26 23:59:59'
+                    : '2025-03-26 23:59:59',
                 hierarchyMeters
             );
 
@@ -440,17 +468,23 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                const yesterdayData = yesterdayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+                const yesterdayData = yesterdayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
                 const todayValue = todayData
                     ? todayData.actual_demand_mw
@@ -591,17 +625,23 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
 
+        const now = moment();
+
         sortedTimestamps.forEach((timestamp) => {
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
-            const yesterdayData = yesterdayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
+            const yesterdayData = yesterdayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
 
             const todayValue = todayData
                 ? todayData.actual_demand_mw

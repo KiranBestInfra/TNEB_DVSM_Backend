@@ -188,12 +188,16 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
@@ -341,8 +345,10 @@ export const demandGraph = async (req, res) => {
         const regionID = user
             ? user.user_hierarchy_id
             : req.params.regionID || null;
+        const regionId = req.query.regionId;
+        const selectedDate =
+            regionId === 'main' ? req.query.date : req.params.date;
 
-        const selectedDate = req.params.date;
 
         let hierarchyMeters = null;
 
@@ -384,7 +390,6 @@ export const demandGraph = async (req, res) => {
             .endOf('day')
             .format('YYYY-MM-DD HH:mm:ss');
 
-        // Get yesterday's start and end times (one day before selected date)
         const startOfYesterday = moment(selectedDate)
             .tz('Asia/Kolkata')
             .subtract(1, 'days')
@@ -403,12 +408,12 @@ export const demandGraph = async (req, res) => {
                 ? startOfDay
                     ? startOfDay
                     : '2025-03-27 00:00:00'
-                : '2025-03-27 00:00:00',
+                : startOfDay,
             process.env.NODE_ENV === 'development'
                 ? endOfDay
                     ? endOfDay
                     : '2025-03-27 23:59:59'
-                : '2025-03-27 23:59:59',
+                : endOfDay,
             hierarchyMeters
         );
 
@@ -444,12 +449,12 @@ export const demandGraph = async (req, res) => {
                 ? startOfYesterday
                     ? startOfYesterday
                     : '2025-03-26 00:00:00'
-                : '2025-03-26 00:00:00',
+                : startOfYesterday,
             process.env.NODE_ENV === 'development'
-                ? endOfYesterday
+                ? startOfYesterday
                     ? endOfYesterday
                     : '2025-03-26 23:59:59'
-                : '2025-03-26 23:59:59',
+                : endOfYesterday,
             hierarchyMeters
         );
 
@@ -498,13 +503,16 @@ export const demandGraph = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
 
+        const now = moment();
+
         sortedTimestamps.forEach((timestamp) => {
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
-            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
 
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
