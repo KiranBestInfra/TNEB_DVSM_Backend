@@ -390,7 +390,7 @@ export const demandGraph = async (req, res) => {
 
             const timeKey = record.datetime;
             if (!todayGroupedDemand[timeKey]) {
-                todayGroupedDemand[timeKey] = 0;
+                todayGroupedDemand[timeKey] = null;
             }
 
             todayGroupedDemand[timeKey] += demandMW;
@@ -426,7 +426,7 @@ export const demandGraph = async (req, res) => {
 
             const timeKey = record.datetime;
             if (!yesterdayGroupedDemand[timeKey]) {
-                yesterdayGroupedDemand[timeKey] = 0;
+                yesterdayGroupedDemand[timeKey] = null;
             }
 
             yesterdayGroupedDemand[timeKey] += demandMW;
@@ -468,7 +468,7 @@ export const demandGraph = async (req, res) => {
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
+            currentDayData.push(todayData ? todayData.actual_demand_mw : null);
 
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
@@ -476,7 +476,7 @@ export const demandGraph = async (req, res) => {
                     timestamp
             );
             previousDayData.push(
-                yesterdayData ? yesterdayData.actual_demand_mw : 0
+                yesterdayData ? yesterdayData.actual_demand_mw : null
             );
         });
 
