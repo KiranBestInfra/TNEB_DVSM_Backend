@@ -246,12 +246,16 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
@@ -265,12 +269,15 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -457,12 +464,16 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
@@ -476,12 +487,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -607,12 +621,17 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
+        const now = moment();
+
         sortedTimestamps.forEach((timestamp) => {
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
@@ -626,12 +645,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 ? yesterdayData.actual_demand_mw
                 : undefined;
 
-            if (todayValue !== undefined || yesterdayValue !== undefined) {
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
                 xAxis.push(timestamp);
-                if (todayValue !== undefined) {
+                if (todayValue !== undefined && todayValue != 0) {
                     currentDayData.push(todayValue);
                 }
-                if (yesterdayValue !== undefined) {
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
                     previousDayData.push(yesterdayValue);
                 }
             }
