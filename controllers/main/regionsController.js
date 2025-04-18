@@ -189,23 +189,33 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             );
 
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
-
                 const todayData = todayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -357,8 +367,6 @@ export const demandGraph = async (req, res) => {
             null,
             hierarchyMeters
         );
-        // const { startOfDay, endOfDay } = getTodayStartAndEnd();
-        // const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
         meterCal.forEach((meter) => {
             const id = meter.meter_serial_no.replace(/^0+/, '');
@@ -406,18 +414,16 @@ export const demandGraph = async (req, res) => {
 
         todayDemandData.forEach((record) => {
             const meterNo = record.meter_no.replace(/^0+/, '');
-
             const scalingFactor = meterMap[meterNo];
 
             if (scalingFactor === undefined) return;
 
             const demandMW = record.kwh * scalingFactor;
-
             const timeKey = record.datetime;
             if (!todayGroupedDemand[timeKey]) {
                 todayGroupedDemand[timeKey] = 0;
+                todayGroupedDemand[timeKey] = 0;
             }
-
             todayGroupedDemand[timeKey] += demandMW;
         });
 
@@ -490,8 +496,6 @@ export const demandGraph = async (req, res) => {
         );
 
         sortedTimestamps.forEach((timestamp) => {
-            xAxis.push(timestamp);
-
             const todayData = todayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===

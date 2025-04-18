@@ -247,23 +247,33 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
             );
 
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
-
                 const todayData = todayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -353,13 +363,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 pool,
                 accessValues,
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-27 00:00:00'
+                    ? startOfDay
+                        ? startOfDay
+                        : '2025-03-27 00:00:00'
                     : startOfDay,
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-27 23:59:59'
+                    ? endOfDay
+                        ? endOfDay
+                        : '2025-03-27 23:59:59'
                     : endOfDay,
-                startOfDay,
-                endOfDay,
                 hierarchyMeters
             );
 
@@ -367,13 +379,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 pool,
                 accessValues,
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-26 00:00:00'
+                    ? startOfYesterday
+                        ? startOfYesterday
+                        : '2025-03-26 00:00:00'
                     : startOfYesterday,
                 process.env.NODE_ENV === 'development'
-                    ? '2025-03-26 23:59:59'
+                    ? endOfYesterday
+                        ? endOfYesterday
+                        : '2025-03-26 23:59:59'
                     : endOfYesterday,
-                startOfYesterday,
-                endOfYesterday,
                 hierarchyMeters
             );
 
@@ -444,23 +458,33 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             );
 
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
-
                 const todayData = todayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -584,23 +608,33 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
         sortedTimestamps.forEach((timestamp) => {
-            xAxis.push(timestamp);
-
             const todayData = todayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            previousDayData.push(
-                yesterdayData ? yesterdayData.actual_demand_mw : 0
-            );
+
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (todayValue !== undefined || yesterdayValue !== undefined) {
+                xAxis.push(timestamp);
+                if (todayValue !== undefined) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined) {
+                    previousDayData.push(yesterdayValue);
+                }
+            }
         });
 
         const detailedGraphData = {

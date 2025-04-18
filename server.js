@@ -70,7 +70,6 @@ app.use(hpp());
 app.use(compression());
 
 const extractTokenData = async (req, res, next) => {
-    console.log(req.path);
     if (req.path.includes('/auth')) {
         return next();
     }

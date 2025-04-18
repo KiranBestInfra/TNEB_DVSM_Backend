@@ -10,7 +10,7 @@ import socketService from '../socketService.js';
 
 class RegionSocketHandler {
     constructor() {
-        this.updateInterval = 30000;
+        this.updateInterval = 900000;
     }
 
     initialize(socket) {
@@ -83,7 +83,7 @@ class RegionSocketHandler {
                     if (socket.connected) {
                         await this.sendDemandData(socket, regionId);
                     }
-                }, 30000);
+                }, this.updateInterval);
 
                 socket.demandIntervalId = intervalId;
             } catch (error) {
