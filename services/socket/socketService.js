@@ -16,7 +16,7 @@ class SocketService {
 
     initialize(server) {
         this.io = new Server(server, {
-            path: '/socket',
+            path: '/dsocket/socket',
             cors: {
                 origin: [
                     'http://localhost:5173',
@@ -36,7 +36,9 @@ class SocketService {
     }
 
     setupConnectionHandler() {
+        console.log('-----------Socket connection attempt-----------');
         this.io.on('connection', (socket) => {
+            console.log('-----------Socket connection inside-----------');
             regionSocketHandler.initialize(socket);
             edcSocketHandler.initialize(socket);
             substationSocketHandler.initialize(socket);
@@ -51,6 +53,14 @@ class SocketService {
                     clearInterval(this.intervalIds.get(socket.id));
                     this.intervalIds.delete(socket.id);
                 }
+            });
+
+            socket.on('connect_error', (error) => {
+                logger.error('Socket connection error:', error);
+            });
+
+            socket.on('connect_timeout', (timeout) => {
+                logger.error('Socket connection timeout:', timeout);
             });
         });
     }
