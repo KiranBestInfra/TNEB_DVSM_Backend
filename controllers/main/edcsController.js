@@ -265,12 +265,15 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -336,18 +339,25 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 meterMap[id] = meter.scaling_factor;
             });
 
+            // Get today's start and end times
+            // Use selected date for today's range
             const startOfDay = moment(selectedDate)
+                .tz('Asia/Kolkata')
                 .startOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
             const endOfDay = moment(selectedDate)
+                .tz('Asia/Kolkata')
                 .endOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
 
+            // Get yesterday's start and end times (one day before selected date)
             const startOfYesterday = moment(selectedDate)
+                .tz('Asia/Kolkata')
                 .subtract(1, 'days')
                 .startOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
             const endOfYesterday = moment(selectedDate)
+                .tz('Asia/Kolkata')
                 .subtract(1, 'days')
                 .endOf('day')
                 .format('YYYY-MM-DD HH:mm:ss');
@@ -469,12 +479,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -619,12 +632,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 ? yesterdayData.actual_demand_mw
                 : undefined;
 
-            if (todayValue !== undefined || yesterdayValue !== undefined) {
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
                 xAxis.push(timestamp);
-                if (todayValue !== undefined) {
+                if (todayValue !== undefined && todayValue != 0) {
                     currentDayData.push(todayValue);
                 }
-                if (yesterdayValue !== undefined) {
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
                     previousDayData.push(yesterdayValue);
                 }
             }
