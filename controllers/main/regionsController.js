@@ -403,12 +403,12 @@ export const demandGraph = async (req, res) => {
             pool,
             accessValues,
             process.env.NODE_ENV === 'development'
-                ? null
+                ? startOfDay
                     ? startOfDay
                     : '2025-03-27 00:00:00'
                 : startOfDay,
             process.env.NODE_ENV === 'development'
-                ? null
+                ? endOfDay
                     ? endOfDay
                     : '2025-03-27 23:59:59'
                 : endOfDay,
@@ -444,12 +444,12 @@ export const demandGraph = async (req, res) => {
             pool,
             accessValues,
             process.env.NODE_ENV === 'development'
-                ? null
+                ? startOfYesterday
                     ? startOfYesterday
                     : '2025-03-26 00:00:00'
                 : startOfYesterday,
             process.env.NODE_ENV === 'development'
-                ? null
+                ? startOfYesterday
                     ? endOfYesterday
                     : '2025-03-26 23:59:59'
                 : endOfYesterday,
