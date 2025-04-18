@@ -265,12 +265,15 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -469,12 +472,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -619,12 +625,15 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 ? yesterdayData.actual_demand_mw
                 : undefined;
 
-            if (todayValue !== undefined || yesterdayValue !== undefined) {
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
                 xAxis.push(timestamp);
-                if (todayValue !== undefined) {
+                if (todayValue !== undefined && todayValue != 0) {
                     currentDayData.push(todayValue);
                 }
-                if (yesterdayValue !== undefined) {
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
                     previousDayData.push(yesterdayValue);
                 }
             }
