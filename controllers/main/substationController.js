@@ -253,17 +253,23 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                const yesterdayData = yesterdayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+                const yesterdayData = yesterdayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
                 const todayValue = todayData
                     ? todayData.actual_demand_mw
@@ -440,17 +446,23 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
-                const yesterdayData = yesterdayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
+                const yesterdayData = yesterdayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
 
                 const todayValue = todayData
                     ? todayData.actual_demand_mw
@@ -591,17 +603,23 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
 
+        const now = moment();
+
         sortedTimestamps.forEach((timestamp) => {
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
-            const yesterdayData = yesterdayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
+            const yesterdayData = yesterdayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
 
             const todayValue = todayData
                 ? todayData.actual_demand_mw

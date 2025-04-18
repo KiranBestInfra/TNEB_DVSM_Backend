@@ -246,12 +246,16 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
@@ -460,12 +464,16 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            const now = moment();
+
             sortedTimestamps.forEach((timestamp) => {
-                const todayData = todayFinalResults.find(
-                    (d) =>
-                        moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                        timestamp
-                );
+                const todayData = todayFinalResults.find((d) => {
+                    const dataTime = moment(new Date(d.datetime));
+                    return (
+                        dataTime.format('HH:mm:ss') === timestamp &&
+                        dataTime.isSameOrBefore(now)
+                    );
+                });
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
@@ -613,12 +621,17 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
+        const now = moment();
+
         sortedTimestamps.forEach((timestamp) => {
-            const todayData = todayFinalResults.find(
-                (d) =>
-                    moment(new Date(d.datetime)).format('HH:mm:ss') ===
-                    timestamp
-            );
+            const todayData = todayFinalResults.find((d) => {
+                const dataTime = moment(new Date(d.datetime));
+                return (
+                    dataTime.format('HH:mm:ss') === timestamp &&
+                    dataTime.isSameOrBefore(now)
+                );
+            });
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
