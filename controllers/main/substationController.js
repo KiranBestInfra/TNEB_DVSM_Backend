@@ -265,13 +265,21 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                         timestamp
                 );
 
-                if (
-                    todayData?.actual_demand_mw !== undefined ||
-                    yesterdayData?.actual_demand_mw !== undefined
-                ) {
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
                     xAxis.push(timestamp);
-                    currentDayData.push(todayData?.actual_demand_mw);
-                    previousDayData.push(yesterdayData?.actual_demand_mw);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
                 }
             });
 
@@ -441,13 +449,21 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                         timestamp
                 );
 
-                if (
-                    todayData?.actual_demand_mw !== undefined ||
-                    yesterdayData?.actual_demand_mw !== undefined
-                ) {
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
                     xAxis.push(timestamp);
-                    currentDayData.push(todayData?.actual_demand_mw);
-                    previousDayData.push(yesterdayData?.actual_demand_mw);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
                 }
             });
 
@@ -581,13 +597,21 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     timestamp
             );
 
-            if (
-                todayData?.actual_demand_mw !== undefined ||
-                yesterdayData?.actual_demand_mw !== undefined
-            ) {
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (todayValue !== undefined || yesterdayValue !== undefined) {
                 xAxis.push(timestamp);
-                currentDayData.push(todayData?.actual_demand_mw);
-                previousDayData.push(yesterdayData?.actual_demand_mw);
+                if (todayValue !== undefined) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined) {
+                    previousDayData.push(yesterdayValue);
+                }
             }
         });
 

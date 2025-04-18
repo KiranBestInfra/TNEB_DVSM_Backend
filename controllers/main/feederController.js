@@ -143,13 +143,21 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                         timestamp
                 );
 
-                if (
-                    todayData?.actual_demand_mw !== undefined ||
-                    yesterdayData?.actual_demand_mw !== undefined
-                ) {
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
                     xAxis.push(timestamp);
-                    currentDayData.push(todayData?.actual_demand_mw);
-                    previousDayData.push(yesterdayData?.actual_demand_mw);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
                 }
             });
 
@@ -469,6 +477,7 @@ export const demandGraph = async (req, res) => {
                     moment(a, 'HH:mm:ss').valueOf() -
                     moment(b, 'HH:mm:ss').valueOf()
             );
+
             sortedTimestamps.forEach((timestamp) => {
                 const todayData = todayFinalResults.find(
                     (d) =>
@@ -481,13 +490,21 @@ export const demandGraph = async (req, res) => {
                         timestamp
                 );
 
-                if (
-                    todayData?.actual_demand_mw !== undefined ||
-                    yesterdayData?.actual_demand_mw !== undefined
-                ) {
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (todayValue !== undefined || yesterdayValue !== undefined) {
                     xAxis.push(timestamp);
-                    currentDayData.push(todayData?.actual_demand_mw);
-                    previousDayData.push(yesterdayData?.actual_demand_mw);
+                    if (todayValue !== undefined) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined) {
+                        previousDayData.push(yesterdayValue);
+                    }
                 }
             });
 
@@ -608,6 +625,7 @@ export const demandGraph = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
         sortedTimestamps.forEach((timestamp) => {
             const todayData = todayFinalResults.find(
                 (d) =>
@@ -620,13 +638,21 @@ export const demandGraph = async (req, res) => {
                     timestamp
             );
 
-            if (
-                todayData?.actual_demand_mw !== undefined ||
-                yesterdayData?.actual_demand_mw !== undefined
-            ) {
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (todayValue !== undefined || yesterdayValue !== undefined) {
                 xAxis.push(timestamp);
-                currentDayData.push(todayData?.actual_demand_mw);
-                previousDayData.push(yesterdayData?.actual_demand_mw);
+                if (todayValue !== undefined) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined) {
+                    previousDayData.push(yesterdayValue);
+                }
             }
         });
 
