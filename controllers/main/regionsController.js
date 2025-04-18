@@ -207,12 +207,15 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                     ? yesterdayData.actual_demand_mw
                     : undefined;
 
-                if (todayValue !== undefined || yesterdayValue !== undefined) {
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
                     xAxis.push(timestamp);
-                    if (todayValue !== undefined) {
+                    if (todayValue !== undefined && todayValue != 0) {
                         currentDayData.push(todayValue);
                     }
-                    if (yesterdayValue !== undefined) {
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
                         previousDayData.push(yesterdayValue);
                     }
                 }
@@ -508,9 +511,26 @@ export const demandGraph = async (req, res) => {
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            previousDayData.push(
-                yesterdayData ? yesterdayData.actual_demand_mw : 0
-            );
+
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
+                xAxis.push(timestamp);
+                if (todayValue !== undefined && todayValue != 0) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                    previousDayData.push(yesterdayValue);
+                }
+            }
         });
 
         const detailedGraphData = {
