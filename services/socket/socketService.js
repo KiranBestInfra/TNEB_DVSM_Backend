@@ -36,9 +36,7 @@ class SocketService {
     }
 
     setupConnectionHandler() {
-        console.log('-----------Socket connection attempt-----------');
         this.io.on('connection', (socket) => {
-            console.log('-----------Socket connection inside-----------');
             regionSocketHandler.initialize(socket);
             edcSocketHandler.initialize(socket);
             substationSocketHandler.initialize(socket);
