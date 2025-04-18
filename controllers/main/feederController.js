@@ -132,23 +132,36 @@ export const fetchFeederGraphs = async (socket, feeders) => {
             );
 
             sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
-
                 const todayData = todayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined && todayValue != 0) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -467,24 +480,38 @@ export const demandGraph = async (req, res) => {
                     moment(a, 'HH:mm:ss').valueOf() -
                     moment(b, 'HH:mm:ss').valueOf()
             );
-            sortedTimestamps.forEach((timestamp) => {
-                xAxis.push(timestamp);
 
+            sortedTimestamps.forEach((timestamp) => {
                 const todayData = todayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
                 const yesterdayData = yesterdayFinalResults.find(
                     (d) =>
                         moment(new Date(d.datetime)).format('HH:mm:ss') ===
                         timestamp
                 );
-                previousDayData.push(
-                    yesterdayData ? yesterdayData.actual_demand_mw : 0
-                );
+
+                const todayValue = todayData
+                    ? todayData.actual_demand_mw
+                    : undefined;
+                const yesterdayValue = yesterdayData
+                    ? yesterdayData.actual_demand_mw
+                    : undefined;
+
+                if (
+                    (todayValue !== undefined && todayValue != 0) ||
+                    (yesterdayValue !== undefined && yesterdayValue != 0)
+                ) {
+                    xAxis.push(timestamp);
+                    if (todayValue !== undefined && todayValue != 0) {
+                        currentDayData.push(todayValue);
+                    }
+                    if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                        previousDayData.push(yesterdayValue);
+                    }
+                }
             });
 
             const detailedGraphData = {
@@ -604,24 +631,38 @@ export const demandGraph = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
-        sortedTimestamps.forEach((timestamp) => {
-            xAxis.push(timestamp);
 
+        sortedTimestamps.forEach((timestamp) => {
             const todayData = todayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            currentDayData.push(todayData ? todayData.actual_demand_mw : 0);
-
             const yesterdayData = yesterdayFinalResults.find(
                 (d) =>
                     moment(new Date(d.datetime)).format('HH:mm:ss') ===
                     timestamp
             );
-            previousDayData.push(
-                yesterdayData ? yesterdayData.actual_demand_mw : 0
-            );
+
+            const todayValue = todayData
+                ? todayData.actual_demand_mw
+                : undefined;
+            const yesterdayValue = yesterdayData
+                ? yesterdayData.actual_demand_mw
+                : undefined;
+
+            if (
+                (todayValue !== undefined && todayValue != 0) ||
+                (yesterdayValue !== undefined && yesterdayValue != 0)
+            ) {
+                xAxis.push(timestamp);
+                if (todayValue !== undefined && todayValue != 0) {
+                    currentDayData.push(todayValue);
+                }
+                if (yesterdayValue !== undefined && yesterdayValue != 0) {
+                    previousDayData.push(yesterdayValue);
+                }
+            }
         });
 
         const detailedGraphData = {
