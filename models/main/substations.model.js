@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 30000;
+const QUERY_TIMEOUT = 60000;
 
 class Substations {
     async getTotalSubstations(connection) {
@@ -316,9 +316,9 @@ class Substations {
             throw error;
         }
     }
-    async getDemandTrendsData(  
+    async getDemandTrendsData(
         connection,
-        accessValues = [],      
+        accessValues = [],
         start,
         end,
         meters = null
