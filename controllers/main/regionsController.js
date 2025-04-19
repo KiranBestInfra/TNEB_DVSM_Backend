@@ -345,8 +345,10 @@ export const demandGraph = async (req, res) => {
         const regionID = user
             ? user.user_hierarchy_id
             : req.params.regionID || null;
+        const regionId = req.query.regionId;
+        const selectedDate =
+            regionId === 'main' ? req.query.date : req.params.date;
 
-        const selectedDate = req.params.date;
 
         let hierarchyMeters = null;
 
