@@ -310,7 +310,7 @@ class EDCs {
         }
     }
 
-    async getEdcCommMeterCounts(connection, edc, date) {
+    async getEdcCommMeterCounts(connection, edc) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -329,9 +329,9 @@ class EDCs {
                     ON ic.meter_no = m.meter_serial_no
                 WHERE edc.hierarchy_type_id = 11
                   AND edc.hierarchy_id = ?
-                  AND DATE(ic.device_date) = ?
+                  AND DATE(ic.device_date) = CURDATE()
                 `,
-                values: [edc, date],
+                values: [edc],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -345,7 +345,7 @@ class EDCs {
         }
     }
 
-    async getEdcNonCommMeterCounts(connection, edc, date) {
+    async getEdcNonCommMeterCounts(connection, edc) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -365,10 +365,10 @@ class EDCs {
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
-                      WHERE DATE(ic.device_date) = ?
+                      WHERE DATE(ic.device_date) = CURDATE()
                   )
                 `,
-                values: [edc, date],
+                values: [edc],
                 timeout: QUERY_TIMEOUT,
             });
 
