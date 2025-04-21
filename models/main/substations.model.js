@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 30000;
+const QUERY_TIMEOUT = 60000;
 
 class Substations {
     async getTotalSubstations(connection) {
@@ -359,7 +359,7 @@ class Substations {
             throw error;
         }
     }
-    async getSubstationCommMeterCounts(connection, substationId, date) {
+    async getSubstationCommMeterCounts(connection, substationId) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -373,10 +373,10 @@ class Substations {
                 JOIN meter m ON feeder.hierarchy_id = m.location_id
                 JOIN instant_comm ic ON ic.meter_no = m.meter_serial_no
                 WHERE edc.hierarchy_id = ?
-                AND DATE(ic.device_date) = ?
+                AND DATE(ic.device_date) = CURDATE()
                 AND substation.hierarchy_type_id = 35
             `,
-                values: [substationId, date],
+                values: [substationId],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -390,7 +390,7 @@ class Substations {
         }
     }
 
-    async getSubstationNonCommMeterCounts(connection, substationId, date) {
+    async getSubstationNonCommMeterCounts(connection, substationId) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -407,10 +407,10 @@ class Substations {
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
-                      WHERE DATE(ic.device_date) = ?
+                      WHERE DATE(ic.device_date) = CURDATE()
                   )
             `,
-                values: [substationId, date],
+                values: [substationId],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -423,7 +423,7 @@ class Substations {
             throw error;
         }
     }
-    async getFeedersCommMeterCounts(connection, substationId, date) {
+    async getFeedersCommMeterCounts(connection, substationId) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -445,10 +445,10 @@ class Substations {
                 AND m.meter_serial_no IN (
                     SELECT DISTINCT ic.meter_no 
                     FROM instant_comm ic 
-                    WHERE DATE(ic.device_date) = ?
-  );
+                    WHERE DATE(ic.device_date) = CURDATE()
+                );
             `,
-                values: [substationId, date],
+                values: [substationId],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -461,32 +461,32 @@ class Substations {
             throw error;
         }
     }
-    async getFeedersNonCommMeterCounts(connection, substationId, date) {
+    async getFeedersNonCommMeterCounts(connection, substationId) {
         try {
             const [rows] = await connection.query({
                 sql: `
                 SELECT 
-    COUNT(DISTINCT m.meter_serial_no) AS comm_meters
-FROM hierarchy region
-JOIN hierarchy edc 
-    ON region.hierarchy_id = edc.parent_id 
-JOIN hierarchy district 
-    ON edc.hierarchy_id = district.parent_id  
-JOIN hierarchy substation 
-    ON district.hierarchy_id = substation.parent_id 
-JOIN hierarchy feeder 
-    ON substation.hierarchy_id = feeder.parent_id 
-JOIN meter m 
-    ON feeder.hierarchy_id = m.location_id
-WHERE substation.hierarchy_type_id = 35
-  AND substation.hierarchy_id = ?
-  AND m.meter_serial_no NOT IN (
-      SELECT DISTINCT ic.meter_no 
-      FROM instant_comm ic 
-      WHERE DATE(ic.device_date) = ?
-  );
+                    COUNT(DISTINCT m.meter_serial_no) AS comm_meters
+                FROM hierarchy region
+                JOIN hierarchy edc 
+                    ON region.hierarchy_id = edc.parent_id 
+                JOIN hierarchy district 
+                    ON edc.hierarchy_id = district.parent_id  
+                JOIN hierarchy substation 
+                    ON district.hierarchy_id = substation.parent_id 
+                JOIN hierarchy feeder 
+                    ON substation.hierarchy_id = feeder.parent_id 
+                JOIN meter m 
+                    ON feeder.hierarchy_id = m.location_id
+                WHERE substation.hierarchy_type_id = 35
+                AND substation.hierarchy_id = ?
+                AND m.meter_serial_no NOT IN (
+                    SELECT DISTINCT ic.meter_no 
+                    FROM instant_comm ic 
+                    WHERE DATE(ic.device_date) = CURDATE()
+                );
             `,
-                values: [substationId, date],
+                values: [substationId],
                 timeout: QUERY_TIMEOUT,
             });
 
