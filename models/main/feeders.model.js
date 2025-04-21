@@ -94,6 +94,7 @@ class Feeders {
                         JOIN meter 
                             ON region.hierarchy_id = meter.location_id 
                         WHERE region.hierarchy_type_id = ?  
+                        AND region.sub_type = 6
                         AND region.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,

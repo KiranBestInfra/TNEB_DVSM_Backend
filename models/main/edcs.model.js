@@ -165,7 +165,8 @@ class EDCs {
                             ON substation.hierarchy_id = feeder.parent_id  
                         JOIN meter 
                             ON feeder.hierarchy_id = meter.location_id 
-                        WHERE edc.hierarchy_type_id = ?  
+                        WHERE edc.hierarchy_type_id = ?
+                        AND feeder.sub_type = 6 
                         AND edc.hierarchy_id = ?
                     `,
                     timeout: QUERY_TIMEOUT,
