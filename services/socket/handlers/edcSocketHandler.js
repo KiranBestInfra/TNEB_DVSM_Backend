@@ -14,7 +14,6 @@ class EdcSocketHandler {
     }
 
     initialize(socket) {
-        // Subscribe to EDC graphs
         socket.on('subscribeEdc', async (data) => {
             if (!data || !data.edcs || !Array.isArray(data.edcs)) {
                 logger.error('Invalid EDC subscription data received');
@@ -56,7 +55,6 @@ class EdcSocketHandler {
             }
         });
 
-        // Get EDC widgets data
         socket.on('getEdcWidgets', async (data) => {
             try {
                 const mockReq = {
@@ -85,7 +83,6 @@ class EdcSocketHandler {
             }
         });
 
-        // Get substation total widgets for an EDC
         socket.on('getSubstationTotalWidgets', async (data) => {
             try {
                 const mockReq = {
@@ -117,7 +114,6 @@ class EdcSocketHandler {
             }
         });
 
-        // Get EDC demand graph details
         socket.on('getEdcDemandGraphDetails', async (data) => {
             try {
                 const mockReq = {

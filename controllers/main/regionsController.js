@@ -188,15 +188,15 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
-            sortedTimestamps.splice(-2);
-
             const now = moment();
             sortedTimestamps.forEach((timestamp) => {
                 const todayData = todayFinalResults.find((d) => {
                     const dataTime = moment(new Date(d.datetime));
+                    const timeDiff = now.diff(dataTime, 'minutes');
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
-                        dataTime.isSameOrBefore(now)
+                        dataTime.isSameOrBefore(now) &&
+                        timeDiff > 45
                     );
                 });
 
@@ -510,16 +510,16 @@ export const demandGraph = async (req, res) => {
                 moment(b, 'HH:mm:ss').valueOf()
         );
 
-        sortedTimestamps.splice(-2);
-
         const now = moment();
 
         sortedTimestamps.forEach((timestamp) => {
             const todayData = todayFinalResults.find((d) => {
                 const dataTime = moment(new Date(d.datetime));
+                const timeDiff = now.diff(dataTime, 'minutes');
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
-                    dataTime.isSameOrBefore(now)
+                    dataTime.isSameOrBefore(now) &&
+                    timeDiff > 45
                 );
             });
 
