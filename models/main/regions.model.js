@@ -352,6 +352,7 @@ class Regions {
             const [results] = await connection.query(
                 {
                     sql: `
+<<<<<<< HEAD
                     SELECT DISTINCT meter.meter_serial_no
                     FROM hierarchy region
                     JOIN hierarchy edc 
@@ -367,6 +368,24 @@ class Regions {
                     WHERE region.hierarchy_type_id = ? AND feeder.sub_type = 6
                     AND region.hierarchy_id IN (${allRegionIds});
                 `,
+=======
+                        SELECT DISTINCT meter.meter_serial_no
+                        FROM hierarchy region
+                        JOIN hierarchy edc 
+                            ON region.hierarchy_id = edc.parent_id 
+                        JOIN hierarchy district 
+                            ON edc.hierarchy_id = district.parent_id 
+                        JOIN hierarchy substation 
+                            ON district.hierarchy_id = substation.parent_id 
+                        JOIN hierarchy feeder 
+                            ON substation.hierarchy_id = feeder.parent_id 
+                        JOIN meter 
+                            ON feeder.hierarchy_id = meter.location_id 
+                        WHERE region.hierarchy_type_id = ?
+                        AND feeder.sub_type = 6
+                        AND region.hierarchy_id = ?;
+                    `,
+>>>>>>> 8422761ce3befc041dd78d667cdd252dcb24fad2
                     timeout: QUERY_TIMEOUT,
                 },
                 params
