@@ -351,7 +351,6 @@ export const demandGraph = async (req, res) => {
         let hierarchyMeters = null;
         const regionDetails = await REGIONS.getRegionNames(pool);
         const regionIds = regionDetails.map((region) => region.hierarchy_id);
-
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(
                 pool,
@@ -365,7 +364,7 @@ export const demandGraph = async (req, res) => {
                 regionHierarchy.hierarchy_id
             );
             hierarchyMeters = meters.map((meter) => meter.meter_serial_no);
-        } else if (regionId === 'main') {
+        } else {
             const hierarchy_type_id = 10;
             const meters = await REGIONS.getRegionMeters(
                 pool,
