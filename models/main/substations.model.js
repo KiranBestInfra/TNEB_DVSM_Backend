@@ -1,4 +1,4 @@
-const QUERY_TIMEOUT = 60000;
+const QUERY_TIMEOUT = 30000;
 
 class Substations {
     async getTotalSubstations(connection) {
@@ -268,7 +268,7 @@ class Substations {
                         JOIN meter 
                             ON feeder.hierarchy_id = meter.location_id 
                         WHERE substation.hierarchy_type_id = ?
-                        AND substation.hierarchy_id = ?        
+                        AND substation.hierarchy_id = ?      
                     `,
                     timeout: QUERY_TIMEOUT,
                 },
@@ -446,7 +446,7 @@ class Substations {
                     SELECT DISTINCT ic.meter_no 
                     FROM instant_comm ic 
                     WHERE DATE(ic.device_date) = CURDATE()
-                );
+                    );
             `,
                 values: [substationId],
                 timeout: QUERY_TIMEOUT,

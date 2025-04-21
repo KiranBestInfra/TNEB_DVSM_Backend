@@ -35,10 +35,7 @@ export const getEDCWidgets = async (req, res) => {
         );
         const feederCounts = await EDCs.getEdcFeederCounts(pool, region);
 
-        const commMeters = await Regions.getRegionCommMeterCounts(
-            pool,
-            region
-        );
+        const commMeters = await Regions.getRegionCommMeterCounts(pool, region);
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
             region
@@ -65,7 +62,6 @@ export const getSubstationTotalWidgets = async (req, res) => {
     const user = req.user || null;
     const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
 
-
     if (user && !edcsID) {
         const edcs = await EDCs.getEdcNamesByRegion(
             pool,
@@ -90,10 +86,7 @@ export const getSubstationTotalWidgets = async (req, res) => {
         );
         const totalFeeders = await EDCs.getTotalFeeders(pool);
         const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID);
-        const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
-            pool,
-            edcsID
-        );
+        const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(pool, edcsID);
         const regionFeederNames = await Feeders.getFeederNamesByEdcId(
             pool,
             edcsID
@@ -136,8 +129,8 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const meterMap = {};
@@ -148,7 +141,7 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -180,7 +173,7 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -193,7 +186,7 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -323,8 +316,8 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 edcHierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const meterMap = {};
@@ -335,7 +328,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -398,7 +391,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -411,7 +404,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -528,7 +521,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
         meterCal.forEach((meter) => {
-            const id = meter.meter_serial_no.replace(/^0+/, '');
+            const id = meter.meter_serial_no;
             meterMap[id] = meter.scaling_factor;
         });
 
@@ -558,7 +551,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
         const yesterdayGroupedDemand = {};
 
         todayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
             if (scalingFactor === undefined) return;
 
@@ -571,7 +564,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
         });
 
         yesterdayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
             if (scalingFactor === undefined) return;
 

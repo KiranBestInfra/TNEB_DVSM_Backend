@@ -339,31 +339,37 @@ class Regions {
         connection,
         accessValues = [],
         hierarchy_type_id,
-        hierarchy_id
+        hierarchy_id,
+        regionIds = []
     ) {
         try {
+            const allRegionIds = hierarchy_id
+                ? hierarchy_id
+                : regionIds.map(() => '?').join(',');
+            const params = hierarchy_id
+                ? [hierarchy_type_id, hierarchy_id]
+                : [hierarchy_type_id, allRegionIds];
             const [results] = await connection.query(
                 {
                     sql: `
-                        SELECT DISTINCT meter.meter_serial_no
-                        FROM hierarchy region
-                        JOIN hierarchy edc 
-                            ON region.hierarchy_id = edc.parent_id 
-                        JOIN hierarchy district 
-                            ON edc.hierarchy_id = district.parent_id 
-                        JOIN hierarchy substation 
-                            ON district.hierarchy_id = substation.parent_id 
-                        JOIN hierarchy feeder 
-                            ON substation.hierarchy_id = feeder.parent_id 
-                        JOIN meter 
-                            ON feeder.hierarchy_id = meter.location_id 
-                        WHERE region.hierarchy_type_id = ?
-                        AND feeder.sub_type = 6
-                        AND region.hierarchy_id = ?;
-                    `,
+                    SELECT DISTINCT meter.meter_serial_no
+                    FROM hierarchy region
+                    JOIN hierarchy edc 
+                        ON region.hierarchy_id = edc.parent_id 
+                    JOIN hierarchy district 
+                        ON edc.hierarchy_id = district.parent_id 
+                    JOIN hierarchy substation 
+                        ON district.hierarchy_id = substation.parent_id 
+                    JOIN hierarchy feeder 
+                        ON substation.hierarchy_id = feeder.parent_id 
+                    JOIN meter 
+                        ON feeder.hierarchy_id = meter.location_id 
+                    WHERE region.hierarchy_type_id = ? AND feeder.sub_type = 6
+                    AND region.hierarchy_id IN (${allRegionIds});
+                `,
                     timeout: QUERY_TIMEOUT,
                 },
-                [hierarchy_type_id, hierarchy_id]
+                params
             );
 
             return results;
@@ -390,7 +396,7 @@ class Regions {
                             ON h.hierarchy_type_id = hm.hierarchy_type_id 
                         WHERE hm.hierarchy_title = "REGION"
                         AND h.hierarchy_name = ?
-                        OR h.hierarchy_id = ?
+                        OR h.hierarchy_id = ? 
                     `,
                     timeout: QUERY_TIMEOUT,
                 },

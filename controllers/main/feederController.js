@@ -25,8 +25,8 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const meterMap = {};
@@ -37,7 +37,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -69,7 +69,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -82,7 +82,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -374,8 +374,8 @@ export const demandGraph = async (req, res) => {
                 feederHierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const { startOfDay, endOfDay } = getTodayStartAndEnd();
@@ -390,7 +390,7 @@ export const demandGraph = async (req, res) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -422,7 +422,7 @@ export const demandGraph = async (req, res) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -435,7 +435,7 @@ export const demandGraph = async (req, res) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -551,7 +551,7 @@ export const demandGraph = async (req, res) => {
         );
 
         meterCal.forEach((meter) => {
-            const id = meter.meter_serial_no.replace(/^0+/, '');
+            const id = meter.meter_serial_no;
             meterMap[id] = meter.scaling_factor;
         });
 
@@ -581,7 +581,7 @@ export const demandGraph = async (req, res) => {
         const yesterdayGroupedDemand = {};
 
         todayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
             if (scalingFactor === undefined) return;
 
@@ -594,7 +594,7 @@ export const demandGraph = async (req, res) => {
         });
 
         yesterdayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
             if (scalingFactor === undefined) return;
 
