@@ -5,10 +5,17 @@ class Feeders {
         try {
             const [[{ totalFeeders }]] = await connection.query({
                 sql: `
-                        SELECT COUNT(hierarchy_name) AS totalFeeders 
-                        FROM hierarchy h, hierarchy_master hm 
-                        WHERE h.hierarchy_type_id = hm.hierarchy_type_id 
-                        AND hm.hierarchy_title = "FEEDER"
+                        SELECT COUNT(DISTINCT feeder.hierarchy_id) AS totalFeeders
+                        FROM hierarchy AS region
+                        LEFT JOIN hierarchy AS edc  
+                            ON region.hierarchy_id = edc.parent_id   
+                        LEFT JOIN hierarchy AS district 
+                            ON edc.hierarchy_id = district.parent_id  
+                        LEFT JOIN hierarchy AS substation 
+                            ON district.hierarchy_id = substation.parent_id  
+                        LEFT JOIN hierarchy AS feeder 
+                            ON substation.hierarchy_id = feeder.parent_id   
+                        WHERE region.hierarchy_type_id = 10;
                     `,
                 timeout: QUERY_TIMEOUT,
             });

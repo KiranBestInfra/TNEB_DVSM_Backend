@@ -187,7 +187,7 @@ class Regions {
                   SELECT meter_serial_no FROM meter 
                   WHERE location_id IS NOT NULL
               ) 
-              AND DATE(device_date) = '2025-03-09';
+              AND DATE(device_date) = CURDATE();
           `,
                 timeout: QUERY_TIMEOUT,
             });
@@ -202,13 +202,13 @@ class Regions {
             const [[{ nonCommMeters }]] = await connection.query({
                 sql: `
               SELECT COUNT(DISTINCT meter_serial_no) AS nonCommMeters
-              FROM meter 
-              WHERE location_id IS NOT NULL 
-              AND meter_serial_no NOT IN (
-                  SELECT DISTINCT meter_no FROM instant_comm 
-                  WHERE DATE(device_date) = '2025-03-09'
-              );
-          `,
+                FROM meter 
+                WHERE location_id IS NOT NULL
+                AND meter_serial_no NOT IN (
+                    SELECT DISTINCT meter_no 
+                    FROM instant_comm 
+                    WHERE DATE(device_date) = CURDATE()
+                );`,
                 timeout: QUERY_TIMEOUT,
             });
             return nonCommMeters;
@@ -401,8 +401,7 @@ class Regions {
             throw error;
         }
     }
-
-    async getRegionCommMeterCounts(connection, region, date) {
+    async getRegionCommMeterCounts(connection, region) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -423,9 +422,9 @@ class Regions {
                     ON ic.meter_no = m.meter_serial_no
                 WHERE region.hierarchy_type_id = 10
                   AND (region.hierarchy_name = ? OR region.hierarchy_id = ?)
-                  AND DATE(ic.device_date) = ?
+                  AND DATE(ic.device_date) = CURDATE()
             `,
-                values: [region, region, date],
+                values: [region, region],
                 timeout: QUERY_TIMEOUT,
             });
 
@@ -438,7 +437,7 @@ class Regions {
             throw error;
         }
     }
-    async getRegionNonCommMeterCounts(connection, region, date) {
+    async getRegionNonCommMeterCounts(connection, region) {
         try {
             const [rows] = await connection.query({
                 sql: `
@@ -460,10 +459,10 @@ class Regions {
                   AND m.meter_serial_no NOT IN (
                       SELECT DISTINCT ic.meter_no 
                       FROM instant_comm ic 
-                      WHERE DATE(ic.device_date) = ?
+                      WHERE DATE(ic.device_date) = CURDATE()
                   )
             `,
-                values: [region, region, date],
+                values: [region, region],
                 timeout: QUERY_TIMEOUT,
             });
 

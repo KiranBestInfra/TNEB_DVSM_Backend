@@ -14,7 +14,7 @@ export const getEDCWidgets = async (req, res) => {
         const user = req.user || null;
         const region = user ? user.user_hierarchy_id : req.params.region;
 
-        const deviceDate = '2025-03-09';
+        // const deviceDate = '2025-03-09';
         if (!region) {
             return res.status(400).json({
                 status: 'error',
@@ -37,13 +37,11 @@ export const getEDCWidgets = async (req, res) => {
 
         const commMeters = await Regions.getRegionCommMeterCounts(
             pool,
-            region,
-            deviceDate
+            region
         );
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
-            region,
-            deviceDate
+            region
         );
 
         res.status(200).json({
@@ -67,7 +65,6 @@ export const getSubstationTotalWidgets = async (req, res) => {
     const user = req.user || null;
     const edcsID = (req.params.edcs || null).toUpperCase().replace(/-/g, ' ');
 
-    const date = '2025-03-09';
 
     if (user && !edcsID) {
         const edcs = await EDCs.getEdcNamesByRegion(
@@ -92,11 +89,10 @@ export const getSubstationTotalWidgets = async (req, res) => {
             edcsID
         );
         const totalFeeders = await EDCs.getTotalFeeders(pool);
-        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID, date);
+        const commMeters = await EDCs.getEdcCommMeterCounts(pool, edcsID);
         const nonCommMeters = await EDCs.getEdcNonCommMeterCounts(
             pool,
-            edcsID,
-            date
+            edcsID
         );
         const regionFeederNames = await Feeders.getFeederNamesByEdcId(
             pool,

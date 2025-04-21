@@ -303,7 +303,6 @@ export const getFeedersBySubstationName = async (req, res) => {
     try {
         const user = req.user || null;
         const substationId = req.params.substationId;
-        const date = '2025-03-09';
 
         if (user && !substationId) {
             const substations = await Substations.getSubstationNamesByRegion(
@@ -333,13 +332,11 @@ export const getFeedersBySubstationName = async (req, res) => {
         );
         const commMeters = await Substations.getFeedersCommMeterCounts(
             pool,
-            substationId,
-            date
+            substationId
         );
         const nonCommMeters = await Substations.getFeedersNonCommMeterCounts(
             pool,
-            substationId,
-            date
+            substationId
         );
 
         res.status(200).json({
