@@ -321,7 +321,6 @@ class Regions {
                 },
                 queryParams
             );
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {
