@@ -235,6 +235,8 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            sortedTimestamps.splice(-2);
+
             const now = moment();
 
             sortedTimestamps.forEach((timestamp) => {
@@ -453,6 +455,8 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            sortedTimestamps.splice(-2);
+
             const now = moment();
 
             sortedTimestamps.forEach((timestamp) => {
@@ -610,6 +614,8 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
+        sortedTimestamps.splice(-2);
 
         const now = moment();
 

@@ -188,6 +188,8 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            sortedTimestamps.splice(-2);
+
             const now = moment();
             sortedTimestamps.forEach((timestamp) => {
                 const todayData = todayFinalResults.find((d) => {
@@ -507,6 +509,8 @@ export const demandGraph = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
+        sortedTimestamps.splice(-2);
 
         const now = moment();
 
