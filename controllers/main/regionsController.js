@@ -82,8 +82,8 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                 hierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const meterMap = {};
@@ -94,7 +94,7 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -126,7 +126,7 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -139,7 +139,7 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -348,9 +348,9 @@ export const demandGraph = async (req, res) => {
         const regionId = req.query.regionId;
         const selectedDate =
             regionId === 'main' ? req.query.date : req.params.date;
-
-
         let hierarchyMeters = null;
+        const regionDetails = await REGIONS.getRegionNames(pool);
+        const regionIds = regionDetails.map((region) => region.hierarchy_id);
 
         if (regionID) {
             const regionHierarchy = await REGIONS.getHierarchyByRegion(
@@ -364,10 +364,16 @@ export const demandGraph = async (req, res) => {
                 regionHierarchy.hierarchy_type_id,
                 regionHierarchy.hierarchy_id
             );
-
-            hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            hierarchyMeters = meters.map((meter) => meter.meter_serial_no);
+        } else if (regionId === 'main') {
+            const hierarchy_type_id = 10;
+            const meters = await REGIONS.getRegionMeters(
+                pool,
+                null,
+                hierarchy_type_id,
+                regionIds
             );
+            hierarchyMeters = meters.map((meter) => meter.meter_serial_no);
         }
 
         const meterMap = {};
@@ -378,7 +384,7 @@ export const demandGraph = async (req, res) => {
         );
 
         meterCal.forEach((meter) => {
-            const id = meter.meter_serial_no.replace(/^0+/, '');
+            const id = meter.meter_serial_no;
             meterMap[id] = meter.scaling_factor;
         });
         const startOfDay = moment(selectedDate)
@@ -421,7 +427,7 @@ export const demandGraph = async (req, res) => {
         const yesterdayGroupedDemand = {};
 
         todayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
 
             if (scalingFactor === undefined) return;
@@ -459,7 +465,7 @@ export const demandGraph = async (req, res) => {
         );
 
         yesterdayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
 
             const scalingFactor = meterMap[meterNo];
 
