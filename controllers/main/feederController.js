@@ -131,6 +131,8 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            sortedTimestamps.splice(-2);
+
             const now = moment();
 
             sortedTimestamps.forEach((timestamp) => {
@@ -484,6 +486,8 @@ export const demandGraph = async (req, res) => {
                     moment(b, 'HH:mm:ss').valueOf()
             );
 
+            sortedTimestamps.splice(-2);
+
             const now = moment();
 
             sortedTimestamps.forEach((timestamp) => {
@@ -640,6 +644,8 @@ export const demandGraph = async (req, res) => {
                 moment(a, 'HH:mm:ss').valueOf() -
                 moment(b, 'HH:mm:ss').valueOf()
         );
+
+        sortedTimestamps.splice(-2);
 
         const now = moment();
 
