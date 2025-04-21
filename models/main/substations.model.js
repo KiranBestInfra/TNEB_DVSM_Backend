@@ -268,6 +268,7 @@ class Substations {
                         JOIN meter 
                             ON feeder.hierarchy_id = meter.location_id 
                         WHERE substation.hierarchy_type_id = ?
+                        AND feeder.sub_type = 6
                         AND substation.hierarchy_id = ?      
                     `,
                     timeout: QUERY_TIMEOUT,
