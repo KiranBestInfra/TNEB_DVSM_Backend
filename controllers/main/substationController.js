@@ -17,7 +17,6 @@ export const getSubstationWidgets = async (req, res) => {
         const edcs = req.params.edcs || '';
 
         const param = region ? region : edcs;
-        const deviceDate = '2025-03-09';
 
         if (!region) {
             return res.status(400).json({
@@ -34,15 +33,10 @@ export const getSubstationWidgets = async (req, res) => {
             pool,
             param
         );
-        const commMeters = await Regions.getRegionCommMeterCounts(
-            pool,
-            region,
-            deviceDate
-        );
+        const commMeters = await Regions.getRegionCommMeterCounts(pool, region);
         const nonCommMeters = await Regions.getRegionNonCommMeterCounts(
             pool,
-            region,
-            deviceDate
+            region
         );
 
         const substationFeederCounts = Array.isArray(feederCounts)
@@ -71,7 +65,6 @@ export const getEdcSubstationWidgets = async (req, res) => {
     try {
         const user = req.user || null;
         const edcID = req.params.edcs || null;
-        // const regionId = req.params.region || null;
 
         if (!edcID) {
             return res.status(400).json({
@@ -147,8 +140,8 @@ export const fetchSubstationGraphs = async (socket, substations) => {
             );
             //count++;
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const meterMap = {};
@@ -159,7 +152,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -191,7 +184,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -204,7 +197,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -258,9 +251,11 @@ export const fetchSubstationGraphs = async (socket, substations) => {
             sortedTimestamps.forEach((timestamp) => {
                 const todayData = todayFinalResults.find((d) => {
                     const dataTime = moment(new Date(d.datetime));
+                    const timeDiff = now.diff(dataTime, 'minutes');
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
-                        dataTime.isSameOrBefore(now)
+                        dataTime.isSameOrBefore(now) &&
+                        timeDiff > 45
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -337,8 +332,8 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 substationHierarchy.hierarchy_id
             );
 
-            const hierarchyMeters = meters.map((meter) =>
-                meter.meter_serial_no.replace(/^0+/, '')
+            const hierarchyMeters = meters.map(
+                (meter) => meter.meter_serial_no
             );
 
             const meterMap = {};
@@ -349,7 +344,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             );
 
             meterCal.forEach((meter) => {
-                const id = meter.meter_serial_no.replace(/^0+/, '');
+                const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
 
@@ -406,7 +401,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             const yesterdayGroupedDemand = {};
 
             todayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -419,7 +414,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             });
 
             yesterdayDemandData.forEach((record) => {
-                const meterNo = record.meter_no.replace(/^0+/, '');
+                const meterNo = record.meter_no;
                 const scalingFactor = meterMap[meterNo];
                 if (scalingFactor === undefined) return;
 
@@ -473,9 +468,11 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
             sortedTimestamps.forEach((timestamp) => {
                 const todayData = todayFinalResults.find((d) => {
                     const dataTime = moment(new Date(d.datetime));
+                    const timeDiff = now.diff(dataTime, 'minutes');
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
-                        dataTime.isSameOrBefore(now)
+                        dataTime.isSameOrBefore(now) &&
+                        timeDiff > 45
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -535,7 +532,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
         );
 
         meterCal.forEach((meter) => {
-            const id = meter.meter_serial_no.replace(/^0+/, '');
+            const id = meter.meter_serial_no;
             meterMap[id] = meter.scaling_factor;
         });
 
@@ -565,7 +562,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
         const yesterdayGroupedDemand = {};
 
         todayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
             if (scalingFactor === undefined) return;
 
@@ -578,7 +575,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
         });
 
         yesterdayDemandData.forEach((record) => {
-            const meterNo = record.meter_no.replace(/^0+/, '');
+            const meterNo = record.meter_no;
             const scalingFactor = meterMap[meterNo];
             if (scalingFactor === undefined) return;
 
@@ -630,9 +627,11 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
         sortedTimestamps.forEach((timestamp) => {
             const todayData = todayFinalResults.find((d) => {
                 const dataTime = moment(new Date(d.datetime));
+                const timeDiff = now.diff(dataTime, 'minutes');
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
-                    dataTime.isSameOrBefore(now)
+                    dataTime.isSameOrBefore(now) &&
+                    timeDiff > 45
                 );
             });
             const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -723,17 +722,14 @@ export const getFeedersDataBySubstation = async (req, res) => {
             }
         }
 
-        const date = '2025-03-09';
         const commMeters = await Substations.getSubstationCommMeterCounts(
             pool,
-            substationId,
-            date
+            substationId
         );
 
         const nonCommMeters = await Substations.getSubstationNonCommMeterCounts(
             pool,
-            substationId,
-            date
+            substationId
         );
 
         res.status(200).json({

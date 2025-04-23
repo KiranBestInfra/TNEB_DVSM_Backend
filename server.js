@@ -262,7 +262,7 @@ server.listen(config.SOCKET_PORT, () => {
 });
 
 app.listen(config.PORT, () => {
-    logger.info(`Server is running on port ${config.PORT}`);
+    logger.info(`Server is running on port: ${config.PORT}`);
 });
 
 // const passworGenerator = async () => {
