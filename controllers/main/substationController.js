@@ -119,8 +119,6 @@ export const getEdcSubstationWidgets = async (req, res) => {
 
 export const fetchSubstationGraphs = async (socket, substations) => {
     try {
-        // const regionNames = await REGIONS.getRegionNames(pool);
-
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 

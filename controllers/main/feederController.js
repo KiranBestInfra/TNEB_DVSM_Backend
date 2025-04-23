@@ -25,6 +25,11 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 hierarchy.hierarchy_id
             );
 
+            // Skip if no meters found
+            if (!meters || meters.length === 0) {
+                continue;
+            }
+
             const hierarchyMeters = meters.map(
                 (meter) => meter.meter_serial_no
             );
