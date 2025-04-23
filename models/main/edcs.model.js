@@ -173,7 +173,6 @@ class EDCs {
                 },
                 [hierarchy_type_id, hierarchy_id]
             );
-
             return results;
         } catch (error) {
             if (error.code === 'PROTOCOL_SEQUENCE_TIMEOUT') {

@@ -132,7 +132,6 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
             const hierarchyMeters = meters.map(
                 (meter) => meter.meter_serial_no
             );
-
             const meterMap = {};
             const meterCal = await EDCs.getMeterCalculation(
                 pool,
@@ -144,7 +143,6 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                 const id = meter.meter_serial_no;
                 meterMap[id] = meter.scaling_factor;
             });
-
             const todayDemandData = await EDCs.getDemandTrendsData(
                 pool,
                 null,
@@ -318,7 +316,6 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 edcHierarchy.hierarchy_type_id,
                 edcHierarchy.hierarchy_id
             );
-
             const hierarchyMeters = meters.map(
                 (meter) => meter.meter_serial_no
             );
