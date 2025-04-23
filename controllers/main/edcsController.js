@@ -244,7 +244,7 @@ export const fetchEdcGraphs = async (socket, edcNames) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
 
@@ -465,7 +465,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find(
@@ -625,7 +625,7 @@ export const getEdcDemandGraphDetails = async (req, res) => {
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
                     dataTime.isSameOrBefore(now) &&
-                    timeDiff > 45
+                    timeDiff > 30
                 );
             });
             const yesterdayData = yesterdayFinalResults.find(
