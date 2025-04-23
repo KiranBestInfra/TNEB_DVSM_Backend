@@ -16,7 +16,6 @@ class FeederSocketHandler {
     }
 
     initialize(socket) {
-        // Subscribe to feeder graphs
         socket.on('subscribeFeeder', async (data) => {
             if (!data || !data.feeders || !Array.isArray(data.feeders)) {
                 logger.error('Invalid feeder subscription data received');
@@ -58,7 +57,6 @@ class FeederSocketHandler {
             }
         });
 
-        // Get feeders data by region
         socket.on('getFeedersDataByRegion', async (data) => {
             try {
                 const mockReq = {

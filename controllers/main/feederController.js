@@ -25,6 +25,31 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                 hierarchy.hierarchy_id
             );
 
+            if (!meters || meters.length === 0) {
+                const detailedGraphData = {
+                    xAxis: [],
+                    series: [
+                        {
+                            name: 'Current Day',
+                            data: [],
+                        },
+                        {
+                            name: 'Previous Day',
+                            data: [],
+                        },
+                    ],
+                };
+
+                feederDemandData[feeder] = detailedGraphData;
+                if (feederDemandData[feeder]) {
+                    socket.emit('feederUpdate', {
+                        feeder,
+                        graphData: feederDemandData[feeder],
+                    });
+                }
+                continue;
+            }
+
             const hierarchyMeters = meters.map(
                 (meter) => meter.meter_serial_no
             );
@@ -140,7 +165,7 @@ export const fetchFeederGraphs = async (socket, feeders) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -495,7 +520,7 @@ export const demandGraph = async (req, res) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -654,7 +679,7 @@ export const demandGraph = async (req, res) => {
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
                     dataTime.isSameOrBefore(now) &&
-                    timeDiff > 45
+                    timeDiff > 30
                 );
             });
             const yesterdayData = yesterdayFinalResults.find((d) => {

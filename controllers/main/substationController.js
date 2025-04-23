@@ -119,8 +119,6 @@ export const getEdcSubstationWidgets = async (req, res) => {
 
 export const fetchSubstationGraphs = async (socket, substations) => {
     try {
-        // const regionNames = await REGIONS.getRegionNames(pool);
-
         const { startOfDay, endOfDay } = getTodayStartAndEnd();
         const { startOfYesterday, endOfYesterday } = getYesterdayStartAndEnd();
 
@@ -255,7 +253,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -372,12 +370,12 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     ? startOfDay
                         ? startOfDay
                         : '2025-03-27 00:00:00'
-                    : '2025-03-27 00:00:00',
+                    : startOfDay,
                 process.env.NODE_ENV === 'development'
                     ? endOfDay
                         ? endOfDay
                         : '2025-03-27 23:59:59'
-                    : '2025-03-27 23:59:59',
+                    : endOfDay,
                 hierarchyMeters
             );
 
@@ -388,12 +386,12 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     ? startOfYesterday
                         ? startOfYesterday
                         : '2025-03-26 00:00:00'
-                    : '2025-03-26 00:00:00',
+                    : startOfYesterday,
                 process.env.NODE_ENV === 'development'
                     ? endOfYesterday
                         ? endOfYesterday
                         : '2025-03-26 23:59:59'
-                    : '2025-03-26 23:59:59',
+                    : endOfYesterday,
                 hierarchyMeters
             );
 
@@ -472,7 +470,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -631,7 +629,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
                     dataTime.isSameOrBefore(now) &&
-                    timeDiff > 45
+                    timeDiff > 30
                 );
             });
             const yesterdayData = yesterdayFinalResults.find((d) => {
