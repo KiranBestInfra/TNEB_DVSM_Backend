@@ -519,8 +519,7 @@ export const demandGraph = async (req, res) => {
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
                     dataTime.isSameOrBefore(now) &&
-                    timeDiff > 30 &&
-                    timeDiff < 180
+                    timeDiff > 30
                 );
             });
 
