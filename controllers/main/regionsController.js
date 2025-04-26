@@ -196,7 +196,7 @@ export const fetchRegionGraphs = async (socket, regionNames) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 45
+                        timeDiff > 30
                     );
                 });
 
