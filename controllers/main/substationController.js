@@ -253,7 +253,7 @@ export const fetchSubstationGraphs = async (socket, substations) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 30
+                        timeDiff > 180
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -470,7 +470,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                     return (
                         dataTime.format('HH:mm:ss') === timestamp &&
                         dataTime.isSameOrBefore(now) &&
-                        timeDiff > 30
+                        timeDiff > 180
                     );
                 });
                 const yesterdayData = yesterdayFinalResults.find((d) => {
@@ -629,7 +629,7 @@ export const getSubstationDemandGraphDetails = async (req, res) => {
                 return (
                     dataTime.format('HH:mm:ss') === timestamp &&
                     dataTime.isSameOrBefore(now) &&
-                    timeDiff > 30
+                    timeDiff > 180
                 );
             });
             const yesterdayData = yesterdayFinalResults.find((d) => {
